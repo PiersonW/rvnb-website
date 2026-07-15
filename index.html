@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RVnB — Empty Lots After Dark, Income Overnight</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --night:#141a2b;
+    --night-2:#1d2438;
+    --amber:#f2a93b;
+    --amber-dim:#c98a2e;
+    --lane:#eeeae0;
+    --lane-dim:#d9d4c6;
+    --sign-green:#356b52;
+    --asphalt:#545b66;
+    --asphalt-dark:#2c303a;
+    --radius:2px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:'Inter', sans-serif;
+    background:var(--lane);
+    color:var(--night);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{
+    font-family:'Oswald', sans-serif;
+    text-transform:uppercase;
+    letter-spacing:0.02em;
+  }
+  .mono{font-family:'JetBrains Mono', monospace;}
+  a{color:inherit; text-decoration:none;}
+  img,svg{display:block; max-width:100%;}
+  button{font-family:inherit; cursor:pointer; border:none;}
+  .wrap{max-width:1120px; margin:0 auto; padding:0 28px;}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.01ms !important; transition-duration:0.01ms !important;}
+  }
+
+  /* ---------- NAV ---------- */
+  nav{
+    position:sticky; top:0; z-index:50;
+    background:var(--lane);
+    border-bottom:2px solid var(--night);
+  }
+  nav .wrap{
+    display:flex; align-items:center; justify-content:space-between;
+    height:68px;
+  }
+  .logo{
+    display:flex; align-items:center; gap:10px;
+    font-family:'Oswald', sans-serif; font-weight:700; font-size:20px;
+    letter-spacing:0.04em;
+  }
+  .logo .shield{
+    width:34px; height:34px;
+    background:var(--sign-green);
+    border:2px solid var(--night);
+    border-radius:6px;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--lane); font-size:13px; font-weight:700;
+  }
+  .navlinks{display:flex; gap:32px; font-size:14px; font-weight:600;}
+  .navlinks a{padding:4px 2px; border-bottom:2px solid transparent;}
+  .navlinks a:hover{border-color:var(--amber);}
+  .navlinks{display:none;}
+  @media(min-width:720px){.navlinks{display:flex;}}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    background:var(--night);
+    color:var(--lane);
+    position:relative;
+    overflow:hidden;
+    border-bottom:2px solid var(--night);
+    transition:background 0.6s ease;
+  }
+  .hero.is-day{background:#dfe6e8;}
+  .hero .wrap{
+    position:relative; z-index:2;
+    padding:72px 28px 0;
+    display:grid; gap:36px;
+  }
+  @media(min-width:860px){
+    .hero .wrap{grid-template-columns:1.1fr 1fr; align-items:end; padding-top:88px;}
+  }
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px; letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--amber); margin-bottom:18px; display:flex; align-items:center; gap:10px;
+  }
+  .eyebrow::before{content:''; width:8px; height:8px; background:var(--amber); border-radius:50%; display:inline-block;}
+  .hero h1{
+    font-size:clamp(30px,4.8vw,50px);
+    line-height:1.08;
+    max-width:15ch;
+  }
+  .hero .sub-copy{
+    max-width:38ch;
+    font-size:16px;
+    margin-top:20px;
+    color:var(--lane-dim);
+    transition:color 0.6s ease;
+  }
+  .hero.is-day .sub-copy{color:#454b52;}
+  .hero .cta-row{display:flex; flex-wrap:wrap; gap:14px; margin-top:32px;}
+  .btn{
+    padding:14px 24px;
+    font-weight:700; font-size:14px; letter-spacing:0.02em;
+    text-transform:uppercase;
+    border-radius:var(--radius);
+    display:inline-flex; align-items:center; gap:8px;
+  }
+  .btn-amber{background:var(--amber); color:var(--night);}
+  .btn-amber:hover{background:#ffbb52;}
+  .btn-outline{border:2px solid var(--lane-dim); color:var(--lane);}
+  .hero.is-day .btn-outline{border-color:var(--night); color:var(--night);}
+  .btn-outline:hover{border-color:var(--amber); color:var(--amber);}
+
+  /* Toggle */
+  .toggle-card{
+    justify-self:end;
+    width:100%;
+    max-width:360px;
+  }
+  .demo-caption{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px; letter-spacing:0.02em;
+    color:var(--amber);
+    margin-bottom:10px;
+    text-align:right;
+  }
+  .hero.is-day .demo-caption{color:var(--sign-green);}
+  .toggle-frame{
+    border:2px solid var(--asphalt);
+    background:var(--night-2);
+    padding:22px;
+    border-radius:4px;
+  }
+  .hero.is-day .toggle-frame{background:#c9d3d5; border-color:#8a9498;}
+  .toggle-label{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px; letter-spacing:0.12em; text-transform:uppercase;
+    color:var(--asphalt-light,#9aa1ad);
+    display:flex; justify-content:space-between; margin-bottom:14px;
+  }
+  .scene{
+    height:150px;
+    border-radius:2px;
+    position:relative;
+    overflow:hidden;
+    background:linear-gradient(180deg, #0c1220 0%, #1a2138 100%);
+    transition:background 0.6s ease;
+  }
+  .hero.is-day .scene{background:linear-gradient(180deg, #aecbe8 0%, #dce9ef 100%);}
+  .scene .ground{
+    position:absolute; bottom:0; left:0; right:0; height:46%;
+    background:var(--asphalt-dark);
+  }
+  .hero.is-day .scene .ground{background:#9099a1;}
+  .scene .stripe{
+    position:absolute; bottom:18px; width:34px; height:4px; background:var(--lane-dim); opacity:0.5;
+  }
+  .scene .rv{
+    position:absolute; bottom:14px; left:38%;
+    width:96px; height:46px;
+    background:var(--amber);
+    border-radius:4px 10px 4px 4px;
+    opacity:0; transform:translateY(8px);
+    transition:opacity 0.6s ease, transform 0.6s ease;
+  }
+  .scene .rv::after{
+    content:''; position:absolute; right:-14px; bottom:0; width:20px; height:30px;
+    background:var(--amber); border-radius:0 4px 4px 0;
+  }
+  .scene.show-rv .rv{opacity:1; transform:translateY(0);}
+  .scene .win{
+    position:absolute; top:10px; left:10px; width:16px; height:12px; background:#8fd4ff; border-radius:1px;
+  }
+  .scene .biz{
+    position:absolute; bottom:36px; left:18%;
+    width:64px; height:60px;
+    background:#3a4256;
+    border-radius:2px 2px 0 0;
+  }
+  .hero.is-day .scene .biz{background:#5b6472;}
+  .scene .biz-glow{
+    position:absolute; bottom:36px; left:18%;
+    width:64px; height:60px; opacity:0; transition:opacity .6s ease;
+    background:repeating-linear-gradient(0deg, #ffdd88 0 8px, transparent 8px 16px);
+    background-position:8px 8px; background-size:16px 16px;
+    -webkit-mask:radial-gradient(circle,black 40%,transparent 41%);
+  }
+  .hero.is-day .biz-glow{opacity:1;}
+  .scene .stars{position:absolute; inset:0; opacity:1; transition:opacity 0.6s ease;}
+  .hero.is-day .scene .stars{opacity:0;}
+  .scene .star{position:absolute; width:2px; height:2px; background:#fff; border-radius:50%;}
+
+  .toggle-row{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-top:16px;
+  }
+  .toggle-copy{font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--lane-dim);}
+  .hero.is-day .toggle-copy{color:#5a6268;}
+  .switch-wrap{display:flex; align-items:center; gap:8px;}
+  .switch-tag{
+    font-family:'JetBrains Mono', monospace; font-size:9px; letter-spacing:0.08em;
+    color:var(--lane-dim);
+  }
+  .hero.is-day .switch-tag{color:#5a6268;}
+  .switch{
+    width:56px; height:30px; background:var(--asphalt-dark);
+    border-radius:20px; border:2px solid var(--asphalt);
+    position:relative;
+  }
+  .switch::after{
+    content:''; position:absolute; top:2px; left:2px;
+    width:22px; height:22px; background:var(--amber); border-radius:50%;
+    transition:transform 0.35s ease;
+  }
+  .hero.is-day .switch::after{transform:translateX(26px); background:#f5c65c;}
+  .hero.is-day .switch{background:#c9d3d5;}
+
+  /* ---------- MARQUEE STRIP ---------- */
+  .strip{
+    background:var(--sign-green); color:var(--lane);
+    padding:10px 0; overflow:hidden; white-space:nowrap;
+    border-bottom:2px solid var(--night);
+  }
+  .strip .track{
+    display:inline-block; font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:0.1em;
+    animation:scroll 26s linear infinite;
+  }
+  @keyframes scroll{from{transform:translateX(0);} to{transform:translateX(-50%);}}
+  .strip .track span{margin:0 22px;}
+
+  /* ---------- SECTION SHARED ---------- */
+  section{padding:80px 0;}
+  .section-head{max-width:560px; margin-bottom:48px;}
+  .section-head .eyebrow{color:var(--sign-green);}
+  .section-head .eyebrow::before{background:var(--sign-green);}
+  .section-head h2{font-size:clamp(26px,4vw,38px); color:var(--night);}
+  .section-head p{margin-top:14px; color:var(--asphalt); max-width:46ch;}
+
+  /* ---------- TABS: HOW IT WORKS ---------- */
+  .tabs{display:flex; gap:0; border:2px solid var(--night); width:fit-content; margin-bottom:36px; border-radius:2px; overflow:hidden;}
+  .tab-btn{
+    padding:11px 22px; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.04em;
+    background:var(--lane); color:var(--night);
+  }
+  .tab-btn.active{background:var(--night); color:var(--amber);}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:grid;}
+  .steps{
+    display:grid; gap:0;
+    grid-template-columns:1fr;
+    border-top:2px solid var(--night);
+  }
+  @media(min-width:760px){.steps{grid-template-columns:repeat(4,1fr);}}
+  .step{
+    padding:22px 20px 26px;
+    border-bottom:2px solid var(--night);
+    border-right:2px solid var(--night);
+  }
+  @media(min-width:760px){.step:last-child{border-right:2px solid var(--night);}}
+  .step .num{
+    font-family:'JetBrains Mono', monospace;
+    color:var(--amber-dim); background:var(--night); display:inline-block;
+    padding:2px 8px; font-size:12px; margin-bottom:14px; border-radius:2px;
+  }
+  .step h3{font-size:16px; margin-bottom:8px; color:var(--night);}
+  .step p{font-size:14px; color:var(--asphalt);}
+
+  /* ---------- PERFECT FOR ---------- */
+  .perfect{background:var(--night); color:var(--lane);}
+  .perfect .section-head .eyebrow{color:var(--amber);}
+  .perfect .section-head .eyebrow::before{background:var(--amber);}
+  .perfect .section-head h2{color:var(--lane);}
+  .perfect .section-head p{color:var(--lane-dim);}
+  .grid-tags{display:grid; grid-template-columns:repeat(2,1fr); gap:2px; background:var(--asphalt);}
+  @media(min-width:640px){.grid-tags{grid-template-columns:repeat(4,1fr);}}
+  .tag{
+    background:var(--night); padding:22px 16px;
+    font-family:'JetBrains Mono', monospace; font-size:13px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .tag::before{content:'▸'; color:var(--amber);}
+
+  /* ---------- SIGNUP ---------- */
+  .signup{background:var(--lane-dim);}
+  .signup-card{
+    background:var(--night); color:var(--lane);
+    padding:44px 36px;
+    border-radius:4px;
+    display:grid; gap:28px;
+  }
+  @media(min-width:760px){.signup-card{grid-template-columns:1fr 1fr; padding:52px;}}
+  .signup-card h2{font-size:clamp(24px,3.4vw,32px); max-width:14ch;}
+  .signup-card p{color:var(--lane-dim); margin-top:14px; max-width:36ch; font-size:14px;}
+  .form-block{display:flex; flex-direction:column; gap:12px;}
+  .role-pick{display:flex; gap:8px; margin-bottom:6px;}
+  .role-btn{
+    flex:1; padding:10px; font-size:12px; font-weight:700; text-transform:uppercase;
+    background:var(--night-2); color:var(--lane-dim); border:2px solid var(--asphalt); border-radius:2px;
+  }
+  .role-btn.active{background:var(--amber); color:var(--night); border-color:var(--amber);}
+  input[type=email], input[type=text]{
+    padding:13px 14px; background:var(--night-2); border:2px solid var(--asphalt);
+    color:var(--lane); font-family:'Inter',sans-serif; font-size:14px; border-radius:2px;
+  }
+  input::placeholder{color:#7a8291;}
+  input:focus, .role-btn:focus, .btn:focus, .tab-btn:focus, .switch-btn:focus{outline:3px solid var(--amber); outline-offset:2px;}
+  .form-note{font-family:'JetBrains Mono', monospace; font-size:11px; color:#8a92a0;}
+  .form-msg{font-size:13px; font-weight:600; color:var(--amber); min-height:18px;}
+
+  /* ---------- FOOTER ---------- */
+  footer{background:var(--night); color:var(--lane-dim); padding:36px 0; border-top:2px solid var(--asphalt);}
+  footer .wrap{display:flex; flex-wrap:wrap; justify-content:space-between; gap:16px; align-items:center;}
+  footer .mono{font-size:12px;}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="logo"><span class="shield">RV</span> RVnB</div>
+    <div class="navlinks">
+      <a href="#how">How It Works</a>
+      <a href="#perfect">Who It's For</a>
+      <a href="#signup">Get Started</a>
+    </div>
+    <a href="#signup" class="btn btn-amber" style="padding:10px 18px; font-size:12px;">Get Started</a>
+  </div>
+</nav>
+
+<header class="hero" id="hero">
+  <div class="wrap">
+    <div>
+      <div class="eyebrow">Overnight RV parking marketplace</div>
+      <h1>Closed for business. Open for RVs.</h1>
+      <p class="sub-copy">RVnB connects RV travelers with businesses that have unused parking after hours — restaurants, churches, gyms, offices. Verified guests, automated payouts, zero disruption to your day.</p>
+      <div class="cta-row">
+        <a href="#signup" class="btn btn-amber">List Your Lot</a>
+        <a href="#signup" class="btn btn-outline">Find A Spot</a>
+      </div>
+    </div>
+    <div class="toggle-card">
+      <p class="demo-caption">Same lot, two lives. Tap the switch to see it flip.</p>
+      <div class="toggle-frame">
+        <div class="toggle-label"><span>LOT STATUS</span><span class="mono" id="clock-label">22:00</span></div>
+        <div class="scene" id="scene">
+          <div class="stars" id="stars"></div>
+          <div class="biz"></div>
+          <div class="biz-glow"></div>
+          <div class="ground"></div>
+          <div class="rv" id="rv"></div>
+        </div>
+        <div class="toggle-row">
+          <span class="toggle-copy" id="toggle-copy">After hours: open for RVs</span>
+          <div class="switch-wrap">
+            <span class="switch-tag">DAY</span>
+            <button class="switch" id="switch" aria-label="Toggle day and night view"></button>
+            <span class="switch-tag">NIGHT</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="strip">
+  <div class="track">
+    <span>✔ VERIFIED GUESTS ONLY</span><span>✔ AUTOMATED PAYOUTS</span><span>✔ YOU SET THE HOURS</span><span>✔ ZERO EQUIPMENT NEEDED</span>
+    <span>✔ VERIFIED GUESTS ONLY</span><span>✔ AUTOMATED PAYOUTS</span><span>✔ YOU SET THE HOURS</span><span>✔ ZERO EQUIPMENT NEEDED</span>
+  </div>
+</div>
+
+<section id="how">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Process</div>
+      <h2>How it works</h2>
+      <p>Two sides, one lot. Switch views to see the flow for each.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab-btn active" data-tab="biz" role="tab">For Businesses</button>
+      <button class="tab-btn" data-tab="trav" role="tab">For Travelers</button>
+    </div>
+
+    <div class="tab-panel active" data-panel="biz">
+      <div class="steps">
+        <div class="step"><span class="num">01</span><h3>List your lot</h3><p>Add your address, how many rigs you can fit, and the size limits you're comfortable with.</p></div>
+        <div class="step"><span class="num">02</span><h3>Set your hours</h3><p>Choose arrival and departure windows so guests are gone before your business opens.</p></div>
+        <div class="step"><span class="num">03</span><h3>Approve bookings</h3><p>Accept requests automatically or review each one — you're always in control of who parks.</p></div>
+        <div class="step"><span class="num">04</span><h3>Get paid</h3><p>Payouts land automatically after each stay. No invoicing, no chasing payment.</p></div>
+      </div>
+    </div>
+
+    <div class="tab-panel" data-panel="trav">
+      <div class="steps">
+        <div class="step"><span class="num">01</span><h3>Search your route</h3><p>Find verified overnight spots along the way — no rest-stop roulette.</p></div>
+        <div class="step"><span class="num">02</span><h3>Book & verify</h3><p>Complete a one-time identity check, then book in a couple taps.</p></div>
+        <div class="step"><span class="num">03</span><h3>Get check-in details</h3><p>Gate codes, entry rules, and exact instructions land after payment.</p></div>
+        <div class="step"><span class="num">04</span><h3>Park & go</h3><p>Arrive after close, leave by the window — no knock on the door in the morning.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="perfect" id="perfect">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Supply</div>
+      <h2>Perfect for any lot that sits empty overnight</h2>
+      <p>If the parking lot clears out after close, it can earn while it sleeps.</p>
+    </div>
+    <div class="grid-tags">
+      <div class="tag">Restaurants</div>
+      <div class="tag">Churches</div>
+      <div class="tag">Gyms</div>
+      <div class="tag">Offices</div>
+      <div class="tag">Manufacturing lots</div>
+      <div class="tag">Warehouses</div>
+      <div class="tag">Strip malls</div>
+      <div class="tag">Any unused lot</div>
+    </div>
+  </div>
+</section>
+
+<section class="signup" id="signup">
+  <div class="wrap">
+    <div class="signup-card">
+      <div>
+        <div class="eyebrow" style="color:var(--amber);">Get started</div>
+        <h2>Be first on the list</h2>
+        <p>RVnB is in early build. Tell us which side you're on and we'll reach out as spots open up in your area.</p>
+      </div>
+      <div class="form-block">
+        <div class="role-pick">
+          <button class="role-btn active" data-role="business" type="button">I have a lot</button>
+          <button class="role-btn" data-role="traveler" type="button">I have an RV</button>
+        </div>
+        <input type="text" placeholder="Name" id="name-input">
+        <input type="email" placeholder="Email" id="email-input">
+        <button class="btn btn-amber" id="submit-btn" type="button" style="justify-content:center;">Join the list</button>
+        <div class="form-msg" id="form-msg"></div>
+        <div class="form-note">This form is a prototype and isn't wired to a database yet.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="logo" style="font-size:15px;"><span class="shield" style="width:26px;height:26px;font-size:10px;">RV</span> RVnB</div>
+    <div class="mono">tryrvnb.com · Founder: Pierson Willhite</div>
+  </div>
+</footer>
+
+<script>
+  // Generate stars
+  const starsEl = document.getElementById('stars');
+  for(let i=0;i<18;i++){
+    const s = document.createElement('div');
+    s.className='star';
+    s.style.left = Math.random()*100+'%';
+    s.style.top = Math.random()*60+'%';
+    s.style.opacity = (0.3+Math.random()*0.7).toFixed(2);
+    starsEl.appendChild(s);
+  }
+
+  const hero = document.getElementById('hero');
+  const scene = document.getElementById('scene');
+  const switchBtn = document.getElementById('switch');
+  const clockLabel = document.getElementById('clock-label');
+  const toggleCopy = document.getElementById('toggle-copy');
+  let isDay = false;
+
+  function render(){
+    hero.classList.toggle('is-day', isDay);
+    scene.classList.toggle('show-rv', !isDay);
+    clockLabel.textContent = isDay ? '14:00' : '22:00';
+    toggleCopy.textContent = isDay ? 'Business hours: lot in use' : 'After hours: open for RVs';
+  }
+  switchBtn.addEventListener('click', ()=>{ isDay = !isDay; render(); });
+  render();
+
+  // Tabs
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelector('.tab-panel[data-panel="'+btn.dataset.tab+'"]').classList.add('active');
+    });
+  });
+
+  // Role pick
+  let role = 'business';
+  document.querySelectorAll('.role-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.role-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      role = btn.dataset.role;
+    });
+  });
+
+  // Fake submit (no backend yet)
+  document.getElementById('submit-btn').addEventListener('click', ()=>{
+    const name = document.getElementById('name-input').value.trim();
+    const email = document.getElementById('email-input').value.trim();
+    const msg = document.getElementById('form-msg');
+    if(!name || !email){
+      msg.textContent = 'Add your name and email to continue.';
+      return;
+    }
+    msg.textContent = 'Saved locally — ' + name + ' (' + role + '). Connect a database to make this real.';
+    document.getElementById('name-input').value='';
+    document.getElementById('email-input').value='';
+  });
+</script>
+
+</body>
+</html>
