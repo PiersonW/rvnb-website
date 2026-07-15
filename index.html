@@ -451,7 +451,7 @@
         <input type="email" placeholder="Email" id="email-input">
         <button class="btn btn-amber" id="submit-btn" type="button" style="justify-content:center;">Join the list</button>
         <div class="form-msg" id="form-msg"></div>
-        <div class="form-note">This form is a prototype and isn't wired to a database yet.</div>
+        <div class="form-note">Submissions come straight to your email.</div>
       </div>
     </div>
   </div>
@@ -512,18 +512,53 @@
     });
   });
 
-  // Fake submit (no backend yet)
-  document.getElementById('submit-btn').addEventListener('click', ()=>{
+  // Real submit via Web3Forms
+  const submitBtn = document.getElementById('submit-btn');
+  submitBtn.addEventListener('click', async ()=>{
     const name = document.getElementById('name-input').value.trim();
     const email = document.getElementById('email-input').value.trim();
     const msg = document.getElementById('form-msg');
+
     if(!name || !email){
       msg.textContent = 'Add your name and email to continue.';
       return;
     }
-    msg.textContent = 'Saved locally — ' + name + ' (' + role + '). Connect a database to make this real.';
-    document.getElementById('name-input').value='';
-    document.getElementById('email-input').value='';
+
+    const subject = role === 'business'
+      ? '🅿️ New Host Signup — RVnB'
+      : '🚐 New Traveler Signup — RVnB';
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+    msg.textContent = '';
+
+    try{
+      const res = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          access_key: '7e10b2cb-2e39-4f72-b665-924100b8e61e',
+          subject: subject,
+          from_name: 'RVnB Website',
+          name: name,
+          email: email,
+          'Interested In': role === 'business' ? 'Hosting a lot' : 'Traveling / booking',
+        })
+      });
+      const data = await res.json();
+      if(data.success){
+        msg.textContent = 'Thanks, ' + name + '! We\'ll be in touch soon.';
+        document.getElementById('name-input').value='';
+        document.getElementById('email-input').value='';
+      } else {
+        msg.textContent = 'Something went wrong — please try again.';
+      }
+    } catch(err){
+      msg.textContent = 'Something went wrong — please try again.';
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Join the list';
+    }
   });
 </script>
 
