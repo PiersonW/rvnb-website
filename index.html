@@ -72,6 +72,9 @@
   .navlinks a:hover{border-color:var(--amber);}
   .navlinks{display:none;}
   @media(min-width:720px){.navlinks{display:flex;}}
+  @media(max-width:400px){
+    nav .btn{padding:8px 10px !important; font-size:11px !important;}
+  }
 
   /* ---------- HERO ---------- */
   .hero{
@@ -101,7 +104,7 @@
     font-size:clamp(30px,4.8vw,50px);
     line-height:1.08;
     max-width:15ch;
-    transition:color 0.6s ease;
+    transition:color 0.6s ease, opacity 0.35s ease;
   }
   .hero.is-day h1{color:var(--night);}
   .hero .sub-copy{
@@ -331,6 +334,10 @@
   input:focus, .role-btn:focus, .btn:focus, .tab-btn:focus, .switch-btn:focus{outline:3px solid var(--amber); outline-offset:2px;}
   .form-note{font-family:'JetBrains Mono', monospace; font-size:11px; color:#8a92a0;}
   .form-msg{font-size:13px; font-weight:600; color:var(--amber); min-height:18px;}
+  .form-msg.confirmed{
+    background:#20402f; color:#8fd8ac; border:2px solid var(--sign-green);
+    padding:14px 16px; border-radius:2px; font-size:14px; display:flex; align-items:center; gap:8px;
+  }
 
   /* ---------- FOOTER ---------- */
   footer{background:var(--night); color:var(--lane-dim); padding:36px 0; border-top:2px solid var(--asphalt);}
@@ -374,7 +381,10 @@
       <a href="#perfect">Who It's For</a>
       <a href="#signup">Get Started</a>
     </div>
-    <a href="#signup" class="btn btn-amber" style="padding:10px 18px; font-size:12px;">Get Started</a>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <a href="host-login.html" class="btn btn-outline" style="padding:10px 16px; font-size:12px; border-color:var(--night); color:var(--night);">Log In</a>
+      <a href="#signup" class="btn btn-amber" style="padding:10px 18px; font-size:12px;">Get Started</a>
+    </div>
   </div>
 </nav>
 
@@ -382,10 +392,10 @@
   <div class="wrap">
     <div>
       <div class="eyebrow">Overnight RV parking marketplace</div>
-      <h1>Closed for business. Open for RVs.</h1>
+      <h1 id="hero-headline">Closed for business. Open for RVs.</h1>
       <p class="sub-copy">RVnB connects RV travelers with businesses that have unused parking after hours — restaurants, churches, gyms, offices. Verified guests, automated payouts, zero disruption to your day.</p>
       <div class="cta-row">
-        <a href="#signup" class="btn btn-amber">List Your Lot</a>
+        <a href="list-your-lot.html" class="btn btn-amber">List Your Lot</a>
         <a href="browse.html" class="btn btn-outline">Find A Spot</a>
       </div>
     </div>
@@ -518,9 +528,12 @@
         </div>
         <input type="text" placeholder="Name" id="name-input">
         <input type="email" placeholder="Email" id="email-input">
+        <div style="position:absolute; left:-9999px;" aria-hidden="true">
+          <label for="hp-website">Leave this field blank</label>
+          <input type="text" id="hp-website" tabindex="-1" autocomplete="off">
+        </div>
         <button class="btn btn-amber" id="submit-btn" type="button" style="justify-content:center;">Join the list</button>
         <div class="form-msg" id="form-msg"></div>
-        <div class="form-note">Submissions come straight to your email.</div>
       </div>
     </div>
   </div>
@@ -587,13 +600,27 @@
   const switchBtn = document.getElementById('switch');
   const clockLabel = document.getElementById('clock-label');
   const toggleCopy = document.getElementById('toggle-copy');
+  const heroHeadline = document.getElementById('hero-headline');
   let isDay = false;
+  let firstRender = true;
 
   function render(){
     hero.classList.toggle('is-day', isDay);
     scene.classList.toggle('show-rv', !isDay);
     clockLabel.textContent = isDay ? '14:00' : '22:00';
     toggleCopy.textContent = isDay ? 'Business hours: lot in use' : 'After hours: open for RVs';
+
+    const newHeadline = isDay ? 'Open for business. Closed to RVs.' : 'Closed for business. Open for RVs.';
+    if(firstRender){
+      heroHeadline.textContent = newHeadline;
+      firstRender = false;
+    } else {
+      heroHeadline.style.opacity = '0';
+      setTimeout(() => {
+        heroHeadline.textContent = newHeadline;
+        heroHeadline.style.opacity = '1';
+      }, 350);
+    }
   }
   switchBtn.addEventListener('click', ()=>{ isDay = !isDay; render(); });
   render();
@@ -620,10 +647,26 @@
 
   // Real submit via Web3Forms
   const submitBtn = document.getElementById('submit-btn');
+  const signupPageLoadTime = Date.now();
   submitBtn.addEventListener('click', async ()=>{
     const name = document.getElementById('name-input').value.trim();
     const email = document.getElementById('email-input').value.trim();
     const msg = document.getElementById('form-msg');
+    msg.className = 'form-msg';
+
+    // Honeypot — bots that auto-fill hidden fields trip this
+    if(document.getElementById('hp-website').value !== ''){
+      msg.textContent = 'Thanks, ' + name + '! We\'ll be in touch soon.';
+      document.getElementById('name-input').value='';
+      document.getElementById('email-input').value='';
+      return;
+    }
+
+    // Timing trap — real visitors take a few seconds minimum
+    if(Date.now() - signupPageLoadTime < 2000){
+      msg.textContent = 'Please take a moment before submitting.';
+      return;
+    }
 
     if(!name || !email){
       msg.textContent = 'Add your name and email to continue.';
@@ -653,13 +696,16 @@
       });
       const data = await res.json();
       if(data.success){
-        msg.textContent = 'Thanks, ' + name + '! We\'ll be in touch soon.';
+        msg.className = 'form-msg confirmed';
+        msg.innerHTML = '✓ Thanks, ' + name + ' — you\'re on the list! We\'ll reach out at ' + email + ' soon.';
         document.getElementById('name-input').value='';
         document.getElementById('email-input').value='';
       } else {
+        msg.className = 'form-msg';
         msg.textContent = 'Something went wrong — please try again.';
       }
     } catch(err){
+      msg.className = 'form-msg';
       msg.textContent = 'Something went wrong — please try again.';
     } finally {
       submitBtn.disabled = false;
