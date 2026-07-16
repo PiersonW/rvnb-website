@@ -49,6 +49,7 @@
     <div class="cf-turnstile" data-sitekey="0x4AAAAAAD3dYgYRVK0pvWHm" data-callback="onLoginCaptcha"></div>
     <button type="submit">Log In</button>
     <div class="msg" id="login-msg"></div>
+    <div style="font-size:10px; color:#5a6472; font-family:monospace;" id="login-debug">debug: waiting</div>
   </form>
 
   <form id="signup-form" class="hidden">
@@ -93,7 +94,11 @@
   // Captcha tokens, captured via the widget callbacks
   let loginCaptchaToken = null;
   let signupCaptchaToken = null;
-  function onLoginCaptcha(token){ loginCaptchaToken = token; }
+  function onLoginCaptcha(token){
+    loginCaptchaToken = token;
+    const d = document.getElementById('login-debug');
+    if(d) d.textContent = 'debug: captcha token received ✓';
+  }
   function onSignupCaptcha(token){ signupCaptchaToken = token; }
 
   // If the Turnstile script itself fails to load (ad blocker, network issue, etc),
@@ -110,30 +115,44 @@
   document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const msg = document.getElementById('login-msg');
+    const debugEl = document.getElementById('login-debug');
+    debugEl.textContent = 'debug: submit fired';
 
     if(!loginCaptchaToken){
       msg.className = 'msg show error';
       msg.textContent = 'Please complete the verification check above before logging in.';
+      debugEl.textContent = 'debug: no captcha token yet';
       return;
     }
 
+    debugEl.textContent = 'debug: calling supabase...';
+
     try{
-      const { error } = await supabase.auth.signInWithPassword({
+      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out after 10s — possible network/ad-blocker issue')), 10000));
+      const authCall = supabase.auth.signInWithPassword({
         email: document.getElementById('login-email').value.trim(),
         password: document.getElementById('login-password').value,
         options: { captchaToken: loginCaptchaToken }
       });
+
+      const { error } = await Promise.race([authCall, timeout]);
+
+      debugEl.textContent = 'debug: got response';
+
       if(error){
         msg.className = 'msg show error';
         msg.textContent = error.message;
+        debugEl.textContent = 'debug: error — ' + error.message;
         if(window.turnstile) window.turnstile.reset();
         loginCaptchaToken = null;
         return;
       }
+      debugEl.textContent = 'debug: success, redirecting...';
       window.location.href = returnTo;
     } catch(err){
       msg.className = 'msg show error';
       msg.textContent = 'Something went wrong: ' + err.message;
+      debugEl.textContent = 'debug: exception — ' + err.message;
       if(window.turnstile) window.turnstile.reset();
       loginCaptchaToken = null;
     }
