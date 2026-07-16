@@ -30,6 +30,28 @@
     background:var(--night); color:var(--lane); padding:10px 18px; border-radius:20px;
     font-family:'JetBrains Mono',monospace; font-size:12px; z-index:1000; display:none;
   }
+  #search-bar{
+    position:absolute; top:76px; left:50%; transform:translateX(-50%);
+    z-index:1000; display:flex; gap:0; box-shadow:0 3px 10px rgba(0,0,0,0.25);
+    border-radius:3px; overflow:hidden; width:90%; max-width:380px;
+  }
+  #search-input{
+    flex:1; border:none; padding:12px 14px; font-family:'Inter',sans-serif; font-size:14px;
+  }
+  #search-btn{
+    background:var(--amber); color:var(--night); border:none; padding:0 18px;
+    font-weight:700; text-transform:uppercase; font-size:12px; cursor:pointer;
+  }
+  #search-clear{
+    background:var(--asphalt); color:#fff; border:none; padding:0 14px; cursor:pointer; display:none;
+  }
+  #search-area-btn{
+    position:absolute; top:128px; left:50%; transform:translateX(-50%);
+    z-index:1000; background:var(--night); color:var(--amber); border:none;
+    padding:9px 18px; border-radius:20px; font-family:'JetBrains Mono',monospace;
+    font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.03em;
+    cursor:pointer; box-shadow:0 3px 10px rgba(0,0,0,0.3); display:none;
+  }
 </style>
 </head>
 <body>
@@ -38,6 +60,13 @@
   <span>RVnB — Find a Spot</span>
   <a href="index.html">← Back to home</a>
 </header>
+
+<div id="search-bar">
+  <input type="text" id="search-input" placeholder="Search city or business name...">
+  <button id="search-clear">✕</button>
+  <button id="search-btn">Search</button>
+</div>
+<button id="search-area-btn">Search This Area</button>
 
 <div id="map"></div>
 <div id="status">Loading spots...</div>
@@ -64,6 +93,8 @@
     iconSize: [16,16],
   });
 
+  const allMarkers = []; // { marker, data } — used by search to filter/re-center
+
   async function loadListings(){
     if(SUPABASE_URL.includes('YOUR_SUPABASE')){
       statusEl.style.display = 'block';
@@ -89,14 +120,19 @@
 
     data.forEach(p => {
       const marker = L.marker([p.latitude, p.longitude], { icon: amberIcon }).addTo(map);
+      const photos = (p.photo_urls || '').split(',').map(s => s.trim()).filter(Boolean);
+      const thumb = photos.length > 0 ? `<img src="${photos[0]}" style="width:100%; height:90px; object-fit:cover; border-radius:2px; margin-bottom:6px;">` : '';
       marker.bindPopup(`
         <div class="rv-popup">
+          ${thumb}
           <h3>${p.business_name}</h3>
           <div>${p.city}, ${p.state}</div>
           <div class="price">$${p.price_per_night}/night</div>
           <div class="meta">${p.spots_available} spot(s) · check-in ${p.arrival_time} · check-out ${p.departure_time}</div>
+          <a href="listing.html?id=${p.id}" style="display:inline-block; margin-top:8px; background:#141a2b; color:#f2a93b; padding:6px 12px; border-radius:2px; font-size:12px; font-weight:700; text-decoration:none; text-transform:uppercase;">View &amp; Book</a>
         </div>
       `);
+      allMarkers.push({ marker, data: p });
     });
 
     if(data.length === 0){
@@ -104,6 +140,109 @@
       statusEl.textContent = 'No approved listings yet — add one in Supabase to see it here.';
     }
   }
+
+  // ============================================
+  // Search — matches listings by name/city first;
+  // if nothing matches, treats the query as a place and re-centers the map there
+  // ============================================
+  const searchInput = document.getElementById('search-input');
+  const searchBtn = document.getElementById('search-btn');
+  const clearBtn = document.getElementById('search-clear');
+
+  function showAllMarkers(){
+    allMarkers.forEach(({ marker }) => { if(!map.hasLayer(marker)) marker.addTo(map); });
+  }
+
+  async function runSearch(){
+    const query = searchInput.value.trim();
+    if(!query){ showAllMarkers(); clearBtn.style.display = 'none'; return; }
+
+    clearBtn.style.display = 'block';
+    const q = query.toLowerCase();
+    const matches = allMarkers.filter(({ data }) =>
+      data.business_name.toLowerCase().includes(q) || data.city.toLowerCase().includes(q)
+    );
+
+    if(matches.length > 0){
+      // Show only matching pins, hide the rest, zoom to fit them
+      allMarkers.forEach(({ marker }) => map.removeLayer(marker));
+      matches.forEach(({ marker }) => marker.addTo(map));
+      if(matches.length === 1){
+        moveMapProgrammatically(() => map.setView(matches[0].marker.getLatLng(), 13));
+        matches[0].marker.openPopup();
+      } else {
+        moveMapProgrammatically(() => map.fitBounds(L.featureGroup(matches.map(m => m.marker)).getBounds(), { padding: [40,40] }));
+      }
+      statusEl.style.display = 'none';
+      return;
+    }
+
+    // No listing matched by name/city — try treating it as a place to search
+    showAllMarkers();
+    statusEl.style.display = 'block';
+    statusEl.textContent = 'Searching for "' + query + '"...';
+    try{
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+      const results = await res.json();
+      if(results.length > 0){
+        moveMapProgrammatically(() => map.setView([parseFloat(results[0].lat), parseFloat(results[0].lon)], 11));
+        statusEl.textContent = 'No exact listing match — showing the area for "' + query + '"';
+        setTimeout(() => { statusEl.style.display = 'none'; }, 3000);
+      } else {
+        statusEl.textContent = 'No results found for "' + query + '"';
+        setTimeout(() => { statusEl.style.display = 'none'; }, 3000);
+      }
+    } catch(err){
+      statusEl.textContent = 'Search failed — please try again.';
+    }
+  }
+
+  searchBtn.addEventListener('click', () => { areaBtn.style.display = 'none'; runSearch(); });
+  searchInput.addEventListener('keydown', (e) => { if(e.key === 'Enter'){ areaBtn.style.display = 'none'; runSearch(); } });
+  clearBtn.addEventListener('click', () => {
+    searchInput.value = '';
+    clearBtn.style.display = 'none';
+    areaBtn.style.display = 'none';
+    showAllMarkers();
+  });
+
+  // ============================================
+  // "Search This Area" — appears when the user drags or zooms the map
+  // themselves (not when our own code moves it), and filters pins to
+  // whatever's currently visible in the viewport
+  // ============================================
+  const areaBtn = document.getElementById('search-area-btn');
+  let suppressAreaBtn = false; // true right after WE move the map programmatically
+
+  map.on('dragend zoomend', () => {
+    if(suppressAreaBtn){ suppressAreaBtn = false; return; }
+    areaBtn.style.display = 'block';
+  });
+
+  areaBtn.addEventListener('click', () => {
+    const bounds = map.getBounds();
+    const visible = allMarkers.filter(({ marker }) => bounds.contains(marker.getLatLng()));
+
+    allMarkers.forEach(({ marker }) => map.removeLayer(marker));
+    visible.forEach(({ marker }) => marker.addTo(map));
+
+    areaBtn.style.display = 'none';
+    searchInput.value = '';
+    clearBtn.style.display = 'block'; // lets them get back to "show everything"
+
+    statusEl.style.display = 'block';
+    statusEl.textContent = visible.length > 0
+      ? visible.length + ' spot(s) in this area'
+      : 'No listings in this area yet';
+    setTimeout(() => { statusEl.style.display = 'none'; }, 2500);
+  });
+
+  // Helper so our own setView/fitBounds calls (search, initial load) don't trigger the button
+  function moveMapProgrammatically(fn){
+    suppressAreaBtn = true;
+    fn();
+  }
+
 
   loadListings();
 </script>
