@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Host Login — RVnB</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<style>
+  :root{ --night:#141a2b; --amber:#f2a93b; --lane:#eeeae0; --sign-green:#356b52; }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'Inter',sans-serif; background:var(--night); color:var(--lane);
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+  }
+  .box{background:#1d2438; padding:40px; border-radius:4px; width:100%; max-width:360px;}
+  h1{font-family:'Oswald',sans-serif; text-transform:uppercase; color:var(--amber); font-size:22px; margin-bottom:6px;}
+  .sub{font-size:13px; opacity:0.7; margin-bottom:20px;}
+  .tabs{display:flex; gap:0; border:2px solid #3a4256; border-radius:2px; overflow:hidden; margin-bottom:20px;}
+  .tab-btn{flex:1; padding:10px; background:#141a2b; color:var(--lane); border:none; font-size:12px; font-weight:700; text-transform:uppercase; cursor:pointer;}
+  .tab-btn.active{background:var(--amber); color:var(--night);}
+  form{display:flex; flex-direction:column; gap:12px;}
+  form.hidden{display:none;}
+  input{padding:12px 14px; border:2px solid #3a4256; background:#141a2b; color:var(--lane); border-radius:2px; font-family:'Inter',sans-serif;}
+  button[type=submit]{padding:13px; background:var(--amber); color:var(--night); font-weight:700; text-transform:uppercase; font-size:13px; border:none; border-radius:2px; cursor:pointer;}
+  button[type=submit]:disabled{opacity:0.6;}
+  .msg{font-size:12px; margin-top:4px; display:none;}
+  .msg.show{display:block;}
+  .msg.error{color:#ff9d7a;}
+  .msg.success{color:#8fd8ac;}
+  a.back{display:block; text-align:center; margin-top:18px; font-size:13px; color:var(--lane); opacity:0.6; text-decoration:none;}
+</style>
+</head>
+<body>
+
+<div class="box">
+  <h1>RVnB Host</h1>
+  <div class="sub">Sign in to manage your listing and bookings.</div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="login">Log In</button>
+    <button class="tab-btn" data-tab="signup">Sign Up</button>
+  </div>
+
+  <form id="login-form">
+    <input type="email" id="login-email" placeholder="Email" required>
+    <input type="password" id="login-password" placeholder="Password" required>
+    <div class="cf-turnstile" data-sitekey="YOUR_TURNSTILE_SITE_KEY" data-callback="onLoginCaptcha"></div>
+    <button type="submit">Log In</button>
+    <div class="msg" id="login-msg"></div>
+  </form>
+
+  <form id="signup-form" class="hidden">
+    <div style="position:absolute; left:-9999px;" aria-hidden="true">
+      <label for="hp-signup">Leave this field blank</label>
+      <input type="text" id="hp-signup" tabindex="-1" autocomplete="off">
+    </div>
+    <input type="text" id="signup-name" placeholder="Full name" required>
+    <input type="email" id="signup-email" placeholder="Email" required>
+    <input type="password" id="signup-password" placeholder="Password (min 6 characters)" minlength="6" required>
+    <div class="cf-turnstile" data-sitekey="YOUR_TURNSTILE_SITE_KEY" data-callback="onSignupCaptcha"></div>
+    <button type="submit">Create Account</button>
+    <div class="msg" id="signup-msg"></div>
+  </form>
+
+  <a class="back" href="index.html">← Back to home</a>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://icnhpciixqrhrqrzxkxg.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbmhwY2lpeHFyaHJxcnp4a3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2MDMsImV4cCI6MjA5OTczMjYwM30.5a8nNSiSA7U89f2kGAHGNPPfYpFra0Ve7PIFtOq3GDk';
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const params = new URLSearchParams(window.location.search);
+  const returnTo = params.get('return') || 'host-dashboard.html';
+
+  // Tabs
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('login-form').classList.toggle('hidden', btn.dataset.tab !== 'login');
+      document.getElementById('signup-form').classList.toggle('hidden', btn.dataset.tab !== 'signup');
+    });
+  });
+
+  // Already logged in? Skip straight to dashboard.
+  supabase.auth.getSession().then(({ data }) => {
+    if(data.session) window.location.href = returnTo;
+  });
+
+  // Captcha tokens, captured via the widget callbacks
+  let loginCaptchaToken = null;
+  let signupCaptchaToken = null;
+  function onLoginCaptcha(token){ loginCaptchaToken = token; }
+  function onSignupCaptcha(token){ signupCaptchaToken = token; }
+
+  // Log in
+  document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('login-msg');
+
+    if(!loginCaptchaToken){
+      msg.className = 'msg show error';
+      msg.textContent = 'Please complete the verification check.';
+      return;
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: document.getElementById('login-email').value.trim(),
+      password: document.getElementById('login-password').value,
+      options: { captchaToken: loginCaptchaToken }
+    });
+    if(error){
+      msg.className = 'msg show error';
+      msg.textContent = error.message;
+      if(window.turnstile) window.turnstile.reset();
+      loginCaptchaToken = null;
+      return;
+    }
+    window.location.href = returnTo;
+  });
+
+  // Sign up
+  document.getElementById('signup-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('signup-msg');
+
+    if(document.getElementById('hp-signup').value !== ''){
+      return; // silently drop suspected bot submissions
+    }
+
+    if(!signupCaptchaToken){
+      msg.className = 'msg show error';
+      msg.textContent = 'Please complete the verification check.';
+      return;
+    }
+
+    const email = document.getElementById('signup-email').value.trim();
+    const name = document.getElementById('signup-name').value.trim();
+    const password = document.getElementById('signup-password').value;
+
+    const { data, error } = await supabase.auth.signUp({
+      email, password,
+      options: { captchaToken: signupCaptchaToken }
+    });
+    if(error){
+      msg.className = 'msg show error';
+      msg.textContent = error.message;
+      if(window.turnstile) window.turnstile.reset();
+      signupCaptchaToken = null;
+      return;
+    }
+
+    // Create the matching profile row
+    if(data.user){
+      await supabase.from('profiles').insert({
+        id: data.user.id,
+        email: email,
+        full_name: name,
+        role: 'host'
+      });
+    }
+
+    msg.className = 'msg show success';
+    msg.textContent = 'Account created! Redirecting...';
+    setTimeout(() => { window.location.href = returnTo; }, 1200);
+  });
+</script>
+
+</body>
+</html>
