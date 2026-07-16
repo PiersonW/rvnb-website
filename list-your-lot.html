@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>List Your Lot — RVnB</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<style>
+  :root{
+    --night:#141a2b; --amber:#f2a93b; --amber-dim:#c98a2e; --lane:#eeeae0; --lane-dim:#d9d4c6;
+    --sign-green:#356b52; --asphalt:#545b66; --asphalt-dark:#2c303a;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Inter',sans-serif; background:var(--lane); color:var(--night); line-height:1.5;}
+  h1,h2{font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:0.02em;}
+  a{color:inherit;}
+  .wrap{max-width:640px; margin:0 auto; padding:0 24px;}
+
+  header{background:var(--night); color:var(--lane); padding:16px 0;}
+  header .wrap{display:flex; align-items:center; justify-content:space-between;}
+  header .brand{font-family:'Oswald',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:0.03em;}
+  header a.back{color:var(--amber); text-decoration:none; font-size:14px;}
+
+  .intro{padding:48px 0 16px;}
+  .intro .eyebrow{
+    font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:0.12em; text-transform:uppercase;
+    color:var(--sign-green); margin-bottom:12px;
+  }
+  .intro h1{font-size:clamp(28px,5vw,40px); margin-bottom:12px;}
+  .intro p{color:var(--asphalt); max-width:52ch;}
+
+  form{padding:24px 0 80px; display:flex; flex-direction:column; gap:18px;}
+  fieldset{border:none; display:flex; flex-direction:column; gap:18px;}
+  label{
+    font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.06em;
+    color:var(--asphalt); display:block; margin-bottom:6px;
+  }
+  input, select, textarea{
+    width:100%; padding:13px 14px; background:#fff; border:2px solid var(--night);
+    font-family:'Inter',sans-serif; font-size:15px; border-radius:2px; color:var(--night);
+  }
+  textarea{resize:vertical; min-height:80px;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  @media(max-width:520px){.row2{grid-template-columns:1fr;}}
+  .hint{font-size:12px; color:var(--asphalt); margin-top:4px;}
+
+  button[type=submit]{
+    margin-top:8px; padding:16px 24px; background:var(--amber); color:var(--night);
+    font-weight:700; font-size:14px; text-transform:uppercase; letter-spacing:0.03em;
+    border:none; border-radius:2px; cursor:pointer;
+  }
+  button[type=submit]:hover{background:#ffbb52;}
+  button[type=submit]:disabled{opacity:0.6; cursor:default;}
+
+  .msg{
+    font-family:'JetBrains Mono',monospace; font-size:13px; padding:14px; border-radius:2px; display:none;
+  }
+  .msg.show{display:block;}
+  .msg.success{background:#e4efe8; color:var(--sign-green); border:2px solid var(--sign-green);}
+  .msg.error{background:#fbeae0; color:#a4472b; border:2px solid #a4472b;}
+  .msg.loading{background:#eee; color:var(--asphalt); border:2px solid var(--asphalt);}
+
+  .auth-box{
+    background:var(--night); color:var(--lane); padding:28px; border-radius:4px; margin:24px 0;
+    display:flex; flex-direction:column; gap:12px; max-width:420px;
+  }
+  .auth-tabs{display:flex; gap:0; border:2px solid #3a4256; border-radius:2px; overflow:hidden; margin-bottom:6px;}
+  .auth-tab{
+    flex:1; padding:10px; background:#1d2438; color:var(--lane); border:none; font-weight:700;
+    font-size:12px; text-transform:uppercase; cursor:pointer;
+  }
+  .auth-tab.active{background:var(--amber); color:var(--night);}
+  .auth-note{font-size:12px; color:#a9aebb;}
+  .auth-box input{padding:12px 14px; background:#1d2438; border:2px solid #3a4256; color:var(--lane); border-radius:2px;}
+  #auth-submit{
+    padding:13px; background:var(--amber); color:var(--night); font-weight:700; text-transform:uppercase;
+    font-size:13px; border:none; border-radius:2px; cursor:pointer;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <span class="brand">RVnB</span>
+    <a class="back" href="index.html">← Back to home</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="intro">
+    <div class="eyebrow">Host application</div>
+    <h1>List your lot</h1>
+    <p>Tell us about your space. We review every listing before it goes live — you'll typically hear back within a few days.</p>
+  </div>
+
+  <!-- ACCOUNT GATE -->
+  <div id="auth-gate" class="auth-box">
+    <div class="auth-tabs">
+      <button class="auth-tab active" data-mode="signup" type="button">Create Account</button>
+      <button class="auth-tab" data-mode="login" type="button">Log In</button>
+    </div>
+    <p class="auth-note" id="auth-note">Create an account so you can come back later to edit your listing and manage bookings.</p>
+    <input type="email" id="auth-email" placeholder="Email" required>
+    <input type="password" id="auth-password" placeholder="Password (min 6 characters)" required>
+    <div class="cf-turnstile" data-sitekey="YOUR_TURNSTILE_SITE_KEY" data-callback="onAuthCaptcha" style="margin:6px 0;"></div>
+    <button id="auth-submit" type="button">Create Account &amp; Continue</button>
+    <div class="msg" id="auth-msg"></div>
+    <p class="auth-note">Already have a listing? <a href="host-dashboard.html" style="color:var(--sign-green); font-weight:600;">Go to your dashboard</a> instead.</p>
+  </div>
+
+  <form id="listing-form" style="display:none;">
+    <div style="position:absolute; left:-9999px;" aria-hidden="true">
+      <label for="hp-field">Leave this field blank</label>
+      <input type="text" id="hp-field" tabindex="-1" autocomplete="off">
+    </div>
+    <fieldset>
+      <div>
+        <label for="business_name">Business name</label>
+        <input type="text" id="business_name" required>
+      </div>
+
+      <div class="row2">
+        <div>
+          <label for="contact_name">Your name</label>
+          <input type="text" id="contact_name" required>
+        </div>
+        <div>
+          <label for="contact_email">Your email</label>
+          <input type="email" id="contact_email" required>
+        </div>
+      </div>
+
+      <div>
+        <label for="address">Street address</label>
+        <input type="text" id="address" placeholder="123 Main St" required>
+        <div class="hint">We'll automatically locate this on the map — double-check it's accurate.</div>
+      </div>
+
+      <div class="row2">
+        <div>
+          <label for="city">City</label>
+          <input type="text" id="city" required>
+        </div>
+        <div>
+          <label for="state">State</label>
+          <input type="text" id="state" value="UT" required>
+        </div>
+      </div>
+
+      <div>
+        <label for="business_type">Type of business</label>
+        <select id="business_type" required>
+          <option value="">Select...</option>
+          <option value="church">Church</option>
+          <option value="gym">Gym</option>
+          <option value="restaurant">Restaurant</option>
+          <option value="office">Office</option>
+          <option value="warehouse">Warehouse / Industrial</option>
+          <option value="retail">Retail / Strip Mall</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      <div class="row2">
+        <div>
+          <label for="spots_available">Spots available</label>
+          <input type="number" id="spots_available" min="1" value="1" required>
+        </div>
+        <div>
+          <label for="max_rig_length_ft">Max rig length (ft)</label>
+          <input type="number" id="max_rig_length_ft" min="10" placeholder="e.g. 35">
+        </div>
+      </div>
+
+      <div class="row2">
+        <div>
+          <label for="price_per_night">Price per night ($)</label>
+          <input type="number" id="price_per_night" min="0" step="1" required>
+        </div>
+        <div>
+          <label for="arrival_time">Earliest arrival</label>
+          <input type="time" id="arrival_time" value="20:00" required>
+        </div>
+      </div>
+
+      <div>
+        <label for="departure_time">Latest departure</label>
+        <input type="time" id="departure_time" value="08:00" required>
+      </div>
+
+      <div>
+        <label for="rules">Rules / notes (optional)</label>
+        <textarea id="rules" placeholder="e.g. no generators after 10pm, quiet hours, entrance on the north side..."></textarea>
+      </div>
+
+      <div>
+        <label for="photos">Photos (optional, up to 5)</label>
+        <input type="file" id="photos" accept="image/*" multiple>
+        <div class="hint">Photos of the actual parking area help travelers know what to expect.</div>
+      </div>
+    </fieldset>
+
+    <button type="submit" id="submit-btn">Submit for review</button>
+    <div class="msg" id="form-msg"></div>
+  </form>
+</div>
+
+<script>
+  // ============================================
+  // Same Supabase project as browse.html
+  // ============================================
+  const SUPABASE_URL = 'https://icnhpciixqrhrqrzxkxg.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbmhwY2lpeHFyaHJxcnp4a3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2MDMsImV4cCI6MjA5OTczMjYwM30.5a8nNSiSA7U89f2kGAHGNPPfYpFra0Ve7PIFtOq3GDk';
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const form = document.getElementById('listing-form');
+  const msg = document.getElementById('form-msg');
+  const submitBtn = document.getElementById('submit-btn');
+
+  function showMsg(text, type){
+    msg.textContent = text;
+    msg.className = 'msg show ' + type;
+  }
+
+  // ============================================
+  // ACCOUNT GATE — hosts must be logged in so listings tie to their account
+  // ============================================
+  let authMode = 'signup';
+  let currentUser = null;
+
+  document.querySelectorAll('.auth-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      authMode = tab.dataset.mode;
+      document.getElementById('auth-submit').textContent = authMode === 'signup' ? 'Create Account & Continue' : 'Log In & Continue';
+      document.getElementById('auth-note').textContent = authMode === 'signup'
+        ? 'Create an account so you can come back later to edit your listing and manage bookings.'
+        : 'Log in to add another listing under your existing account.';
+    });
+  });
+
+  let authCaptchaToken = null;
+  function onAuthCaptcha(token){ authCaptchaToken = token; }
+
+  document.getElementById('auth-submit').addEventListener('click', async () => {
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+    const authMsg = document.getElementById('auth-msg');
+
+    if(!authCaptchaToken){
+      authMsg.className = 'msg show error';
+      authMsg.textContent = 'Please complete the verification check.';
+      return;
+    }
+
+    authMsg.className = 'msg show loading';
+    authMsg.textContent = authMode === 'signup' ? 'Creating account...' : 'Logging in...';
+
+    let result;
+    if(authMode === 'signup'){
+      result = await supabase.auth.signUp({ email, password, options: { captchaToken: authCaptchaToken } });
+    } else {
+      result = await supabase.auth.signInWithPassword({ email, password, options: { captchaToken: authCaptchaToken } });
+    }
+
+    if(result.error){
+      authMsg.className = 'msg show error';
+      authMsg.textContent = result.error.message;
+      if(window.turnstile) window.turnstile.reset();
+      authCaptchaToken = null;
+      return;
+    }
+
+    currentUser = result.data.user;
+
+    // Ensure a matching profiles row exists (required by the foreign key on partners.host_id)
+    await supabase.from('profiles').upsert({
+      id: currentUser.id,
+      email: currentUser.email,
+      role: 'host'
+    });
+
+    authMsg.className = '';
+    document.getElementById('auth-gate').style.display = 'none';
+    form.style.display = 'flex';
+    document.getElementById('contact_email').value = currentUser.email;
+  });
+
+  async function checkExistingSession(){
+    const { data } = await supabase.auth.getSession();
+    if(data.session){
+      currentUser = data.session.user;
+      document.getElementById('auth-gate').style.display = 'none';
+      form.style.display = 'flex';
+      document.getElementById('contact_email').value = currentUser.email;
+    }
+  }
+  checkExistingSession();
+
+  // Free geocoding via OpenStreetMap's Nominatim — no API key needed.
+  // Fine for this volume of submissions; if listings ever scale into the
+  // hundreds per day, a paid geocoding service would be more appropriate.
+  async function geocode(address, city, state){
+    const query = encodeURIComponent(`${address}, ${city}, ${state}`);
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1`);
+    const data = await res.json();
+    if(data.length === 0) return null;
+    return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    // Honeypot — real hosts never touch this field, bots that auto-fill everything will
+    if(document.getElementById('hp-field').value !== ''){
+      showMsg('Thanks! Your listing is in for review — we\'ll be in touch soon.', 'success');
+      form.reset();
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Locating address...';
+    showMsg('Looking up your address...', 'loading');
+
+    const address = document.getElementById('address').value.trim();
+    const city = document.getElementById('city').value.trim();
+    const state = document.getElementById('state').value.trim();
+
+    const coords = await geocode(address, city, state);
+    if(!coords){
+      showMsg('Could not locate that address. Please double-check it and try again.', 'error');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit for review';
+      return;
+    }
+
+    submitBtn.textContent = 'Uploading photos...';
+    showMsg('Uploading photos...', 'loading');
+
+    const photoFiles = Array.from(document.getElementById('photos').files).slice(0, 5);
+    const photoUrls = [];
+    for(const file of photoFiles){
+      const filePath = `${Date.now()}-${Math.random().toString(36).slice(2)}-${file.name}`;
+      const { error: uploadError } = await supabase.storage.from('listing-photos').upload(filePath, file);
+      if(uploadError){
+        showMsg('Photo upload failed: ' + uploadError.message, 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit for review';
+        return;
+      }
+      const { data: urlData } = supabase.storage.from('listing-photos').getPublicUrl(filePath);
+      photoUrls.push(urlData.publicUrl);
+    }
+
+    submitBtn.textContent = 'Submitting...';
+    showMsg('Submitting your listing...', 'loading');
+
+    const payload = {
+      business_name: document.getElementById('business_name').value.trim(),
+      address: address,
+      city: city,
+      state: state,
+      latitude: coords.lat,
+      longitude: coords.lon,
+      business_type: document.getElementById('business_type').value,
+      spots_available: parseInt(document.getElementById('spots_available').value, 10),
+      max_rig_length_ft: document.getElementById('max_rig_length_ft').value ? parseInt(document.getElementById('max_rig_length_ft').value, 10) : null,
+      price_per_night: parseFloat(document.getElementById('price_per_night').value),
+      arrival_time: document.getElementById('arrival_time').value,
+      departure_time: document.getElementById('departure_time').value,
+      rules: document.getElementById('rules').value.trim(),
+      contact_name: document.getElementById('contact_name').value.trim(),
+      contact_email: document.getElementById('contact_email').value.trim(),
+      photo_urls: photoUrls.join(','),
+      host_id: currentUser ? currentUser.id : null,
+      status: 'pending'
+    };
+
+    const { error } = await supabase.from('partners').insert(payload);
+
+    if(error){
+      showMsg('Something went wrong: ' + error.message, 'error');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit for review';
+      return;
+    }
+
+    showMsg('Thanks! Your listing is in for review — we\'ll be in touch soon.', 'success');
+
+    // Notify admin inbox so it doesn't rely on manually checking the dashboard
+    fetch('https://api.web3forms.com/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        access_key: '7e10b2cb-2e39-4f72-b665-924100b8e61e',
+        subject: '🅿️ New listing pending review — ' + payload.business_name,
+        from_name: 'RVnB Website',
+        replyto: payload.contact_email,
+        message:
+          `New host listing submitted:\n\n` +
+          `Business: ${payload.business_name}\n` +
+          `Contact: ${payload.contact_name} (${payload.contact_email})\n` +
+          `Address: ${payload.address}, ${payload.city}, ${payload.state}\n` +
+          `Type: ${payload.business_type}\n` +
+          `Price: $${payload.price_per_night}/night · ${payload.spots_available} spot(s)\n\n` +
+          `Review it: https://tryrvnb.com/admin.html`
+      })
+    }).catch(() => {}); // notification failure shouldn't block the user's success message
+
+    form.reset();
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Submit for review';
+  });
+</script>
+
+</body>
+</html>
