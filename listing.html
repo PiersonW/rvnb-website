@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Listing — RVnB</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --night:#141a2b; --amber:#f2a93b; --lane:#eeeae0; --sign-green:#356b52; --asphalt:#545b66;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Inter',sans-serif; background:var(--lane); color:var(--night); line-height:1.5;}
+  h1,h2{font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:0.02em;}
+  a{color:inherit;}
+  .wrap{max-width:640px; margin:0 auto; padding:0 24px;}
+
+  header{background:var(--night); color:var(--lane); padding:16px 0;}
+  header .wrap{display:flex; align-items:center; justify-content:space-between;}
+  header .brand{font-family:'Oswald',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:0.03em;}
+  header a.back{color:var(--amber); text-decoration:none; font-size:14px;}
+
+  #loading{padding:60px 24px; text-align:center; color:var(--asphalt); font-family:'JetBrains Mono',monospace;}
+  #content{display:none;}
+
+  .listing-head{padding:36px 0 20px;}
+  .eyebrow{font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--sign-green); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:10px;}
+  .listing-head h1{font-size:clamp(26px,5vw,36px);}
+  .listing-head .addr{color:var(--asphalt); margin-top:6px;}
+  .price-tag{
+    display:inline-block; margin-top:14px; background:var(--night); color:var(--amber);
+    padding:8px 16px; font-family:'Oswald',sans-serif; font-weight:700; font-size:18px; border-radius:2px;
+  }
+
+  .photo-gallery{margin:20px 0;}
+  .photo-main{
+    width:100%; aspect-ratio:16/10; object-fit:cover; border-radius:3px; border:2px solid var(--night);
+    background:#ddd; cursor:pointer;
+  }
+  .photo-thumbs{display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;}
+  .photo-thumbs img{
+    width:64px; height:64px; object-fit:cover; border-radius:2px; border:2px solid var(--night);
+    cursor:pointer; opacity:0.6; transition:opacity 0.2s ease;
+  }
+  .photo-thumbs img.active{opacity:1;}
+  .no-photos{
+    background:#e2ddce; border:2px dashed var(--asphalt); border-radius:3px; padding:24px;
+    text-align:center; color:var(--asphalt); font-family:'JetBrains Mono',monospace; font-size:12px;
+    margin:20px 0;
+  }
+
+  .details{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:24px 0; font-family:'JetBrains Mono',monospace; font-size:13px;}
+  .details div{background:#fff; border:2px solid var(--night); padding:12px 14px; border-radius:2px;}
+  .details b{display:block; color:var(--asphalt); font-size:10px; text-transform:uppercase; margin-bottom:4px;}
+  .rules-box{background:#fff; border:2px solid var(--night); padding:16px; border-radius:2px; margin-bottom:32px;}
+  .rules-box b{display:block; font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; color:var(--asphalt); margin-bottom:6px;}
+
+  form{background:var(--night); color:var(--lane); padding:28px; border-radius:4px; margin-bottom:60px; display:flex; flex-direction:column; gap:14px;}
+  form h2{color:var(--amber); font-size:20px; margin-bottom:4px;}
+  label{font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--lane); opacity:0.8; display:block; margin-bottom:6px;}
+  input{width:100%; padding:12px 14px; border:2px solid #3a4256; background:#1d2438; color:var(--lane); border-radius:2px; font-family:'Inter',sans-serif; font-size:14px;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  @media(max-width:480px){.row2{grid-template-columns:1fr;}}
+  .total-line{
+    font-family:'JetBrains Mono',monospace; font-size:14px; padding-top:8px; border-top:1px solid #3a4256;
+    display:flex; justify-content:space-between;
+  }
+  .total-line b{color:var(--amber); font-size:16px;}
+  button[type=submit]{
+    margin-top:6px; padding:15px; background:var(--amber); color:var(--night); font-weight:700;
+    text-transform:uppercase; font-size:14px; border:none; border-radius:2px; cursor:pointer;
+  }
+  button[type=submit]:disabled{opacity:0.6;}
+  .note{font-family:'JetBrains Mono',monospace; font-size:11px; color:#8a92a0;}
+  .msg{font-family:'JetBrains Mono',monospace; font-size:13px; padding:12px; border-radius:2px; display:none;}
+  .msg.show{display:block;}
+  .msg.success{background:#20402f; color:#8fd8ac;}
+  .msg.error{background:#402020; color:#ff9d7a;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <span class="brand">RVnB</span>
+    <a class="back" href="browse.html">← Back to map</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <div id="loading">Loading listing...</div>
+
+  <div id="content">
+    <div class="listing-head">
+      <div class="eyebrow" id="l-type"></div>
+      <h1 id="l-name"></h1>
+      <div class="addr" id="l-address"></div>
+      <div class="price-tag" id="l-price"></div>
+    </div>
+
+    <div class="photo-gallery" id="l-photos" style="display:none;"></div>
+    <div class="no-photos" id="l-no-photos" style="display:none;">No photos yet — check with the host for more details.</div>
+
+    <div class="details">
+      <div><b>Spots available</b><span id="l-spots"></span></div>
+      <div><b>Max rig length</b><span id="l-length"></span></div>
+      <div><b>Earliest arrival</b><span id="l-arrival"></span></div>
+      <div><b>Latest departure</b><span id="l-departure"></span></div>
+    </div>
+
+    <div class="rules-box" id="l-rules-box" style="display:none;">
+      <b>Host rules</b>
+      <span id="l-rules"></span>
+    </div>
+
+    <form id="booking-form">
+      <h2>Request to Book</h2>
+      <div style="position:absolute; left:-9999px;" aria-hidden="true">
+        <label for="website">Leave this field blank</label>
+        <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+      </div>
+      <div class="row2">
+        <div>
+          <label for="check_in">Check-in date</label>
+          <input type="date" id="check_in" required>
+        </div>
+        <div>
+          <label for="check_out">Check-out date</label>
+          <input type="date" id="check_out" required>
+        </div>
+      </div>
+      <div class="note" id="booked-dates-note" style="display:none;"></div>
+      <div>
+        <label for="guest_name">Your name</label>
+        <input type="text" id="guest_name" required>
+      </div>
+      <div class="row2">
+        <div>
+          <label for="guest_email">Email</label>
+          <input type="email" id="guest_email" required>
+        </div>
+        <div>
+          <label for="guest_phone">Phone</label>
+          <input type="tel" id="guest_phone">
+        </div>
+      </div>
+      <div class="total-line">
+        <span>Total (<span id="night-count">0</span> nights)</span>
+        <b id="total-price">$0</b>
+      </div>
+      <button type="submit" id="submit-btn">Request to Book</button>
+      <div class="note">No payment is collected yet — the host will confirm your request, and payment details will follow before your stay.</div>
+      <div class="msg" id="form-msg"></div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://icnhpciixqrhrqrzxkxg.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbmhwY2lpeHFyaHJxcnp4a3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2MDMsImV4cCI6MjA5OTczMjYwM30.5a8nNSiSA7U89f2kGAHGNPPfYpFra0Ve7PIFtOq3GDk';
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const params = new URLSearchParams(window.location.search);
+  const listingId = params.get('id');
+  let listing = null;
+
+  async function loadListing(){
+    if(!listingId){
+      document.getElementById('loading').textContent = 'No listing specified.';
+      return;
+    }
+    const { data, error } = await supabase.from('partners').select('*').eq('id', listingId).single();
+    if(error || !data){
+      document.getElementById('loading').textContent = 'Listing not found.';
+      return;
+    }
+    listing = data;
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+
+    document.getElementById('l-type').textContent = data.business_type || 'RV Parking';
+    document.getElementById('l-name').textContent = data.business_name;
+    document.getElementById('l-address').textContent = `${data.address}, ${data.city}, ${data.state}`;
+    document.getElementById('l-price').textContent = `$${data.price_per_night} / night`;
+    document.getElementById('l-spots').textContent = data.spots_available;
+    document.getElementById('l-length').textContent = data.max_rig_length_ft ? data.max_rig_length_ft + ' ft' : 'No limit specified';
+    document.getElementById('l-arrival').textContent = data.arrival_time;
+    document.getElementById('l-departure').textContent = data.departure_time;
+
+    if(data.rules){
+      document.getElementById('l-rules-box').style.display = 'block';
+      document.getElementById('l-rules').textContent = data.rules;
+    }
+
+    const photos = (data.photo_urls || '').split(',').map(s => s.trim()).filter(Boolean);
+    if(photos.length > 0){
+      const gallery = document.getElementById('l-photos');
+      gallery.style.display = 'block';
+      gallery.innerHTML = `
+        <img class="photo-main" id="main-photo" src="${photos[0]}" alt="${data.business_name}">
+        ${photos.length > 1 ? `<div class="photo-thumbs">${photos.map((url,i) => `<img src="${url}" class="${i===0?'active':''}" data-src="${url}">`).join('')}</div>` : ''}
+      `;
+      document.querySelectorAll('.photo-thumbs img').forEach(thumb => {
+        thumb.addEventListener('click', () => {
+          document.getElementById('main-photo').src = thumb.dataset.src;
+          document.querySelectorAll('.photo-thumbs img').forEach(t => t.classList.remove('active'));
+          thumb.classList.add('active');
+        });
+      });
+    } else {
+      document.getElementById('l-no-photos').style.display = 'block';
+    }
+
+    loadBookedDates();
+  }
+
+  async function loadBookedDates(){
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('check_in, check_out')
+      .eq('partner_id', listing.id)
+      .neq('status', 'cancelled');
+
+    if(error || !data || data.length === 0) return;
+
+    const note = document.getElementById('booked-dates-note');
+    note.style.display = 'block';
+    note.textContent = 'Already booked: ' + data.map(b => `${b.check_in} to ${b.check_out}`).join(', ');
+  }
+
+  function calcTotal(){
+    const ci = document.getElementById('check_in').value;
+    const co = document.getElementById('check_out').value;
+    if(!ci || !co || !listing) return;
+    const nights = Math.round((new Date(co) - new Date(ci)) / 86400000);
+    const validNights = nights > 0 ? nights : 0;
+    document.getElementById('night-count').textContent = validNights;
+    document.getElementById('total-price').textContent = '$' + (validNights * listing.price_per_night).toFixed(2);
+  }
+  document.getElementById('check_in').addEventListener('change', calcTotal);
+  document.getElementById('check_out').addEventListener('change', calcTotal);
+
+  const pageLoadTime = Date.now();
+
+  document.getElementById('booking-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const submitBtn = document.getElementById('submit-btn');
+    const msg = document.getElementById('form-msg');
+
+    // Honeypot: a hidden field real visitors never see or fill in.
+    // Bots that auto-fill every field on the page will trip this.
+    if(document.getElementById('website').value !== ''){
+      msg.className = 'msg show success';
+      msg.textContent = 'Request sent! The host will confirm shortly.';
+      document.getElementById('booking-form').reset();
+      return; // silently drop it — no error shown, no database write
+    }
+
+    // Timing trap: real people take at least a few seconds to fill this out;
+    // scripted bots often submit within a fraction of a second of loading.
+    if(Date.now() - pageLoadTime < 2500){
+      msg.className = 'msg show error';
+      msg.textContent = 'Please take a moment to review your request before submitting.';
+      return;
+    }
+
+    const ci = document.getElementById('check_in').value;
+    const co = document.getElementById('check_out').value;
+    const nights = Math.round((new Date(co) - new Date(ci)) / 86400000);
+
+    if(nights <= 0){
+      msg.className = 'msg show error';
+      msg.textContent = 'Check-out must be after check-in.';
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+
+    const bookingPayload = {
+      partner_id: listing.id,
+      check_in: ci,
+      check_out: co,
+      total_price: nights * listing.price_per_night,
+      guest_name: document.getElementById('guest_name').value.trim(),
+      guest_email: document.getElementById('guest_email').value.trim(),
+      guest_phone: document.getElementById('guest_phone').value.trim(),
+      status: 'pending',
+      payment_status: 'unpaid'
+    };
+
+    const { error } = await supabase.from('bookings').insert(bookingPayload);
+
+    if(error){
+      msg.className = 'msg show error';
+      if(error.code === '23P01'){
+        msg.textContent = 'Sorry, those dates were just booked by someone else. Please choose different dates.';
+        loadBookedDates();
+      } else {
+        msg.textContent = 'Something went wrong: ' + error.message;
+      }
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Request to Book';
+      return;
+    }
+
+    msg.className = 'msg show success';
+    msg.textContent = 'Request sent! The host will confirm shortly.';
+
+    // Notify admin inbox immediately instead of relying on manually checking the dashboard
+    fetch('https://api.web3forms.com/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        access_key: '7e10b2cb-2e39-4f72-b665-924100b8e61e',
+        subject: '🚐 New booking request — ' + listing.business_name,
+        from_name: 'RVnB Website',
+        replyto: bookingPayload.guest_email,
+        message:
+          `New booking request:\n\n` +
+          `Listing: ${listing.business_name} (${listing.city}, ${listing.state})\n` +
+          `Guest: ${bookingPayload.guest_name} (${bookingPayload.guest_email})` +
+          `${bookingPayload.guest_phone ? ' · ' + bookingPayload.guest_phone : ''}\n` +
+          `Dates: ${ci} → ${co}\n` +
+          `Total: $${bookingPayload.total_price}\n\n` +
+          `Review it: https://tryrvnb.com/admin.html`
+      })
+    }).catch(() => {});
+
+    document.getElementById('booking-form').reset();
+    document.getElementById('night-count').textContent = '0';
+    document.getElementById('total-price').textContent = '$0';
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Request to Book';
+  });
+
+  loadListing();
+</script>
+
+</body>
+</html>
