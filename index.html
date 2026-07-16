@@ -247,7 +247,8 @@
   }
   .strip .track{
     display:inline-block; font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:0.1em;
-    animation:scroll 90s linear infinite;
+    animation:scroll linear infinite;
+    animation-duration:60s;
   }
   @keyframes scroll{from{transform:translateX(0);} to{transform:translateX(-50%);}}
   .strip .track span{margin:0 22px;}
@@ -385,7 +386,7 @@
       <p class="sub-copy">RVnB connects RV travelers with businesses that have unused parking after hours — restaurants, churches, gyms, offices. Verified guests, automated payouts, zero disruption to your day.</p>
       <div class="cta-row">
         <a href="#signup" class="btn btn-amber">List Your Lot</a>
-        <a href="#signup" class="btn btn-outline">Find A Spot</a>
+        <a href="browse.html" class="btn btn-outline">Find A Spot</a>
       </div>
     </div>
     <div class="toggle-card">
@@ -550,6 +551,26 @@
 </footer>
 
 <script>
+  // Set marquee speed based on actual content width, so it reads at the
+  // same true speed (pixels/sec) on every screen size — not a fixed timer.
+  // Must wait for the web font to finish loading first, or the measured
+  // width will be wrong (fallback font is narrower than JetBrains Mono).
+  function setMarqueeSpeed(){
+    const track = document.querySelector('.strip .track');
+    if(!track) return;
+    const fullWidth = track.scrollWidth / 2; // content is duplicated once
+    const pixelsPerSecond = 35; // lower = slower / easier to read
+    const duration = Math.max(fullWidth / pixelsPerSecond, 40); // never faster than 40s
+    track.style.animationDuration = duration + 's';
+  }
+  if(document.fonts && document.fonts.ready){
+    document.fonts.ready.then(setMarqueeSpeed);
+  } else {
+    window.addEventListener('load', setMarqueeSpeed);
+  }
+  // Safety net in case fonts.ready fires before layout settles
+  window.addEventListener('load', () => setTimeout(setMarqueeSpeed, 300));
+
   // Generate stars
   const starsEl = document.getElementById('stars');
   for(let i=0;i<18;i++){
