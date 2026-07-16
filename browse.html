@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Find a Spot — RVnB</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --night:#141a2b; --amber:#f2a93b; --lane:#eeeae0; --sign-green:#356b52; --asphalt:#545b66;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Inter',sans-serif; background:var(--lane);}
+  header{
+    background:var(--night); color:var(--lane);
+    padding:16px 24px; display:flex; align-items:center; justify-content:space-between;
+    font-family:'Oswald',sans-serif; text-transform:uppercase; font-weight:700; letter-spacing:0.03em;
+  }
+  header a{color:var(--amber); text-decoration:none; font-size:14px;}
+  #map{ height:calc(100vh - 60px); width:100%; }
+  .rv-popup{ font-family:'Inter',sans-serif; }
+  .rv-popup h3{ font-family:'Oswald',sans-serif; font-size:15px; margin-bottom:4px; }
+  .rv-popup .price{ color:var(--sign-green); font-weight:700; }
+  .rv-popup .meta{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--asphalt); margin-top:4px; }
+  #status{
+    position:fixed; bottom:16px; left:50%; transform:translateX(-50%);
+    background:var(--night); color:var(--lane); padding:10px 18px; border-radius:20px;
+    font-family:'JetBrains Mono',monospace; font-size:12px; z-index:1000; display:none;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span>RVnB — Find a Spot</span>
+  <a href="index.html">← Back to home</a>
+</header>
+
+<div id="map"></div>
+<div id="status">Loading spots...</div>
+
+<script>
+  // ============================================
+  // CONFIG — paste your Supabase project values here
+  // Find these in Supabase: Project Settings → API
+  // ============================================
+  const SUPABASE_URL = 'https://icnhpciixqrhrqrzxkxg.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbmhwY2lpeHFyaHJxcnp4a3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2MDMsImV4cCI6MjA5OTczMjYwM30.5a8nNSiSA7U89f2kGAHGNPPfYpFra0Ve7PIFtOq3GDk';
+
+  const statusEl = document.getElementById('status');
+
+  // Center map on Utah County by default
+  const map = L.map('map').setView([40.35, -111.75], 10);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  const amberIcon = L.divIcon({
+    className: '',
+    html: '<div style="background:#f2a93b;width:16px;height:16px;border-radius:50%;border:3px solid #141a2b;"></div>',
+    iconSize: [16,16],
+  });
+
+  async function loadListings(){
+    if(SUPABASE_URL.includes('YOUR_SUPABASE')){
+      statusEl.style.display = 'block';
+      statusEl.textContent = 'Connect your Supabase project (see comments in this file) to load real listings.';
+      return;
+    }
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    statusEl.style.display = 'block';
+    statusEl.textContent = 'Loading spots...';
+
+    const { data, error } = await supabase
+      .from('partners')
+      .select('*')
+      .eq('status', 'approved');
+
+    if(error){
+      statusEl.textContent = 'Could not load listings: ' + error.message;
+      return;
+    }
+
+    statusEl.style.display = 'none';
+
+    data.forEach(p => {
+      const marker = L.marker([p.latitude, p.longitude], { icon: amberIcon }).addTo(map);
+      marker.bindPopup(`
+        <div class="rv-popup">
+          <h3>${p.business_name}</h3>
+          <div>${p.city}, ${p.state}</div>
+          <div class="price">$${p.price_per_night}/night</div>
+          <div class="meta">${p.spots_available} spot(s) · check-in ${p.arrival_time} · check-out ${p.departure_time}</div>
+        </div>
+      `);
+    });
+
+    if(data.length === 0){
+      statusEl.style.display = 'block';
+      statusEl.textContent = 'No approved listings yet — add one in Supabase to see it here.';
+    }
+  }
+
+  loadListings();
+</script>
+
+</body>
+</html>
