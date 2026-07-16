@@ -96,6 +96,16 @@
   function onLoginCaptcha(token){ loginCaptchaToken = token; }
   function onSignupCaptcha(token){ signupCaptchaToken = token; }
 
+  // If the Turnstile script itself fails to load (ad blocker, network issue, etc),
+  // let people know clearly instead of the page just silently not working
+  setTimeout(() => {
+    if(typeof window.turnstile === 'undefined'){
+      document.querySelectorAll('.cf-turnstile').forEach(el => {
+        el.innerHTML = '<div style="color:#ff9d7a; font-size:12px;">Verification widget failed to load. Please disable any ad blocker or tracking protection for this site and refresh the page.</div>';
+      });
+    }
+  }, 4000);
+
   // Log in
   document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -103,23 +113,30 @@
 
     if(!loginCaptchaToken){
       msg.className = 'msg show error';
-      msg.textContent = 'Please complete the verification check.';
+      msg.textContent = 'Please complete the verification check above before logging in.';
       return;
     }
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: document.getElementById('login-email').value.trim(),
-      password: document.getElementById('login-password').value,
-      options: { captchaToken: loginCaptchaToken }
-    });
-    if(error){
+    try{
+      const { error } = await supabase.auth.signInWithPassword({
+        email: document.getElementById('login-email').value.trim(),
+        password: document.getElementById('login-password').value,
+        options: { captchaToken: loginCaptchaToken }
+      });
+      if(error){
+        msg.className = 'msg show error';
+        msg.textContent = error.message;
+        if(window.turnstile) window.turnstile.reset();
+        loginCaptchaToken = null;
+        return;
+      }
+      window.location.href = returnTo;
+    } catch(err){
       msg.className = 'msg show error';
-      msg.textContent = error.message;
+      msg.textContent = 'Something went wrong: ' + err.message;
       if(window.turnstile) window.turnstile.reset();
       loginCaptchaToken = null;
-      return;
     }
-    window.location.href = returnTo;
   });
 
   // Sign up
@@ -133,7 +150,7 @@
 
     if(!signupCaptchaToken){
       msg.className = 'msg show error';
-      msg.textContent = 'Please complete the verification check.';
+      msg.textContent = 'Please complete the verification check above before creating an account.';
       return;
     }
 
@@ -141,31 +158,38 @@
     const name = document.getElementById('signup-name').value.trim();
     const password = document.getElementById('signup-password').value;
 
-    const { data, error } = await supabase.auth.signUp({
-      email, password,
-      options: { captchaToken: signupCaptchaToken }
-    });
-    if(error){
+    try{
+      const { data, error } = await supabase.auth.signUp({
+        email, password,
+        options: { captchaToken: signupCaptchaToken }
+      });
+      if(error){
+        msg.className = 'msg show error';
+        msg.textContent = error.message;
+        if(window.turnstile) window.turnstile.reset();
+        signupCaptchaToken = null;
+        return;
+      }
+
+      // Create the matching profile row
+      if(data.user){
+        await supabase.from('profiles').insert({
+          id: data.user.id,
+          email: email,
+          full_name: name,
+          role: 'host'
+        });
+      }
+
+      msg.className = 'msg show success';
+      msg.textContent = 'Account created! Redirecting...';
+      setTimeout(() => { window.location.href = returnTo; }, 1200);
+    } catch(err){
       msg.className = 'msg show error';
-      msg.textContent = error.message;
+      msg.textContent = 'Something went wrong: ' + err.message;
       if(window.turnstile) window.turnstile.reset();
       signupCaptchaToken = null;
-      return;
     }
-
-    // Create the matching profile row
-    if(data.user){
-      await supabase.from('profiles').insert({
-        id: data.user.id,
-        email: email,
-        full_name: name,
-        role: 'host'
-      });
-    }
-
-    msg.className = 'msg show success';
-    msg.textContent = 'Account created! Redirecting...';
-    setTimeout(() => { window.location.href = returnTo; }, 1200);
   });
 </script>
 
