@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — RVnB</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --night:#141a2b; --amber:#f2a93b; --lane:#eeeae0; --sign-green:#356b52;
+    --asphalt:#545b66; --red:#a4472b;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Inter',sans-serif; background:var(--lane); color:var(--night);}
+  h1{font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:0.02em;}
+  .wrap{max-width:880px; margin:0 auto; padding:32px 24px 80px;}
+
+  /* Login screen */
+  #login-view{
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    background:var(--night);
+  }
+  .login-box{
+    background:#1d2438; padding:40px; border-radius:4px; width:100%; max-width:340px;
+    display:flex; flex-direction:column; gap:14px;
+  }
+  .login-box h1{color:var(--amber); font-size:22px; margin-bottom:6px;}
+  .login-box p{color:var(--lane); font-size:13px; opacity:0.7; margin-bottom:10px;}
+  .login-box input{
+    padding:12px 14px; border:2px solid #3a4256; background:#141a2b; color:var(--lane);
+    border-radius:2px; font-family:'Inter',sans-serif;
+  }
+  .login-box button{
+    padding:13px; background:var(--amber); color:var(--night); font-weight:700;
+    text-transform:uppercase; font-size:13px; border:none; border-radius:2px; cursor:pointer;
+  }
+  .login-error{color:#ff9d7a; font-size:12px; display:none;}
+
+  /* Dashboard */
+  #dashboard-view{display:none;}
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:28px; padding-bottom:16px; border-bottom:2px solid var(--night);
+  }
+  header h1{font-size:24px;}
+  header button{
+    background:none; border:2px solid var(--asphalt); color:var(--asphalt);
+    padding:8px 16px; font-size:12px; text-transform:uppercase; font-weight:700;
+    border-radius:2px; cursor:pointer;
+  }
+  .empty{color:var(--asphalt); font-family:'JetBrains Mono',monospace; font-size:13px; padding:40px 0; text-align:center;}
+
+  .tabs{display:flex; gap:0; border:2px solid var(--night); width:fit-content; margin-bottom:24px; border-radius:2px; overflow:hidden;}
+  .tab-btn{
+    padding:10px 20px; font-weight:700; font-size:12px; text-transform:uppercase; letter-spacing:0.03em;
+    background:#fff; color:var(--night); border:none; cursor:pointer;
+  }
+  .tab-btn.active{background:var(--night); color:var(--amber);}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  .status.confirmed{background:#d8ebe0; color:var(--sign-green);}
+  .status.cancelled{background:#f0dcd6; color:var(--red);}
+  .status.completed{background:#dbe4ea; color:#3a5f7a;}
+
+  .card{
+    background:#fff; border:2px solid var(--night); border-radius:3px;
+    padding:20px; margin-bottom:16px;
+  }
+  .card-top{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;}
+  .card h3{font-family:'Oswald',sans-serif; font-size:18px; text-transform:uppercase;}
+  .card .status{
+    font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase;
+    padding:3px 8px; border-radius:10px; letter-spacing:0.05em;
+  }
+  .status.pending{background:#f2e4c4; color:#8a6415;}
+  .status.approved{background:#d8ebe0; color:var(--sign-green);}
+  .status.paused{background:#e6e6e6; color:var(--asphalt);}
+  .card .meta{font-size:13px; color:var(--asphalt); margin-top:6px; line-height:1.7;}
+  .card .meta b{color:var(--night);}
+  .card .rules{font-size:13px; color:var(--asphalt); margin-top:10px; font-style:italic;}
+  .card-actions{display:flex; gap:8px; margin-top:16px; flex-wrap:wrap;}
+  .card-actions button{
+    padding:9px 16px; border-radius:2px; font-size:12px; font-weight:700; text-transform:uppercase;
+    border:none; cursor:pointer;
+  }
+  .btn-approve{background:var(--sign-green); color:#fff;}
+  .btn-pause{background:#e6e6e6; color:var(--night);}
+  .btn-reject{background:var(--red); color:#fff;}
+</style>
+</head>
+<body>
+
+<div id="login-view">
+  <div class="login-box">
+    <h1>RVnB Admin</h1>
+    <p>Sign in to review host listings.</p>
+    <input type="email" id="login-email" placeholder="Email">
+    <input type="password" id="login-password" placeholder="Password">
+    <button id="login-btn">Sign In</button>
+    <div class="login-error" id="login-error">Incorrect email or password.</div>
+  </div>
+</div>
+
+<div id="dashboard-view">
+  <div class="wrap">
+    <header>
+      <h1>Admin</h1>
+      <button id="logout-btn">Sign Out</button>
+    </header>
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="listings">Listings</button>
+      <button class="tab-btn" data-tab="bookings">Bookings</button>
+    </div>
+    <div id="listings-container" class="tab-panel active"></div>
+    <div id="bookings-container" class="tab-panel"></div>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://icnhpciixqrhrqrzxkxg.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbmhwY2lpeHFyaHJxcnp4a3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2MDMsImV4cCI6MjA5OTczMjYwM30.5a8nNSiSA7U89f2kGAHGNPPfYpFra0Ve7PIFtOq3GDk';
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const loginView = document.getElementById('login-view');
+  const dashboardView = document.getElementById('dashboard-view');
+  const loginError = document.getElementById('login-error');
+  const container = document.getElementById('listings-container');
+
+  async function checkSession(){
+    const { data } = await supabase.auth.getSession();
+    if(data.session){
+      showDashboard();
+    }
+  }
+
+  document.getElementById('login-btn').addEventListener('click', async () => {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if(error){
+      loginError.style.display = 'block';
+      loginError.textContent = error.message;
+      return;
+    }
+    showDashboard();
+  });
+
+  document.getElementById('logout-btn').addEventListener('click', async () => {
+    await supabase.auth.signOut();
+    location.reload();
+  });
+
+  function showDashboard(){
+    loginView.style.display = 'none';
+    dashboardView.style.display = 'block';
+    loadListings();
+    loadBookings();
+  }
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.tab + '-container').classList.add('active');
+    });
+  });
+
+  async function loadListings(){
+    container.innerHTML = '<div class="empty">Loading listings...</div>';
+    const { data, error } = await supabase
+      .from('partners')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if(error){
+      container.innerHTML = '<div class="empty">Could not load listings: ' + error.message + '</div>';
+      return;
+    }
+    if(data.length === 0){
+      container.innerHTML = '<div class="empty">No listings yet.</div>';
+      return;
+    }
+
+    container.innerHTML = '';
+    data.forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <div class="card-top">
+          <div>
+            <h3>${p.business_name}</h3>
+            <div class="meta">
+              <b>${p.address}, ${p.city}, ${p.state}</b><br>
+              ${p.business_type || '—'} · ${p.spots_available} spot(s) · $${p.price_per_night}/night<br>
+              Check-in ${p.arrival_time} · Check-out ${p.departure_time}<br>
+              ${p.contact_name ? 'Contact: ' + p.contact_name + (p.contact_email ? ' (' + p.contact_email + ')' : '') : ''}
+            </div>
+            ${p.rules ? '<div class="rules">"' + p.rules + '"</div>' : ''}
+          </div>
+          <span class="status ${p.status}">${p.status}</span>
+        </div>
+        <div class="card-actions">
+          ${p.status !== 'approved' ? `<button class="btn-approve" data-id="${p.id}" data-status="approved">Approve</button>` : ''}
+          ${p.status !== 'paused' ? `<button class="btn-pause" data-id="${p.id}" data-status="paused">Pause</button>` : ''}
+          <button class="btn-reject" data-id="${p.id}" data-status="rejected">Delete</button>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+
+    document.querySelectorAll('.card-actions button').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        const status = btn.dataset.status;
+        if(status === 'rejected'){
+          if(!confirm('Permanently delete this listing?')) return;
+          await supabase.from('partners').delete().eq('id', id);
+        } else {
+          await supabase.from('partners').update({ status }).eq('id', id);
+        }
+        loadListings();
+      });
+    });
+  }
+
+  async function loadBookings(){
+    const bContainer = document.getElementById('bookings-container');
+    bContainer.innerHTML = '<div class="empty">Loading bookings...</div>';
+
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('*, partners(business_name, city, state)')
+      .order('created_at', { ascending: false });
+
+    if(error){
+      bContainer.innerHTML = '<div class="empty">Could not load bookings: ' + error.message + '</div>';
+      return;
+    }
+    if(data.length === 0){
+      bContainer.innerHTML = '<div class="empty">No booking requests yet.</div>';
+      return;
+    }
+
+    bContainer.innerHTML = '';
+    data.forEach(b => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      const spot = b.partners ? `${b.partners.business_name} — ${b.partners.city}, ${b.partners.state}` : 'Unknown listing';
+      card.innerHTML = `
+        <div class="card-top">
+          <div>
+            <h3>${b.guest_name}</h3>
+            <div class="meta">
+              <b>${spot}</b><br>
+              ${b.check_in} → ${b.check_out} · $${b.total_price}<br>
+              ${b.guest_email}${b.guest_phone ? ' · ' + b.guest_phone : ''}
+            </div>
+          </div>
+          <span class="status ${b.status}">${b.status}</span>
+        </div>
+        <div class="card-actions">
+          ${b.status !== 'confirmed' ? `<button class="btn-approve" data-id="${b.id}" data-status="confirmed">Confirm</button>` : ''}
+          ${b.status !== 'cancelled' ? `<button class="btn-reject" data-id="${b.id}" data-status="cancelled">Cancel</button>` : ''}
+          ${b.status === 'confirmed' ? `<button class="btn-pause" data-id="${b.id}" data-status="completed">Mark Completed</button>` : ''}
+        </div>
+      `;
+      bContainer.appendChild(card);
+    });
+
+    document.querySelectorAll('#bookings-container .card-actions button').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        await supabase.from('bookings').update({ status: btn.dataset.status }).eq('id', btn.dataset.id);
+        loadBookings();
+      });
+    });
+  }
+
+  checkSession();
+</script>
+
+</body>
+</html>
