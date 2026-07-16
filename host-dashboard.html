@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Host Dashboard — RVnB</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --night:#141a2b; --amber:#f2a93b; --lane:#eeeae0; --sign-green:#356b52;
+    --asphalt:#545b66; --red:#a4472b;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Inter',sans-serif; background:var(--lane); color:var(--night);}
+  h1,h2,h3{font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:0.02em;}
+  .wrap{max-width:880px; margin:0 auto; padding:32px 24px 80px;}
+
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:28px; padding-bottom:16px; border-bottom:2px solid var(--night);
+  }
+  header button{
+    background:none; border:2px solid var(--asphalt); color:var(--asphalt);
+    padding:8px 16px; font-size:12px; text-transform:uppercase; font-weight:700;
+    border-radius:2px; cursor:pointer;
+  }
+
+  .tabs{display:flex; gap:0; border:2px solid var(--night); width:fit-content; margin-bottom:24px; border-radius:2px; overflow:hidden;}
+  .tab-btn{padding:10px 20px; font-weight:700; font-size:12px; text-transform:uppercase; background:#fff; color:var(--night); border:none; cursor:pointer;}
+  .tab-btn.active{background:var(--night); color:var(--amber);}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  .empty{color:var(--asphalt); font-family:'JetBrains Mono',monospace; font-size:13px; padding:40px 0; text-align:center;}
+
+  .card{background:#fff; border:2px solid var(--night); border-radius:3px; padding:20px; margin-bottom:16px;}
+  .card-top{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;}
+  .card h3{font-size:18px;}
+  .status{font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; padding:3px 8px; border-radius:10px;}
+  .status.pending{background:#f2e4c4; color:#8a6415;}
+  .status.approved{background:#d8ebe0; color:var(--sign-green);}
+  .status.paused{background:#e6e6e6; color:var(--asphalt);}
+  .status.confirmed{background:#d8ebe0; color:var(--sign-green);}
+  .status.cancelled{background:#f0dcd6; color:var(--red);}
+  .status.completed{background:#dbe4ea; color:#3a5f7a;}
+  .meta{font-size:13px; color:var(--asphalt); margin-top:6px; line-height:1.7;}
+
+  .edit-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px;}
+  @media(max-width:520px){.edit-grid{grid-template-columns:1fr;}}
+  .edit-grid label{
+    font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; color:var(--asphalt);
+    display:block; margin-bottom:4px;
+  }
+  .edit-grid input, .edit-grid textarea{
+    width:100%; padding:9px 11px; border:2px solid var(--night); border-radius:2px; font-family:'Inter',sans-serif; font-size:13px;
+  }
+  .edit-grid .full{grid-column:1/-1;}
+
+  .card-actions{display:flex; gap:8px; margin-top:16px; flex-wrap:wrap;}
+  .card-actions button{padding:9px 16px; border-radius:2px; font-size:12px; font-weight:700; text-transform:uppercase; border:none; cursor:pointer;}
+  .btn-save{background:var(--night); color:var(--amber);}
+  .btn-approve{background:var(--sign-green); color:#fff;}
+  .btn-pause{background:#e6e6e6; color:var(--night);}
+  .btn-reject{background:var(--red); color:#fff;}
+  .save-msg{font-size:12px; margin-top:8px; color:var(--sign-green); display:none;}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>Host Dashboard</h1>
+    <button id="logout-btn">Sign Out</button>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="listings">My Listings</button>
+    <button class="tab-btn" data-tab="bookings">Bookings</button>
+  </div>
+
+  <div id="listings-container" class="tab-panel active"><div class="empty">Loading...</div></div>
+  <div id="bookings-container" class="tab-panel"></div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://icnhpciixqrhrqrzxkxg.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbmhwY2lpeHFyaHJxcnp4a3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2MDMsImV4cCI6MjA5OTczMjYwM30.5a8nNSiSA7U89f2kGAHGNPPfYpFra0Ve7PIFtOq3GDk';
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let currentUser = null;
+
+  async function init(){
+    const { data } = await supabase.auth.getSession();
+    if(!data.session){
+      window.location.href = 'host-login.html?return=host-dashboard.html';
+      return;
+    }
+    currentUser = data.session.user;
+    loadListings();
+    loadBookings();
+  }
+
+  document.getElementById('logout-btn').addEventListener('click', async () => {
+    await supabase.auth.signOut();
+    window.location.href = 'host-login.html';
+  });
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.tab + '-container').classList.add('active');
+    });
+  });
+
+  async function loadListings(){
+    const container = document.getElementById('listings-container');
+    container.innerHTML = '<div class="empty">Loading...</div>';
+
+    const { data, error } = await supabase.from('partners').select('*').eq('host_id', currentUser.id).order('created_at', { ascending: false });
+
+    if(error){
+      container.innerHTML = '<div class="empty">Could not load listings: ' + error.message + '</div>';
+      return;
+    }
+    if(data.length === 0){
+      container.innerHTML = '<div class="empty">You don\'t have any listings yet. <a href="list-your-lot.html">Add one →</a></div>';
+      return;
+    }
+
+    container.innerHTML = '';
+    data.forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <div class="card-top">
+          <h3>${p.business_name}</h3>
+          <span class="status ${p.status}">${p.status}</span>
+        </div>
+        <div class="meta">${p.address}, ${p.city}, ${p.state}</div>
+
+        <div class="edit-grid">
+          <div><label>Price per night ($)</label><input type="number" class="f-price" value="${p.price_per_night}"></div>
+          <div><label>Spots available</label><input type="number" class="f-spots" value="${p.spots_available}"></div>
+          <div><label>Earliest arrival</label><input type="time" class="f-arrival" value="${p.arrival_time}"></div>
+          <div><label>Latest departure</label><input type="time" class="f-departure" value="${p.departure_time}"></div>
+          <div class="full"><label>Rules / notes</label><textarea class="f-rules" rows="2">${p.rules || ''}</textarea></div>
+        </div>
+
+        <div class="card-actions">
+          <button class="btn-save" data-id="${p.id}">Save Changes</button>
+          ${p.status === 'approved' ? `<button class="btn-pause" data-id="${p.id}" data-status="paused">Pause Listing</button>` : ''}
+          ${p.status === 'paused' ? `<button class="btn-approve" data-id="${p.id}" data-status="approved">Reactivate</button>` : ''}
+        </div>
+        <div class="save-msg">Saved!</div>
+      `;
+      container.appendChild(card);
+    });
+
+    // Save edits
+    document.querySelectorAll('.btn-save').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const card = btn.closest('.card');
+        const id = btn.dataset.id;
+        const { error } = await supabase.from('partners').update({
+          price_per_night: parseFloat(card.querySelector('.f-price').value),
+          spots_available: parseInt(card.querySelector('.f-spots').value, 10),
+          arrival_time: card.querySelector('.f-arrival').value,
+          departure_time: card.querySelector('.f-departure').value,
+          rules: card.querySelector('.f-rules').value.trim()
+        }).eq('id', id);
+
+        const saveMsg = card.querySelector('.save-msg');
+        if(error){
+          saveMsg.style.color = '#a4472b';
+          saveMsg.textContent = 'Error: ' + error.message;
+        } else {
+          saveMsg.style.color = '#356b52';
+          saveMsg.textContent = 'Saved!';
+        }
+        saveMsg.style.display = 'block';
+        setTimeout(() => saveMsg.style.display = 'none', 2500);
+      });
+    });
+
+    // Pause / reactivate
+    document.querySelectorAll('.btn-pause, .btn-approve').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        await supabase.from('partners').update({ status: btn.dataset.status }).eq('id', btn.dataset.id);
+        loadListings();
+      });
+    });
+  }
+
+  async function loadBookings(){
+    const container = document.getElementById('bookings-container');
+    container.innerHTML = '<div class="empty">Loading...</div>';
+
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('*, partners(business_name)')
+      .order('created_at', { ascending: false });
+
+    if(error){
+      container.innerHTML = '<div class="empty">Could not load bookings: ' + error.message + '</div>';
+      return;
+    }
+    if(data.length === 0){
+      container.innerHTML = '<div class="empty">No booking requests yet.</div>';
+      return;
+    }
+
+    container.innerHTML = '';
+    data.forEach(b => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <div class="card-top">
+          <h3>${b.guest_name}</h3>
+          <span class="status ${b.status}">${b.status}</span>
+        </div>
+        <div class="meta">
+          <b>${b.partners ? b.partners.business_name : ''}</b><br>
+          ${b.check_in} → ${b.check_out} · $${b.total_price}<br>
+          ${b.guest_email}${b.guest_phone ? ' · ' + b.guest_phone : ''}
+        </div>
+        <div class="card-actions">
+          ${b.status !== 'confirmed' ? `<button class="btn-approve" data-id="${b.id}" data-status="confirmed">Confirm</button>` : ''}
+          ${b.status !== 'cancelled' ? `<button class="btn-reject" data-id="${b.id}" data-status="cancelled">Decline</button>` : ''}
+          ${b.status === 'confirmed' ? `<button class="btn-pause" data-id="${b.id}" data-status="completed">Mark Completed</button>` : ''}
+        </div>
+      `;
+      container.appendChild(card);
+    });
+
+    document.querySelectorAll('#bookings-container .card-actions button').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        await supabase.from('bookings').update({ status: btn.dataset.status }).eq('id', btn.dataset.id);
+        loadBookings();
+      });
+    });
+  }
+
+  init();
+</script>
+
+</body>
+</html>
