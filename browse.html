@@ -106,7 +106,7 @@
     statusEl.style.display = 'block';
     statusEl.textContent = 'Loading spots...';
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('partners')
       .select('*')
       .eq('status', 'approved');
