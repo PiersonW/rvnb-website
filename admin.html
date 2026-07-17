@@ -171,6 +171,14 @@
     });
   });
 
+  function formatTime12hr(hhmm){
+    if(!hhmm) return '';
+    const [h, m] = hhmm.split(':').map(Number);
+    const period = h >= 12 ? 'PM' : 'AM';
+    const hour12 = h % 12 === 0 ? 12 : h % 12;
+    return `${hour12}:${String(m).padStart(2,'0')} ${period}`;
+  }
+
   async function loadListings(){
     container.innerHTML = '<div class="empty">Loading listings...</div>';
     const { data, error } = await supabaseClient
@@ -198,7 +206,7 @@
             <div class="meta">
               <b>${p.address}, ${p.city}, ${p.state}</b><br>
               ${p.business_type || '—'} · ${p.spots_available} spot(s) · $${p.price_per_night}/night<br>
-              Check-in ${p.arrival_time} · Check-out ${p.departure_time}<br>
+              Check-in ${formatTime12hr(p.arrival_time)} · Check-out ${formatTime12hr(p.departure_time)}<br>
               ${p.contact_name ? 'Contact: ' + p.contact_name + (p.contact_email ? ' (' + p.contact_email + ')' : '') : ''}
             </div>
             ${p.rules ? '<div class="rules">"' + p.rules + '"</div>' : ''}
