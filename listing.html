@@ -62,11 +62,15 @@
   input{width:100%; padding:12px 14px; border:2px solid #3a4256; background:#1d2438; color:var(--lane); border-radius:2px; font-family:'Inter',sans-serif; font-size:14px;}
   .row2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
   @media(max-width:480px){.row2{grid-template-columns:1fr;}}
-  .total-line{
-    font-family:'JetBrains Mono',monospace; font-size:14px; padding-top:8px; border-top:1px solid #3a4256;
-    display:flex; justify-content:space-between;
+  .price-breakdown{
+    font-family:'JetBrains Mono',monospace; font-size:13px;
+    border-top:1px solid #3a4256; padding-top:10px; display:flex; flex-direction:column; gap:6px;
   }
-  .total-line b{color:var(--amber); font-size:16px;}
+  .pb-row{display:flex; justify-content:space-between; color:#c5cad4;}
+  .pb-row.pb-total{
+    border-top:1px solid #3a4256; padding-top:8px; margin-top:2px;
+    font-size:15px; color:var(--amber); font-weight:700;
+  }
   button[type=submit]{
     margin-top:6px; padding:15px; background:var(--amber); color:var(--night); font-weight:700;
     text-transform:uppercase; font-size:14px; border:none; border-radius:2px; cursor:pointer;
@@ -147,12 +151,14 @@
           <input type="tel" id="guest_phone">
         </div>
       </div>
-      <div class="total-line">
-        <span>Total (<span id="night-count">0</span> nights)</span>
-        <b id="total-price">$0</b>
+      <div class="price-breakdown" id="price-breakdown" style="display:none;">
+        <div class="pb-row"><span id="pb-nights-label">0 nights × $0/night</span><span id="pb-subtotal">$0</span></div>
+        <div class="pb-row"><span>Booking fee (8%)</span><span id="pb-fee">$0</span></div>
+        <div class="pb-row"><span>Tax (7%)</span><span id="pb-tax">$0</span></div>
+        <div class="pb-row pb-total"><span>Total due today</span><span id="pb-total">$0</span></div>
       </div>
       <button type="submit" id="submit-btn">Request to Book</button>
-      <div class="note">No payment is collected yet — the host will confirm your request, and payment details will follow before your stay.</div>
+      <div class="note">Your card will be authorized now but not charged until the host confirms. If declined, you're never charged.</div>
       <div class="msg" id="form-msg"></div>
     </form>
   </div>
@@ -267,14 +273,51 @@
     note.textContent = 'Already booked: ' + data.map(b => `${b.check_in} to ${b.check_out}`).join(', ');
   }
 
+  // ============================================
+  // Fee structure: traveler pays listed price + 8% booking fee + tax.
+  // Host receives listed price minus 12%. RVnB keeps both fees.
+  // ============================================
+  const TRAVELER_FEE_RATE = 0.08;
+  const HOST_FEE_RATE = 0.12;
+  const TAX_RATE = 0.07; // placeholder — confirm actual local rate before going live
+
+  let currentPricing = null;
+
   function calcTotal(){
     const ci = document.getElementById('check_in').value;
     const co = document.getElementById('check_out').value;
-    if(!ci || !co || !listing) return;
+    const breakdown = document.getElementById('price-breakdown');
+    if(!ci || !co || !listing){
+      breakdown.style.display = 'none';
+      currentPricing = null;
+      return;
+    }
     const nights = Math.round((new Date(co) - new Date(ci)) / 86400000);
     const validNights = nights > 0 ? nights : 0;
-    document.getElementById('night-count').textContent = validNights;
-    document.getElementById('total-price').textContent = '$' + (validNights * listing.price_per_night).toFixed(2);
+
+    if(validNights === 0){
+      breakdown.style.display = 'none';
+      currentPricing = null;
+      return;
+    }
+
+    const subtotal = validNights * listing.price_per_night;
+    const travelerFee = subtotal * TRAVELER_FEE_RATE;
+    const taxAmount = (subtotal + travelerFee) * TAX_RATE;
+    const totalCharged = subtotal + travelerFee + taxAmount;
+    const hostFee = subtotal * HOST_FEE_RATE;
+    const hostPayout = subtotal - hostFee;
+
+    currentPricing = {
+      nights: validNights, subtotal, travelerFee, taxAmount, totalCharged, hostFee, hostPayout
+    };
+
+    breakdown.style.display = 'flex';
+    document.getElementById('pb-nights-label').textContent = `${validNights} night${validNights !== 1 ? 's' : ''} × $${listing.price_per_night}/night`;
+    document.getElementById('pb-subtotal').textContent = '$' + subtotal.toFixed(2);
+    document.getElementById('pb-fee').textContent = '$' + travelerFee.toFixed(2);
+    document.getElementById('pb-tax').textContent = '$' + taxAmount.toFixed(2);
+    document.getElementById('pb-total').textContent = '$' + totalCharged.toFixed(2);
   }
   document.getElementById('check_in').addEventListener('change', calcTotal);
   document.getElementById('check_out').addEventListener('change', calcTotal);
@@ -305,9 +348,8 @@
 
     const ci = document.getElementById('check_in').value;
     const co = document.getElementById('check_out').value;
-    const nights = Math.round((new Date(co) - new Date(ci)) / 86400000);
 
-    if(nights <= 0){
+    if(!currentPricing || currentPricing.nights <= 0){
       msg.className = 'msg show error';
       msg.textContent = 'Check-out must be after check-in.';
       return;
@@ -320,7 +362,14 @@
       partner_id: listing.id,
       check_in: ci,
       check_out: co,
-      total_price: nights * listing.price_per_night,
+      subtotal: currentPricing.subtotal,
+      traveler_fee: currentPricing.travelerFee,
+      tax_amount: currentPricing.taxAmount,
+      total_charged: currentPricing.totalCharged,
+      host_fee: currentPricing.hostFee,
+      host_payout: currentPricing.hostPayout,
+      tax_rate: TAX_RATE,
+      total_price: currentPricing.totalCharged, // kept for backward compatibility
       guest_name: document.getElementById('guest_name').value.trim(),
       guest_email: document.getElementById('guest_email').value.trim(),
       guest_phone: document.getElementById('guest_phone').value.trim(),
@@ -362,14 +411,14 @@
           `Guest: ${bookingPayload.guest_name} (${bookingPayload.guest_email})` +
           `${bookingPayload.guest_phone ? ' · ' + bookingPayload.guest_phone : ''}\n` +
           `Dates: ${ci} → ${co}\n` +
-          `Total: $${bookingPayload.total_price}\n\n` +
+          `Traveler pays: $${currentPricing.totalCharged.toFixed(2)} · Host receives: $${currentPricing.hostPayout.toFixed(2)}\n\n` +
           `Review it: https://tryrvnb.com/admin.html`
       })
     }).catch(() => {});
 
     document.getElementById('booking-form').reset();
-    document.getElementById('night-count').textContent = '0';
-    document.getElementById('total-price').textContent = '$0';
+    document.getElementById('price-breakdown').style.display = 'none';
+    currentPricing = null;
     submitBtn.disabled = false;
     submitBtn.textContent = 'Request to Book';
   });
