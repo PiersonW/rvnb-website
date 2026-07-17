@@ -69,9 +69,26 @@
 </div>
 
 <script>
-  const SUPABASE_URL = 'https://icnhpciixqrhrqrzxkxg.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbmhwY2lpeHFyaHJxcnp4a3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2MDMsImV4cCI6MjA5OTczMjYwM30.5a8nNSiSA7U89f2kGAHGNPPfYpFra0Ve7PIFtOq3GDk';
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // Show something visible immediately if this script is even running at all
+  document.addEventListener('DOMContentLoaded', () => {
+    const d = document.getElementById('login-debug');
+    if(d && d.textContent === 'debug: waiting') d.textContent = 'debug: page scripts loaded ok';
+  });
+
+  let supabase;
+  try{
+    const SUPABASE_URL = 'https://icnhpciixqrhrqrzxkxg.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbmhwY2lpeHFyaHJxcnp4a3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2MDMsImV4cCI6MjA5OTczMjYwM30.5a8nNSiSA7U89f2kGAHGNPPfYpFra0Ve7PIFtOq3GDk';
+    if(typeof window.supabase === 'undefined'){
+      throw new Error('Supabase library failed to load — check internet connection or ad blocker');
+    }
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  } catch(initErr){
+    document.body.innerHTML = '<div style="max-width:400px; margin:60px auto; padding:24px; background:#402020; color:#ff9d7a; border-radius:4px; font-family:monospace; font-size:13px;">' +
+      '<b>Page failed to load properly:</b><br><br>' + initErr.message +
+      '<br><br>Try refreshing the page, checking your internet connection, or disabling any ad blocker / privacy extension for this site.</div>';
+    throw initErr;
+  }
 
   const params = new URLSearchParams(window.location.search);
   const returnTo = params.get('return') || 'host-dashboard.html';
