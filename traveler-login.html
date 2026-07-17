@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Traveler Login — RVnB</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<style>
+  :root{ --night:#141a2b; --amber:#f2a93b; --lane:#eeeae0; --sign-green:#356b52; }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'Inter',sans-serif; background:var(--night); color:var(--lane);
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+  }
+  .box{background:#1d2438; padding:40px; border-radius:4px; width:100%; max-width:360px;}
+  h1{font-family:'Oswald',sans-serif; text-transform:uppercase; color:var(--amber); font-size:22px; margin-bottom:6px;}
+  .sub{font-size:13px; opacity:0.7; margin-bottom:20px;}
+  .tabs{display:flex; gap:0; border:2px solid #3a4256; border-radius:2px; overflow:hidden; margin-bottom:20px;}
+  .tab-btn{flex:1; padding:10px; background:#141a2b; color:var(--lane); border:none; font-size:12px; font-weight:700; text-transform:uppercase; cursor:pointer;}
+  .tab-btn.active{background:var(--amber); color:var(--night);}
+  form{display:flex; flex-direction:column; gap:12px;}
+  form.hidden{display:none;}
+  input{padding:12px 14px; border:2px solid #3a4256; background:#141a2b; color:var(--lane); border-radius:2px; font-family:'Inter',sans-serif;}
+  button[type=submit], button[type=button]{padding:13px; background:var(--amber); color:var(--night); font-weight:700; text-transform:uppercase; font-size:13px; border:none; border-radius:2px; cursor:pointer;}
+  button[type=submit]:disabled, button[type=button]:disabled{opacity:0.6;}
+  .msg{font-size:12px; margin-top:4px; display:none;}
+  .msg.show{display:block;}
+  .msg.error{color:#ff9d7a;}
+  .msg.success{color:#8fd8ac;}
+  a.back{display:block; text-align:center; margin-top:18px; font-size:13px; color:var(--lane); opacity:0.6; text-decoration:none;}
+</style>
+</head>
+<body>
+
+<div class="box">
+  <h1>RVnB Traveler</h1>
+  <div class="sub">Sign in to view your trips and booking history.</div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="login">Log In</button>
+    <button class="tab-btn" data-tab="signup">Sign Up</button>
+  </div>
+
+  <form id="login-form">
+    <input type="email" id="login-email" placeholder="Email" required>
+    <input type="password" id="login-password" placeholder="Password" required>
+    <div class="cf-turnstile" data-sitekey="0x4AAAAAAD3dYgYRVK0pvWHm" data-callback="onLoginCaptcha"></div>
+    <button type="button" id="login-submit-btn" onclick="window.doLogin()">Log In</button>
+    <div class="msg" id="login-msg"></div>
+    <div style="font-size:10px; color:#5a6472; font-family:monospace;" id="login-debug">debug: waiting</div>
+    <script>document.getElementById('login-debug').textContent = 'debug: inline script ran (v2)';</script>
+  </form>
+
+  <form id="signup-form" class="hidden">
+    <div style="position:absolute; left:-9999px;" aria-hidden="true">
+      <label for="hp-signup">Leave this field blank</label>
+      <input type="text" id="hp-signup" tabindex="-1" autocomplete="off">
+    </div>
+    <input type="text" id="signup-name" placeholder="Full name" required>
+    <input type="email" id="signup-email" placeholder="Email" required>
+    <input type="password" id="signup-password" placeholder="Password (min 6 characters)" minlength="6" required>
+    <div class="cf-turnstile" data-sitekey="0x4AAAAAAD3dYgYRVK0pvWHm" data-callback="onSignupCaptcha"></div>
+    <button type="button" id="signup-submit-btn" onclick="doSignup()">Create Account</button>
+    <div class="msg" id="signup-msg"></div>
+  </form>
+
+  <a class="back" href="index.html">← Back to home</a>
+</div>
+
+<script>
+  // Show something visible immediately if this script is even running at all
+  document.addEventListener('DOMContentLoaded', () => {
+    const d = document.getElementById('login-debug');
+    if(d && d.textContent === 'debug: waiting') d.textContent = 'debug: page scripts loaded ok';
+  });
+
+  let supabaseClient;
+  try{
+    const SUPABASE_URL = 'https://icnhpciixqrhrqrzxkxg.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbmhwY2lpeHFyaHJxcnp4a3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2MDMsImV4cCI6MjA5OTczMjYwM30.5a8nNSiSA7U89f2kGAHGNPPfYpFra0Ve7PIFtOq3GDk';
+    if(typeof window.supabase === 'undefined'){
+      throw new Error('Supabase library failed to load — check internet connection or ad blocker');
+    }
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  } catch(initErr){
+    document.body.innerHTML = '<div style="max-width:400px; margin:60px auto; padding:24px; background:#402020; color:#ff9d7a; border-radius:4px; font-family:monospace; font-size:13px;">' +
+      '<b>Page failed to load properly:</b><br><br>' + initErr.message +
+      '<br><br>Try refreshing the page, checking your internet connection, or disabling any ad blocker / privacy extension for this site.</div>';
+    throw initErr;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const returnTo = params.get('return') || 'traveler-dashboard.html';
+
+  // Tabs
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('login-form').classList.toggle('hidden', btn.dataset.tab !== 'login');
+      document.getElementById('signup-form').classList.toggle('hidden', btn.dataset.tab !== 'signup');
+    });
+  });
+
+  // Already logged in? Skip straight to dashboard.
+  supabaseClient.auth.getSession().then(({ data }) => {
+    if(data.session) window.location.href = returnTo;
+  });
+
+  // Captcha tokens, captured via the widget callbacks
+  let loginCaptchaToken = null;
+  let signupCaptchaToken = null;
+  function onLoginCaptcha(token){
+    loginCaptchaToken = token;
+    const d = document.getElementById('login-debug');
+    if(d) d.textContent = 'debug: captcha token received ✓';
+  }
+  function onSignupCaptcha(token){ signupCaptchaToken = token; }
+
+  // If the Turnstile script itself fails to load (ad blocker, network issue, etc),
+  // let people know clearly instead of the page just silently not working
+  setTimeout(() => {
+    if(typeof window.turnstile === 'undefined'){
+      document.querySelectorAll('.cf-turnstile').forEach(el => {
+        el.innerHTML = '<div style="color:#ff9d7a; font-size:12px;">Verification widget failed to load. Please disable any ad blocker or tracking protection for this site and refresh the page.</div>';
+      });
+    }
+  }, 4000);
+
+  // Log in
+  window.doLogin = async function(){
+    try{
+      const debugEl = document.getElementById('login-debug');
+      debugEl.style.color = '#ff9d7a';
+      debugEl.textContent = 'debug: doLogin() called ✓';
+
+      const msg = document.getElementById('login-msg');
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+
+      if(!email || !password){
+        msg.className = 'msg show error';
+        msg.textContent = 'Please enter both email and password.';
+        debugEl.textContent = 'debug: missing email/password';
+        return;
+      }
+
+      if(!loginCaptchaToken){
+        msg.className = 'msg show error';
+        msg.textContent = 'Please complete the verification check above before logging in.';
+        debugEl.textContent = 'debug: no captcha token yet';
+        return;
+      }
+
+      debugEl.textContent = 'debug: calling supabase...';
+
+      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out after 10s — possible network/ad-blocker issue')), 10000));
+      const authCall = supabaseClient.auth.signInWithPassword({
+        email, password,
+        options: { captchaToken: loginCaptchaToken }
+      });
+
+      const { error } = await Promise.race([authCall, timeout]);
+
+      debugEl.textContent = 'debug: got response';
+
+      if(error){
+        msg.className = 'msg show error';
+        msg.textContent = error.message;
+        debugEl.textContent = 'debug: error — ' + error.message;
+        if(window.turnstile) window.turnstile.reset();
+        loginCaptchaToken = null;
+        return;
+      }
+      debugEl.textContent = 'debug: success, redirecting...';
+      window.location.href = returnTo;
+    } catch(err){
+      const debugEl = document.getElementById('login-debug');
+      if(debugEl) debugEl.textContent = 'debug: CRASH — ' + err.message;
+      const msg = document.getElementById('login-msg');
+      if(msg){ msg.className = 'msg show error'; msg.textContent = 'Something went wrong: ' + err.message; }
+    }
+  };
+
+  // Sign up
+  async function doSignup(){
+    const msg = document.getElementById('signup-msg');
+
+    if(document.getElementById('hp-signup').value !== ''){
+      return; // silently drop suspected bot submissions
+    }
+
+    const email = document.getElementById('signup-email').value.trim();
+    const name = document.getElementById('signup-name').value.trim();
+    const password = document.getElementById('signup-password').value;
+
+    if(!email || !password || !name){
+      msg.className = 'msg show error';
+      msg.textContent = 'Please fill in your name, email, and password.';
+      return;
+    }
+
+    if(!signupCaptchaToken){
+      msg.className = 'msg show error';
+      msg.textContent = 'Please complete the verification check above before creating an account.';
+      return;
+    }
+
+    try{
+      const { data, error } = await supabaseClient.auth.signUp({
+        email, password,
+        options: { captchaToken: signupCaptchaToken }
+      });
+      if(error){
+        msg.className = 'msg show error';
+        msg.textContent = error.message;
+        if(window.turnstile) window.turnstile.reset();
+        signupCaptchaToken = null;
+        return;
+      }
+
+      // Create the matching profile row
+      if(data.user){
+        await supabaseClient.from('profiles').insert({
+          id: data.user.id,
+          email: email,
+          full_name: name,
+          role: 'traveler'
+        });
+      }
+
+      msg.className = 'msg show success';
+      msg.textContent = 'Account created! Redirecting...';
+      setTimeout(() => { window.location.href = returnTo; }, 1200);
+    } catch(err){
+      msg.className = 'msg show error';
+      msg.textContent = 'Something went wrong: ' + err.message;
+      if(window.turnstile) window.turnstile.reset();
+      signupCaptchaToken = null;
+    }
+  }
+</script>
+
+</body>
+</html>
