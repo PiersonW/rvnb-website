@@ -170,7 +170,7 @@
 
   async function loadListings(){
     container.innerHTML = '<div class="empty">Loading listings...</div>';
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('partners')
       .select('*')
       .order('created_at', { ascending: false });
@@ -230,7 +230,7 @@
     const bContainer = document.getElementById('bookings-container');
     bContainer.innerHTML = '<div class="empty">Loading bookings...</div>';
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('bookings')
       .select('*, partners(business_name, city, state)')
       .order('created_at', { ascending: false });
