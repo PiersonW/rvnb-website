@@ -106,7 +106,7 @@
     font-size:clamp(30px,4.8vw,50px);
     line-height:1.08;
     max-width:15ch;
-    transition:color 0.6s ease, opacity 0.35s ease;
+    transition:color 0.6s ease, opacity 0.18s ease;
   }
   .hero.is-day h1{color:var(--night);}
   .hero .sub-copy{
@@ -611,7 +611,7 @@
       setTimeout(() => {
         heroHeadline.textContent = newHeadline;
         heroHeadline.style.opacity = '1';
-      }, 350);
+      }, 180);
     }
   }
   switchBtn.addEventListener('click', ()=>{ isDay = !isDay; render(); });
