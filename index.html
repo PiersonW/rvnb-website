@@ -743,8 +743,10 @@
 
         if(signedInEl){ signedInEl.style.display = 'inline'; signedInEl.textContent = 'Signed in: ' + email; }
         if(signoutBtn) signoutBtn.style.display = 'inline-flex';
-        if(myTripsLink) myTripsLink.style.display = 'none';
-        if(hostLoginLink) hostLoginLink.style.display = 'none';
+
+        // Don't hide these — just point them straight at the dashboard instead of the login screen
+        if(myTripsLink){ myTripsLink.href = 'traveler-dashboard.html'; myTripsLink.textContent = 'My Trips'; }
+        if(hostLoginLink){ hostLoginLink.href = 'host-dashboard.html'; hostLoginLink.textContent = 'Host Dashboard'; }
 
         if(signoutBtn){
           signoutBtn.addEventListener('click', async () => {
