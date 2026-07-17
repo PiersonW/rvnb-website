@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Trips — RVnB</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --night:#141a2b; --amber:#f2a93b; --lane:#eeeae0; --sign-green:#356b52;
+    --asphalt:#545b66; --red:#a4472b;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Inter',sans-serif; background:var(--lane); color:var(--night);}
+  h1,h2,h3{font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:0.02em;}
+  a{color:inherit;}
+  .wrap{max-width:800px; margin:0 auto; padding:32px 24px 80px;}
+
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:28px; padding-bottom:16px; border-bottom:2px solid var(--night);
+  }
+  header .btns{display:flex; gap:10px;}
+  header a, header button{
+    background:none; border:2px solid var(--asphalt); color:var(--asphalt);
+    padding:8px 16px; font-size:12px; text-transform:uppercase; font-weight:700;
+    border-radius:2px; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center;
+  }
+
+  .section-title{
+    font-family:'JetBrains Mono',monospace; font-size:12px; text-transform:uppercase;
+    letter-spacing:0.1em; color:var(--sign-green); margin:32px 0 14px;
+  }
+  .section-title:first-of-type{margin-top:0;}
+  .empty{color:var(--asphalt); font-family:'JetBrains Mono',monospace; font-size:13px; padding:24px 0;}
+
+  .card{background:#fff; border:2px solid var(--night); border-radius:3px; padding:20px; margin-bottom:14px;}
+  .card-top{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;}
+  .card h3{font-size:17px;}
+  .status{font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; padding:3px 8px; border-radius:10px;}
+  .status.pending{background:#f2e4c4; color:#8a6415;}
+  .status.confirmed{background:#d8ebe0; color:var(--sign-green);}
+  .status.cancelled{background:#f0dcd6; color:var(--red);}
+  .status.completed{background:#dbe4ea; color:#3a5f7a;}
+  .meta{font-size:13px; color:var(--asphalt); margin-top:6px; line-height:1.7;}
+  .meta b{color:var(--night);}
+  .card-actions{margin-top:14px;}
+  .btn-cancel{
+    padding:8px 16px; border-radius:2px; font-size:12px; font-weight:700; text-transform:uppercase;
+    border:none; cursor:pointer; background:var(--red); color:#fff;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>My Trips</h1>
+    <div class="btns">
+      <a href="index.html">← Home</a>
+      <button id="logout-btn">Sign Out</button>
+    </div>
+  </header>
+
+  <div class="section-title">Upcoming</div>
+  <div id="upcoming-container"><div class="empty">Loading...</div></div>
+
+  <div class="section-title">Past &amp; Cancelled</div>
+  <div id="past-container"></div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://icnhpciixqrhrqrzxkxg.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbmhwY2lpeHFyaHJxcnp4a3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2MDMsImV4cCI6MjA5OTczMjYwM30.5a8nNSiSA7U89f2kGAHGNPPfYpFra0Ve7PIFtOq3GDk';
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let currentUser = null;
+
+  async function init(){
+    const { data } = await supabaseClient.auth.getSession();
+    if(!data.session){
+      window.location.href = 'traveler-login.html?return=traveler-dashboard.html';
+      return;
+    }
+    currentUser = data.session.user;
+    loadTrips();
+  }
+
+  document.getElementById('logout-btn').addEventListener('click', async () => {
+    await supabaseClient.auth.signOut();
+    window.location.href = 'traveler-login.html';
+  });
+
+  async function loadTrips(){
+    const upcomingEl = document.getElementById('upcoming-container');
+    const pastEl = document.getElementById('past-container');
+    upcomingEl.innerHTML = '<div class="empty">Loading...</div>';
+    pastEl.innerHTML = '';
+
+    const { data, error } = await supabaseClient
+      .from('bookings')
+      .select('*, partners(business_name, city, state, address)')
+      .eq('traveler_id', currentUser.id)
+      .order('check_in', { ascending: true });
+
+    if(error){
+      upcomingEl.innerHTML = '<div class="empty">Could not load trips: ' + error.message + '</div>';
+      return;
+    }
+
+    const today = new Date().toISOString().slice(0,10);
+    const upcoming = data.filter(b => b.check_out >= today && b.status !== 'cancelled' && b.status !== 'completed');
+    const past = data.filter(b => b.check_out < today || b.status === 'cancelled' || b.status === 'completed');
+
+    upcomingEl.innerHTML = upcoming.length === 0 ? '<div class="empty">No upcoming trips yet — go find a spot!</div>' : '';
+    upcoming.forEach(b => upcomingEl.appendChild(renderCard(b, true)));
+
+    pastEl.innerHTML = past.length === 0 ? '<div class="empty">No past trips yet.</div>' : '';
+    past.forEach(b => pastEl.appendChild(renderCard(b, false)));
+  }
+
+  function renderCard(b, allowCancel){
+    const card = document.createElement('div');
+    card.className = 'card';
+    const spot = b.partners ? b.partners.business_name : 'Listing';
+    const location = b.partners ? `${b.partners.city}, ${b.partners.state}` : '';
+    card.innerHTML = `
+      <div class="card-top">
+        <div>
+          <h3>${spot}</h3>
+          <div class="meta">
+            <b>${b.check_in} → ${b.check_out}</b><br>
+            ${location}<br>
+            $${b.total_price} total
+          </div>
+        </div>
+        <span class="status ${b.status}">${b.status}</span>
+      </div>
+      ${allowCancel && b.status !== 'cancelled' ? `<div class="card-actions"><button class="btn-cancel" data-id="${b.id}">Cancel Trip</button></div>` : ''}
+    `;
+    const cancelBtn = card.querySelector('.btn-cancel');
+    if(cancelBtn){
+      cancelBtn.addEventListener('click', async () => {
+        if(!confirm('Cancel this trip?')) return;
+        await supabaseClient.from('bookings').update({ status: 'cancelled' }).eq('id', cancelBtn.dataset.id);
+        loadTrips();
+      });
+    }
+    return card;
+  }
+
+  init();
+</script>
+
+</body>
+</html>
