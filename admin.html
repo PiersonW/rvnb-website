@@ -50,6 +50,12 @@
     border-radius:2px; cursor:pointer;
   }
   .empty{color:var(--asphalt); font-family:'JetBrains Mono',monospace; font-size:13px; padding:40px 0; text-align:center;}
+  .archive-toggle{
+    width:100%; background:none; border:2px dashed var(--asphalt); color:var(--asphalt);
+    padding:12px; margin:8px 0 16px; font-family:'JetBrains Mono',monospace; font-size:12px;
+    text-transform:uppercase; letter-spacing:0.04em; border-radius:2px; cursor:pointer;
+  }
+  .archive-toggle:hover{border-color:var(--night); color:var(--night);}
 
   .tabs{display:flex; gap:0; border:2px solid var(--night); width:fit-content; margin-bottom:24px; border-radius:2px; overflow:hidden;}
   .tab-btn{
@@ -94,7 +100,7 @@
 
 <div id="login-view">
   <div class="login-box">
-    <h1>RVnB Admin</h1>
+    <h1><a href="index.html" style="color:inherit; text-decoration:none;">RVnB</a> Admin</h1>
     <p>Sign in to review host listings.</p>
     <input type="email" id="login-email" placeholder="Email">
     <input type="password" id="login-password" placeholder="Password">
@@ -106,7 +112,10 @@
 <div id="dashboard-view">
   <div class="wrap">
     <header>
-      <h1>Admin</h1>
+      <div>
+        <a href="index.html" style="font-family:'Oswald',sans-serif; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); text-decoration:none; display:block; margin-bottom:2px;">RVnB</a>
+        <h1>Admin</h1>
+      </div>
       <div style="display:flex; gap:10px;">
         <a href="index.html" style="border:2px solid var(--asphalt); color:var(--asphalt); padding:8px 16px; font-size:12px; text-transform:uppercase; font-weight:700; border-radius:2px; text-decoration:none; display:inline-flex; align-items:center;">← Home</a>
         <button id="logout-btn">Sign Out</button>
@@ -237,6 +246,8 @@
     });
   }
 
+  let showArchivedBookings = false;
+
   async function loadBookings(){
     const bContainer = document.getElementById('bookings-container');
     bContainer.innerHTML = '<div class="empty">Loading bookings...</div>';
@@ -255,8 +266,37 @@
       return;
     }
 
+    const active = data.filter(b => b.status === 'pending' || b.status === 'confirmed');
+    const archived = data.filter(b => b.status === 'cancelled' || b.status === 'completed');
+
     bContainer.innerHTML = '';
-    data.forEach(b => {
+
+    if(active.length === 0 && !showArchivedBookings){
+      bContainer.innerHTML = '<div class="empty">No active bookings right now.</div>';
+    }
+    active.forEach(b => bContainer.appendChild(renderBookingCard(b)));
+
+    if(archived.length > 0){
+      const toggleBtn = document.createElement('button');
+      toggleBtn.className = 'archive-toggle';
+      toggleBtn.textContent = showArchivedBookings
+        ? `Hide declined & completed (${archived.length})`
+        : `Show declined & completed (${archived.length})`;
+      toggleBtn.addEventListener('click', () => {
+        showArchivedBookings = !showArchivedBookings;
+        loadBookings();
+      });
+      bContainer.appendChild(toggleBtn);
+
+      if(showArchivedBookings){
+        archived.forEach(b => bContainer.appendChild(renderBookingCard(b)));
+      }
+    }
+
+    attachBookingActionListeners();
+  }
+
+  function renderBookingCard(b){
       const card = document.createElement('div');
       card.className = 'card';
       const spot = b.partners ? `${b.partners.business_name} — ${b.partners.city}, ${b.partners.state}` : 'Unknown listing';
@@ -280,9 +320,10 @@
         </div>
         <div class="action-msg" id="booking-msg-${b.id}" style="font-size:12px; margin-top:8px; display:none;"></div>
       `;
-      bContainer.appendChild(card);
-    });
+      return card;
+  }
 
+  function attachBookingActionListeners(){
     document.querySelectorAll('#bookings-container .card-actions button').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.dataset.id;
