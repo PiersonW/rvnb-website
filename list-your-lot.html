@@ -214,7 +214,7 @@
   // ============================================
   const SUPABASE_URL = 'https://icnhpciixqrhrqrzxkxg.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbmhwY2lpeHFyaHJxcnp4a3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2MDMsImV4cCI6MjA5OTczMjYwM30.5a8nNSiSA7U89f2kGAHGNPPfYpFra0Ve7PIFtOq3GDk';
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   const form = document.getElementById('listing-form');
   const msg = document.getElementById('form-msg');
@@ -262,9 +262,9 @@
 
     let result;
     if(authMode === 'signup'){
-      result = await supabase.auth.signUp({ email, password, options: { captchaToken: authCaptchaToken } });
+      result = await supabaseClient.auth.signUp({ email, password, options: { captchaToken: authCaptchaToken } });
     } else {
-      result = await supabase.auth.signInWithPassword({ email, password, options: { captchaToken: authCaptchaToken } });
+      result = await supabaseClient.auth.signInWithPassword({ email, password, options: { captchaToken: authCaptchaToken } });
     }
 
     if(result.error){
@@ -278,7 +278,7 @@
     currentUser = result.data.user;
 
     // Ensure a matching profiles row exists (required by the foreign key on partners.host_id)
-    await supabase.from('profiles').upsert({
+    await supabaseClient.from('profiles').upsert({
       id: currentUser.id,
       email: currentUser.email,
       role: 'host'
@@ -291,7 +291,7 @@
   });
 
   async function checkExistingSession(){
-    const { data } = await supabase.auth.getSession();
+    const { data } = await supabaseClient.auth.getSession();
     if(data.session){
       currentUser = data.session.user;
       document.getElementById('auth-gate').style.display = 'none';
@@ -345,14 +345,14 @@
     const photoUrls = [];
     for(const file of photoFiles){
       const filePath = `${Date.now()}-${Math.random().toString(36).slice(2)}-${file.name}`;
-      const { error: uploadError } = await supabase.storage.from('listing-photos').upload(filePath, file);
+      const { error: uploadError } = await supabaseClient.storage.from('listing-photos').upload(filePath, file);
       if(uploadError){
         showMsg('Photo upload failed: ' + uploadError.message, 'error');
         submitBtn.disabled = false;
         submitBtn.textContent = 'Submit for review';
         return;
       }
-      const { data: urlData } = supabase.storage.from('listing-photos').getPublicUrl(filePath);
+      const { data: urlData } = supabaseClient.storage.from('listing-photos').getPublicUrl(filePath);
       photoUrls.push(urlData.publicUrl);
     }
 
@@ -380,7 +380,7 @@
       status: 'pending'
     };
 
-    const { error } = await supabase.from('partners').insert(payload);
+    const { error } = await supabaseClient.from('partners').insert(payload);
 
     if(error){
       showMsg('Something went wrong: ' + error.message, 'error');
