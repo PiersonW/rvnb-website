@@ -599,7 +599,7 @@
   function render(){
     hero.classList.toggle('is-day', isDay);
     scene.classList.toggle('show-rv', !isDay);
-    clockLabel.textContent = isDay ? '14:00' : '22:00';
+    clockLabel.textContent = isDay ? '2:00 PM' : '10:00 PM';
     toggleCopy.textContent = isDay ? 'Business hours: lot in use' : 'After hours: open for RVs';
 
     const newHeadline = isDay ? 'Open for business. Closed to RVs.' : 'Closed for business. Open for RVs.';
