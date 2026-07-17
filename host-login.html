@@ -47,7 +47,7 @@
     <input type="email" id="login-email" placeholder="Email" required>
     <input type="password" id="login-password" placeholder="Password" required>
     <div class="cf-turnstile" data-sitekey="0x4AAAAAAD3dYgYRVK0pvWHm" data-callback="onLoginCaptcha"></div>
-    <button type="button" id="login-submit-btn" onclick="try{ window.doLogin(); }catch(e){ alert('ERROR calling doLogin: ' + e.message); }">Log In</button>
+    <button type="button" id="login-submit-btn" onclick="window.doLogin()">Log In</button>
     <div class="msg" id="login-msg"></div>
     <div style="font-size:10px; color:#5a6472; font-family:monospace;" id="login-debug">debug: waiting</div>
     <script>document.getElementById('login-debug').textContent = 'debug: inline script ran (v2)';</script>
@@ -76,14 +76,14 @@
     if(d && d.textContent === 'debug: waiting') d.textContent = 'debug: page scripts loaded ok';
   });
 
-  let supabase;
+  let supabaseClient;
   try{
     const SUPABASE_URL = 'https://icnhpciixqrhrqrzxkxg.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbmhwY2lpeHFyaHJxcnp4a3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2MDMsImV4cCI6MjA5OTczMjYwM30.5a8nNSiSA7U89f2kGAHGNPPfYpFra0Ve7PIFtOq3GDk';
     if(typeof window.supabase === 'undefined'){
       throw new Error('Supabase library failed to load — check internet connection or ad blocker');
     }
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   } catch(initErr){
     document.body.innerHTML = '<div style="max-width:400px; margin:60px auto; padding:24px; background:#402020; color:#ff9d7a; border-radius:4px; font-family:monospace; font-size:13px;">' +
       '<b>Page failed to load properly:</b><br><br>' + initErr.message +
@@ -105,7 +105,7 @@
   });
 
   // Already logged in? Skip straight to dashboard.
-  supabase.auth.getSession().then(({ data }) => {
+  supabaseClient.auth.getSession().then(({ data }) => {
     if(data.session) window.location.href = returnTo;
   });
 
@@ -157,7 +157,7 @@
       debugEl.textContent = 'debug: calling supabase...';
 
       const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out after 10s — possible network/ad-blocker issue')), 10000));
-      const authCall = supabase.auth.signInWithPassword({
+      const authCall = supabaseClient.auth.signInWithPassword({
         email, password,
         options: { captchaToken: loginCaptchaToken }
       });
@@ -177,9 +177,10 @@
       debugEl.textContent = 'debug: success, redirecting...';
       window.location.href = returnTo;
     } catch(err){
-      alert('doLogin() crashed: ' + err.message);
       const debugEl = document.getElementById('login-debug');
       if(debugEl) debugEl.textContent = 'debug: CRASH — ' + err.message;
+      const msg = document.getElementById('login-msg');
+      if(msg){ msg.className = 'msg show error'; msg.textContent = 'Something went wrong: ' + err.message; }
     }
   };
 
@@ -208,7 +209,7 @@
     }
 
     try{
-      const { data, error } = await supabase.auth.signUp({
+      const { data, error } = await supabaseClient.auth.signUp({
         email, password,
         options: { captchaToken: signupCaptchaToken }
       });
@@ -222,7 +223,7 @@
 
       // Create the matching profile row
       if(data.user){
-        await supabase.from('profiles').insert({
+        await supabaseClient.from('profiles').insert({
           id: data.user.id,
           email: email,
           full_name: name,
