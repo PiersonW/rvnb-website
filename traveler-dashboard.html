@@ -45,7 +45,25 @@
   .status.completed{background:#dbe4ea; color:#3a5f7a;}
   .meta{font-size:13px; color:var(--asphalt); margin-top:6px; line-height:1.7;}
   .meta b{color:var(--night);}
-  .card-actions{margin-top:14px;}
+  .card-actions{margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;}
+  .trip-details{
+    margin-top:16px; padding-top:14px; border-top:1px solid #d9d4c6;
+    display:grid; grid-template-columns:1fr 1fr; gap:10px 20px;
+  }
+  .detail-row{font-size:13px;}
+  .detail-row.full{grid-column:1/-1;}
+  .detail-label{
+    display:block; font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase;
+    color:var(--asphalt); margin-bottom:2px; letter-spacing:0.04em;
+  }
+  .turnover-reminder{
+    margin-top:14px; background:#402a10; color:#f5c877; padding:10px 12px;
+    border-radius:2px; font-size:12px; line-height:1.5;
+  }
+  .btn-view{
+    padding:8px 16px; border-radius:2px; font-size:12px; font-weight:700; text-transform:uppercase;
+    border:2px solid var(--night); color:var(--night); text-decoration:none; display:inline-flex; align-items:center;
+  }
   .btn-cancel{
     padding:8px 16px; border-radius:2px; font-size:12px; font-weight:700; text-transform:uppercase;
     border:none; cursor:pointer; background:var(--red); color:#fff;
@@ -100,7 +118,7 @@
 
     const { data, error } = await supabaseClient
       .from('bookings')
-      .select('*, partners(business_name, city, state, address)')
+      .select('*, partners(id, business_name, city, state, address, arrival_time, departure_time, rules)')
       .eq('traveler_id', currentUser.id)
       .order('check_in', { ascending: true });
 
@@ -120,24 +138,46 @@
     past.forEach(b => pastEl.appendChild(renderCard(b, false)));
   }
 
+  function formatTime12hr(hhmm){
+    if(!hhmm) return '';
+    const [h, m] = hhmm.split(':').map(Number);
+    const period = h >= 12 ? 'PM' : 'AM';
+    const hour12 = h % 12 === 0 ? 12 : h % 12;
+    return `${hour12}:${String(m).padStart(2,'0')} ${period}`;
+  }
+
   function renderCard(b, allowCancel){
     const card = document.createElement('div');
     card.className = 'card';
-    const spot = b.partners ? b.partners.business_name : 'Listing';
-    const location = b.partners ? `${b.partners.city}, ${b.partners.state}` : '';
+    const p = b.partners;
+    const spot = p ? p.business_name : 'Listing';
+    const address = p ? `${p.address}, ${p.city}, ${p.state}` : '';
     card.innerHTML = `
       <div class="card-top">
         <div>
           <h3>${spot}</h3>
           <div class="meta">
             <b>${b.check_in} → ${b.check_out}</b><br>
-            ${location}<br>
+            ${address}<br>
             $${b.total_price} total
           </div>
         </div>
         <span class="status ${b.status}">${b.status}</span>
       </div>
-      ${allowCancel && b.status !== 'cancelled' ? `<div class="card-actions"><button class="btn-cancel" data-id="${b.id}">Cancel Trip</button></div>` : ''}
+
+      ${p ? `
+      <div class="trip-details">
+        <div class="detail-row"><span class="detail-label">Arrive after</span><span>${formatTime12hr(p.arrival_time)}</span></div>
+        <div class="detail-row"><span class="detail-label">Leave by</span><span>${formatTime12hr(p.departure_time)}</span></div>
+        ${p.rules ? `<div class="detail-row full"><span class="detail-label">House rules</span><span>${p.rules}</span></div>` : ''}
+      </div>
+      <div class="turnover-reminder">⚠ Vehicle must leave the lot by ${formatTime12hr(p.departure_time)} each morning and may not return until ${formatTime12hr(p.arrival_time)} — every night of this stay, not just once.</div>
+      ` : ''}
+
+      <div class="card-actions">
+        ${p ? `<a href="listing.html?id=${p.id}" class="btn-view">View Listing</a>` : ''}
+        ${allowCancel && b.status !== 'cancelled' ? `<button class="btn-cancel" data-id="${b.id}">Cancel Trip</button>` : ''}
+      </div>
     `;
     const cancelBtn = card.querySelector('.btn-cancel');
     if(cancelBtn){
