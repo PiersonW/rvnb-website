@@ -159,7 +159,7 @@
           <div class="meta">
             <b>${b.check_in} → ${b.check_out}</b><br>
             ${address}<br>
-            $${b.total_price} total
+            $${b.total_charged ? Number(b.total_charged).toFixed(2) : Number(b.total_price).toFixed(2)} total (incl. fees &amp; tax)
           </div>
         </div>
         <span class="status ${b.status}">${b.status}</span>
