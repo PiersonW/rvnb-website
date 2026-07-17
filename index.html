@@ -52,9 +52,10 @@
     border-bottom:2px solid var(--night);
   }
   nav .wrap{
-    display:flex; align-items:center; justify-content:space-between;
+    display:flex; align-items:center;
     height:68px;
   }
+  .navlinks{margin-left:40px;}
   .logo{
     display:flex; align-items:center; gap:10px;
     font-family:'Oswald', sans-serif; font-weight:700; font-size:20px;
@@ -383,14 +384,14 @@
     </div>
 
     <!-- Logged OUT state -->
-    <div id="nav-logged-out" style="display:flex; gap:10px; align-items:center;">
+    <div id="nav-logged-out" style="display:flex; gap:10px; align-items:center; margin-left:auto;">
       <a href="traveler-login.html" style="font-size:12px; color:var(--asphalt); text-decoration:underline; white-space:nowrap;">My Trips</a>
       <a href="host-login.html" class="btn btn-outline" style="padding:10px 16px; font-size:12px; border-color:var(--night); color:var(--night);">Host Login</a>
       <a href="#signup" class="btn btn-amber" style="padding:10px 18px; font-size:12px;">Get Started</a>
     </div>
 
     <!-- Logged IN state — single compact account menu instead of a row of buttons -->
-    <div id="nav-logged-in" style="display:none; position:relative;">
+    <div id="nav-logged-in" style="display:none; position:relative; margin-left:auto;">
       <button id="account-menu-btn" class="btn btn-outline" style="padding:10px 16px; font-size:12px; border-color:var(--night); color:var(--night); cursor:pointer; display:flex; align-items:center; gap:6px;">
         <span id="account-email-short">Account</span> ▾
       </button>
@@ -583,23 +584,26 @@
 <script>
   // Set marquee speed based on actual content width, so it reads at the
   // same true speed (pixels/sec) on every screen size — not a fixed timer.
-  // Must wait for the web font to finish loading first, or the measured
-  // width will be wrong (fallback font is narrower than JetBrains Mono).
+  // Re-measures several times over a few seconds and only ever keeps the
+  // SLOWEST (safest) result, since font-loading timing has proven unreliable
+  // to catch with a single measurement across different devices/browsers.
+  let slowestDurationSoFar = 0;
   function setMarqueeSpeed(){
     const track = document.querySelector('.strip .track');
     if(!track) return;
     const fullWidth = track.scrollWidth / 2; // content is duplicated once
-    const pixelsPerSecond = 35; // lower = slower / easier to read
-    const duration = Math.max(fullWidth / pixelsPerSecond, 40); // never faster than 40s
-    track.style.animationDuration = duration + 's';
+    const pixelsPerSecond = 30; // lower = slower / easier to read
+    const duration = Math.max(fullWidth / pixelsPerSecond, 45); // never faster than 45s
+    if(duration > slowestDurationSoFar){
+      slowestDurationSoFar = duration;
+      track.style.animationDuration = duration + 's';
+    }
   }
+  [0, 300, 800, 1500, 2500, 4000].forEach(delay => setTimeout(setMarqueeSpeed, delay));
   if(document.fonts && document.fonts.ready){
     document.fonts.ready.then(setMarqueeSpeed);
-  } else {
-    window.addEventListener('load', setMarqueeSpeed);
   }
-  // Safety net in case fonts.ready fires before layout settles
-  window.addEventListener('load', () => setTimeout(setMarqueeSpeed, 300));
+  window.addEventListener('load', setMarqueeSpeed);
 
   // Generate stars
   const starsEl = document.getElementById('stars');
