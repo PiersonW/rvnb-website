@@ -6,6 +6,7 @@
 <title>Listing — RVnB</title>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://js.stripe.com/v3/"></script>
 <style>
   :root{
     --night:#141a2b; --amber:#f2a93b; --lane:#eeeae0; --sign-green:#356b52; --asphalt:#545b66;
@@ -71,6 +72,14 @@
     border-top:1px solid #3a4256; padding-top:8px; margin-top:2px;
     font-size:15px; color:var(--amber); font-weight:700;
   }
+  #card-field-wrap label{
+    font-family:'JetBrains Mono', monospace; font-size:11px; text-transform:uppercase;
+    letter-spacing:0.05em; color:var(--lane); opacity:0.8; display:block; margin-bottom:6px;
+  }
+  #card-element{
+    padding:13px 14px; background:#1d2438; border:2px solid #3a4256; border-radius:2px;
+  }
+  #card-errors{ color:#ff9d7a; font-size:12px; margin-top:6px; min-height:16px; }
   button[type=submit]{
     margin-top:6px; padding:15px; background:var(--amber); color:var(--night); font-weight:700;
     text-transform:uppercase; font-size:14px; border:none; border-radius:2px; cursor:pointer;
@@ -157,6 +166,11 @@
         <div class="pb-row"><span>Tax (7%)</span><span id="pb-tax">$0</span></div>
         <div class="pb-row pb-total"><span>Total due today</span><span id="pb-total">$0</span></div>
       </div>
+      <div id="card-field-wrap" style="display:none;">
+        <label for="card-element">Card details</label>
+        <div id="card-element"></div>
+        <div id="card-errors" role="alert"></div>
+      </div>
       <button type="submit" id="submit-btn">Request to Book</button>
       <div class="note">Your card will be authorized now but not charged until the host confirms. If declined, you're never charged.</div>
       <div class="msg" id="form-msg"></div>
@@ -168,6 +182,19 @@
   const SUPABASE_URL = 'https://icnhpciixqrhrqrzxkxg.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbmhwY2lpeHFyaHJxcnp4a3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2MDMsImV4cCI6MjA5OTczMjYwM30.5a8nNSiSA7U89f2kGAHGNPPfYpFra0Ve7PIFtOq3GDk';
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const stripe = Stripe('pk_test_51TuFPeCwR9zOQ7qopFOHOw9MzqF5ZQX1EzBWmRiuGSpqida5eYUhDoNipHhKODYQauKT4G1GKvIpR7NTT29LMKwk00rPe0omQp');
+  const stripeElements = stripe.elements();
+  const cardElement = stripeElements.create('card', {
+    style: {
+      base: { color: '#eeeae0', fontFamily: 'Inter, sans-serif', fontSize: '15px', '::placeholder': { color: '#7a8291' } },
+      invalid: { color: '#ff9d7a' }
+    }
+  });
+  cardElement.mount('#card-element');
+  cardElement.on('change', (event) => {
+    document.getElementById('card-errors').textContent = event.error ? event.error.message : '';
+  });
 
   const params = new URLSearchParams(window.location.search);
   const listingId = params.get('id');
@@ -287,8 +314,10 @@
     const ci = document.getElementById('check_in').value;
     const co = document.getElementById('check_out').value;
     const breakdown = document.getElementById('price-breakdown');
+    const cardWrap = document.getElementById('card-field-wrap');
     if(!ci || !co || !listing){
       breakdown.style.display = 'none';
+      cardWrap.style.display = 'none';
       currentPricing = null;
       return;
     }
@@ -297,6 +326,7 @@
 
     if(validNights === 0){
       breakdown.style.display = 'none';
+      cardWrap.style.display = 'none';
       currentPricing = null;
       return;
     }
@@ -313,6 +343,7 @@
     };
 
     breakdown.style.display = 'flex';
+    cardWrap.style.display = 'block';
     document.getElementById('pb-nights-label').textContent = `${validNights} night${validNights !== 1 ? 's' : ''} × $${listing.price_per_night}/night`;
     document.getElementById('pb-subtotal').textContent = '$' + subtotal.toFixed(2);
     document.getElementById('pb-fee').textContent = '$' + travelerFee.toFixed(2);
@@ -355,8 +386,57 @@
       return;
     }
 
+    const guestName = document.getElementById('guest_name').value.trim();
+    const guestEmail = document.getElementById('guest_email').value.trim();
+    const guestPhone = document.getElementById('guest_phone').value.trim();
+
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Submitting...';
+    submitBtn.textContent = 'Authorizing card...';
+    msg.className = 'msg show';
+    msg.textContent = '';
+
+    // Step 1: ask our Edge Function to create a Stripe PaymentIntent (manual capture)
+    const { data: piData, error: piError } = await supabaseClient.functions.invoke('create-payment-intent', {
+      body: {
+        amount: currentPricing.totalCharged,
+        guestEmail: guestEmail,
+        listingName: listing.business_name
+      }
+    });
+
+    if(piError || !piData || piData.error){
+      msg.className = 'msg show error';
+      msg.textContent = 'Could not start payment: ' + (piData?.error || piError?.message || 'unknown error');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Request to Book';
+      return;
+    }
+
+    // Step 2: confirm the card with Stripe directly — card details never touch our server
+    const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(piData.clientSecret, {
+      payment_method: {
+        card: cardElement,
+        billing_details: { name: guestName, email: guestEmail }
+      }
+    });
+
+    if(stripeError){
+      msg.className = 'msg show error';
+      msg.textContent = stripeError.message || 'Your card could not be authorized.';
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Request to Book';
+      return;
+    }
+
+    if(paymentIntent.status !== 'requires_capture'){
+      msg.className = 'msg show error';
+      msg.textContent = 'Unexpected payment status — please try again or contact support.';
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Request to Book';
+      return;
+    }
+
+    submitBtn.textContent = 'Saving your request...';
 
     const bookingPayload = {
       partner_id: listing.id,
@@ -370,12 +450,13 @@
       host_payout: currentPricing.hostPayout,
       tax_rate: TAX_RATE,
       total_price: currentPricing.totalCharged, // kept for backward compatibility
-      guest_name: document.getElementById('guest_name').value.trim(),
-      guest_email: document.getElementById('guest_email').value.trim(),
-      guest_phone: document.getElementById('guest_phone').value.trim(),
+      guest_name: guestName,
+      guest_email: guestEmail,
+      guest_phone: guestPhone,
       traveler_id: loggedInTraveler ? loggedInTraveler.id : null,
+      payment_intent_id: paymentIntent.id,
       status: 'pending',
-      payment_status: 'unpaid'
+      payment_status: 'authorized'
     };
 
     const { error } = await supabaseClient.from('bookings').insert(bookingPayload);
@@ -383,10 +464,10 @@
     if(error){
       msg.className = 'msg show error';
       if(error.code === '23P01'){
-        msg.textContent = 'Sorry, those dates were just booked by someone else. Please choose different dates.';
+        msg.textContent = 'Sorry, those dates were just booked by someone else. Please choose different dates. Your card was not charged, but contact us if you see a pending authorization.';
         loadBookedDates();
       } else {
-        msg.textContent = 'Something went wrong: ' + error.message;
+        msg.textContent = 'Your card was authorized but saving your request failed: ' + error.message + '. Please contact us — do not try again without checking first.';
       }
       submitBtn.disabled = false;
       submitBtn.textContent = 'Request to Book';
@@ -418,6 +499,8 @@
 
     document.getElementById('booking-form').reset();
     document.getElementById('price-breakdown').style.display = 'none';
+    document.getElementById('card-field-wrap').style.display = 'none';
+    cardElement.clear();
     currentPricing = null;
     submitBtn.disabled = false;
     submitBtn.textContent = 'Request to Book';
