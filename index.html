@@ -132,117 +132,100 @@
   .btn-outline:hover{border-color:var(--amber); color:var(--amber);}
 
   /* Toggle */
-  .toggle-card{
-    justify-self:end;
-    width:100%;
-    max-width:360px;
+  /* ---------- SHOWCASE: interactive day/night scene ---------- */
+  .showcase{
+    background:#101623; padding:90px 0 100px; overflow:hidden;
   }
-  .demo-caption{
-    font-family:'JetBrains Mono', monospace;
-    font-size:12px; letter-spacing:0.02em;
-    color:var(--amber);
-    margin-bottom:10px;
-    text-align:right;
+  .showcase-head{text-align:center; max-width:640px; margin:0 auto 48px;}
+  .showcase-head .eyebrow{color:var(--amber); justify-content:center;}
+  .showcase-head h2{
+    font-family:'Oswald',sans-serif; text-transform:uppercase; color:var(--lane);
+    font-size:clamp(28px,4.2vw,44px); line-height:1.08; margin:14px 0 16px;
   }
-  .hero.is-day .demo-caption{color:var(--sign-green);}
-  .toggle-frame{
-    border:2px solid var(--asphalt);
-    background:var(--night-2);
-    padding:22px;
-    border-radius:4px;
-  }
-  .hero.is-day .toggle-frame{background:#c9d3d5; border-color:#8a9498;}
-  .toggle-label{
-    font-family:'JetBrains Mono', monospace;
-    font-size:11px; letter-spacing:0.12em; text-transform:uppercase;
-    color:var(--asphalt-light,#9aa1ad);
-    display:flex; justify-content:space-between; margin-bottom:14px;
-  }
-  .scene{
-    height:150px;
-    border-radius:2px;
-    position:relative;
-    overflow:hidden;
-    background:linear-gradient(180deg, #0c1220 0%, #1a2138 100%);
-    transition:background 0.6s ease;
-  }
-  .hero.is-day .scene{background:linear-gradient(180deg, #aecbe8 0%, #dce9ef 100%);}
-  .scene .ground{
-    position:absolute; bottom:0; left:0; right:0; height:46%;
-    background:var(--asphalt-dark);
-  }
-  .hero.is-day .scene .ground{background:#9099a1;}
-  .scene .stripe{
-    position:absolute; bottom:18px; width:34px; height:4px; background:var(--lane-dim); opacity:0.5;
-  }
-  .rv-svg{
-    position:absolute; bottom:8px; left:32%;
-    width:128px; height:auto;
-    opacity:0; transform:translateY(8px);
-    transition:opacity 0.6s ease, transform 0.6s ease;
-    filter:drop-shadow(0 3px 4px rgba(0,0,0,0.35));
-  }
-  .scene.show-rv .rv-svg{opacity:1; transform:translateY(0);}
-  .rv-body{fill:var(--amber);}
-  .rv-ac{fill:var(--amber-dim);}
-  .rv-mirror{fill:#2a3040;}
-  .rv-win{fill:#2a3040;}
-  .rv-stripe{fill:var(--sign-green);}
-  .rv-bumper{fill:#dfe1e6;}
-  .rv-headlight{fill:#ffe9a8;}
-  .rv-wheel{fill:#1c202a; stroke:#5a616e; stroke-width:2;}
-  .rv-hub{fill:#8890a0;}
-  .biz-svg{
-    position:absolute; bottom:16px; left:10%;
-    width:84px; height:auto;
-    filter:drop-shadow(0 3px 4px rgba(0,0,0,0.3));
-  }
-  .biz-body{fill:#3a4256;}
-  .biz-roofpoly{fill:#252b3a;}
-  .biz-fascia{fill:#2c3242;}
-  .biz-sign{fill:var(--sign-green);}
-  .biz-win{fill:#1c2130;}
-  .biz-mullion{stroke:#4a5266; stroke-width:1;}
-  .biz-awning{fill:var(--amber-dim);}
-  .biz-door{fill:#2c3242;}
-  .biz-handle{fill:#9aa1ad;}
-  .biz-bush{fill:#2f4a3a;}
-  .biz-curb{fill:#20242e;}
-  .hero.is-day .biz-body{fill:#7b8492;}
-  .hero.is-day .biz-roofpoly{fill:#565f6c;}
-  .hero.is-day .biz-fascia{fill:#4a525f;}
-  .hero.is-day .biz-win{fill:#ffdd88;}
-  .hero.is-day .biz-mullion{stroke:#c9862a;}
-  .hero.is-day .biz-door{fill:#4a525f;}
-  .hero.is-day .biz-bush{fill:#3f6b52;}
-  .scene .stars{position:absolute; inset:0; opacity:1; transition:opacity 0.6s ease;}
-  .hero.is-day .scene .stars{opacity:0;}
-  .scene .star{position:absolute; width:2px; height:2px; background:#fff; border-radius:50%;}
+  .showcase-head p{color:#9aa3b5; font-size:16px;}
 
-  .toggle-row{
-    display:flex; align-items:center; justify-content:space-between;
-    margin-top:16px;
+  .showcase-stage{
+    position:relative; max-width:960px; margin:0 auto;
+    border-radius:14px; overflow:hidden; box-shadow:0 30px 70px rgba(0,0,0,0.45);
+    background:#0A1020;
   }
-  .toggle-copy{font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--lane-dim);}
-  .hero.is-day .toggle-copy{color:#5a6268;}
-  .switch-wrap{display:flex; align-items:center; gap:8px;}
-  .switch-tag{
-    font-family:'JetBrains Mono', monospace; font-size:9px; letter-spacing:0.08em;
-    color:var(--lane-dim);
+  .scene-svg{display:block; width:100%; height:auto;}
+
+  .time-slider{
+    position:absolute; left:18px; top:50%; transform:translateY(-50%);
+    z-index:5; display:flex; flex-direction:column; align-items:center; gap:8px;
+    outline:none;
   }
-  .hero.is-day .switch-tag{color:#5a6268;}
-  .switch{
-    width:56px; height:30px; background:var(--asphalt-dark);
-    border-radius:20px; border:2px solid var(--asphalt);
-    position:relative;
+  .time-slider:focus-visible .slider-track{box-shadow:0 0 0 3px rgba(242,169,59,0.6);}
+  .slider-tag{
+    font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.1em; color:#c7cede;
+    text-transform:uppercase; opacity:0.8;
   }
-  .switch::after{
-    content:''; position:absolute; top:2px; left:2px;
-    width:22px; height:22px; background:var(--amber); border-radius:50%;
-    transition:transform 0.35s ease;
+  .slider-track{
+    position:relative; width:6px; height:190px; border-radius:6px;
+    background:linear-gradient(180deg, #F2A93B 0%, #3a4256 55%, #0A1020 100%);
+    cursor:pointer;
   }
-  .hero.is-day .switch::after{transform:translateX(26px); background:#f5c65c;}
-  .hero.is-day .switch{background:#c9d3d5;}
+  .slider-fill{
+    position:absolute; bottom:0; left:0; width:100%; border-radius:6px;
+    background:rgba(255,255,255,0.12);
+  }
+  .slider-thumb{
+    position:absolute; left:50%; top:30%; width:26px; height:26px;
+    transform:translate(-50%,-50%);
+    background:#F2A93B; border-radius:50%; border:3px solid #141a2b;
+    display:flex; align-items:center; justify-content:center;
+    cursor:grab; box-shadow:0 3px 10px rgba(0,0,0,0.4);
+    touch-action:none;
+  }
+  .slider-thumb:active{cursor:grabbing;}
+
+  .showcase-caption{
+    position:relative; background:#0A1020; height:64px;
+    border-top:1px solid rgba(255,255,255,0.08);
+  }
+  .caption-inner{
+    display:flex; align-items:center; gap:14px;
+    position:absolute; left:0; top:0; right:0; bottom:0; padding:0 28px;
+    transition:opacity 0.15s linear;
+  }
+  .caption-inner .cap-icon{font-size:22px; line-height:1;}
+  .caption-inner b{
+    display:block; font-family:'Oswald',sans-serif; text-transform:uppercase;
+    color:var(--lane); font-size:15px; letter-spacing:0.02em;
+  }
+  .caption-inner span{
+    display:block; font-family:'JetBrains Mono',monospace; font-size:12px; color:#9aa3b5; margin-top:2px;
+  }
+
+  #stars circle{animation:twinkle 3s ease-in-out infinite;}
+  @keyframes twinkle{0%,100%{opacity:0.9;} 50%{opacity:0.25;}}
+  #particles circle{animation:drift 4s ease-in-out infinite;}
+  @keyframes drift{
+    0%{transform:translateY(0); opacity:0.7;}
+    50%{transform:translateY(-14px); opacity:1;}
+    100%{transform:translateY(0); opacity:0.7;}
+  }
+
+  .showcase-chips{
+    max-width:960px; margin:40px auto 0; display:grid; grid-template-columns:repeat(3,1fr); gap:16px;
+  }
+  @media(max-width:760px){.showcase-chips{grid-template-columns:1fr;}}
+  .chip{
+    background:#161d2e; border-radius:8px; padding:18px 20px;
+    display:flex; align-items:center; gap:14px;
+  }
+  .chip-icon{
+    width:36px; height:36px; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; font-weight:700; font-size:15px;
+  }
+  .chip b{display:block; color:var(--lane); font-size:14px; font-family:'Inter',sans-serif;}
+  .chip span{display:block; color:#8890a0; font-size:12px; margin-top:2px;}
+
+  @media(prefers-reduced-motion: reduce){
+    #stars circle, #particles circle{animation:none;}
+  }
 
   /* ---------- MARQUEE STRIP ---------- */
   .strip{
@@ -404,7 +387,7 @@
 </nav>
 
 <header class="hero" id="hero">
-  <div class="wrap">
+  <div class="wrap" style="grid-template-columns:1fr; max-width:760px;">
     <div>
       <div class="eyebrow">Overnight RV parking marketplace</div>
       <h1 id="hero-headline">Closed for business. Open for RVs.</h1>
@@ -414,59 +397,207 @@
         <a href="browse.html" class="btn btn-outline">Find A Spot</a>
       </div>
     </div>
-    <div class="toggle-card">
-      <p class="demo-caption">Same lot, two lives. Tap the switch to see it flip.</p>
-      <div class="toggle-frame">
-        <div class="toggle-label"><span>LOT STATUS</span><span class="mono" id="clock-label">22:00</span></div>
-        <div class="scene" id="scene">
-          <div class="stars" id="stars"></div>
-          <div class="ground"></div>
-          <svg class="biz-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <ellipse cx="8" cy="92" rx="8" ry="6" class="biz-bush"/>
-            <ellipse cx="92" cy="92" rx="8" ry="6" class="biz-bush"/>
-            <rect x="8" y="90" width="84" height="4" rx="1" class="biz-curb"/>
-            <rect x="10" y="34" width="80" height="58" rx="2" class="biz-body"/>
-            <polygon points="4,30 50,8 96,30" class="biz-roofpoly"/>
-            <rect x="2" y="27" width="96" height="6" rx="2" class="biz-fascia"/>
-            <rect x="33" y="13" width="34" height="10" rx="2" class="biz-sign"/>
-            <rect x="17" y="47" width="19" height="19" rx="1.5" class="biz-win"/>
-            <line x1="26.5" y1="47" x2="26.5" y2="66" class="biz-mullion"/>
-            <line x1="17" y1="56.5" x2="36" y2="56.5" class="biz-mullion"/>
-            <rect x="64" y="47" width="19" height="19" rx="1.5" class="biz-win"/>
-            <line x1="73.5" y1="47" x2="73.5" y2="66" class="biz-mullion"/>
-            <line x1="64" y1="56.5" x2="83" y2="56.5" class="biz-mullion"/>
-            <rect x="37" y="50" width="26" height="7" rx="1" class="biz-awning"/>
-            <rect x="42" y="64" width="16" height="28" rx="1.5" class="biz-door"/>
-            <circle cx="55" cy="78" r="1.6" class="biz-handle"/>
-          </svg>
-          <svg class="rv-svg" id="rv" viewBox="0 0 130 62" xmlns="http://www.w3.org/2000/svg">
-            <rect x="10" y="14" width="110" height="32" rx="16" class="rv-body"/>
-            <rect x="56" y="6" width="18" height="10" rx="3" class="rv-ac"/>
-            <rect x="6" y="18" width="5" height="9" rx="2" class="rv-mirror"/>
-            <rect x="14" y="19" width="24" height="20" rx="6" class="rv-win"/>
-            <rect x="46" y="20" width="24" height="16" rx="3" class="rv-win"/>
-            <rect x="78" y="20" width="22" height="16" rx="3" class="rv-win"/>
-            <rect x="10" y="38" width="110" height="5" class="rv-stripe"/>
-            <rect x="4" y="40" width="10" height="8" rx="3" class="rv-bumper"/>
-            <circle cx="9" cy="44" r="2.4" class="rv-headlight"/>
-            <circle cx="36" cy="50" r="11" class="rv-wheel"/>
-            <circle cx="36" cy="50" r="4.5" class="rv-hub"/>
-            <circle cx="96" cy="50" r="11" class="rv-wheel"/>
-            <circle cx="96" cy="50" r="4.5" class="rv-hub"/>
-          </svg>
-        </div>
-        <div class="toggle-row">
-          <span class="toggle-copy" id="toggle-copy">After hours: open for RVs</span>
-          <div class="switch-wrap">
-            <span class="switch-tag">NIGHT</span>
-            <button class="switch" id="switch" aria-label="Toggle day and night view"></button>
-            <span class="switch-tag">DAY</span>
+  </div>
+</header>
+
+<section class="showcase" id="showcase">
+  <div class="wrap">
+    <div class="showcase-head">
+      <div class="eyebrow">One lot, two lives</div>
+      <h2>One parking lot.<br>Two revenue streams.</h2>
+      <p>Turn unused parking into overnight income while your business sleeps.</p>
+    </div>
+
+    <div class="showcase-stage">
+      <div class="time-slider" id="time-slider" role="slider" tabindex="0" aria-label="Time of day" aria-valuemin="0" aria-valuemax="100" aria-valuenow="30">
+        <span class="slider-tag slider-tag-top">Day</span>
+        <div class="slider-track" id="slider-track">
+          <div class="slider-fill" id="slider-fill"></div>
+          <div class="slider-thumb" id="slider-thumb">
+            <svg viewBox="0 0 24 24" width="16" height="16">
+              <circle id="thumb-sun" cx="12" cy="12" r="6" fill="#141a2b"/>
+              <path id="thumb-moon" d="M15 4a8 8 0 1 0 5 14 7 7 0 0 1-5-14z" fill="#141a2b"/>
+            </svg>
           </div>
+        </div>
+        <span class="slider-tag slider-tag-bottom">Night</span>
+      </div>
+
+      <svg class="scene-svg" id="scene-svg" viewBox="0 0 960 520" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <linearGradient id="skyDayGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#5FADE8"/>
+            <stop offset="100%" stop-color="#CDEBF4"/>
+          </linearGradient>
+          <linearGradient id="skyNightGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#0A1020"/>
+            <stop offset="100%" stop-color="#1C2C4A"/>
+          </linearGradient>
+          <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#FFE9A8" stop-opacity="0.55"/>
+            <stop offset="100%" stop-color="#FFE9A8" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="lampGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#FFC96B" stop-opacity="0.55"/>
+            <stop offset="100%" stop-color="#FFC96B" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="winGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#FFD98A" stop-opacity="0.7"/>
+            <stop offset="100%" stop-color="#FFD98A" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+
+        <!-- SKY: day -->
+        <g id="sky-day">
+          <rect x="0" y="0" width="960" height="332" fill="url(#skyDayGrad)"/>
+          <path d="M0,300 Q120,255 260,295 T520,290 T780,300 T960,285 V332 H0 Z" fill="#BFE0C8" opacity="0.55"/>
+          <g fill="#ffffff" opacity="0.9">
+            <ellipse cx="150" cy="90" rx="34" ry="14"/><ellipse cx="180" cy="82" rx="24" ry="12"/><ellipse cx="120" cy="86" rx="20" ry="10"/>
+            <ellipse cx="700" cy="60" rx="38" ry="15"/><ellipse cx="735" cy="54" rx="22" ry="11"/><ellipse cx="665" cy="58" rx="20" ry="10"/>
+            <ellipse cx="850" cy="120" rx="26" ry="11"/><ellipse cx="875" cy="115" rx="18" ry="9"/>
+          </g>
+          <circle cx="230" cy="95" r="70" fill="url(#sunGlow)"/>
+          <circle cx="230" cy="95" r="32" fill="#FFD666"/>
+        </g>
+
+        <!-- SKY: night -->
+        <g id="sky-night">
+          <rect x="0" y="0" width="960" height="332" fill="url(#skyNightGrad)"/>
+          <path d="M0,300 Q120,255 260,295 T520,290 T780,300 T960,285 V332 H0 Z" fill="#152238" opacity="0.7"/>
+          <g id="stars" fill="#ffffff"></g>
+          <g transform="translate(790,85)">
+            <circle r="30" fill="#F4EFE0"/>
+            <circle cx="12" cy="-6" r="26" fill="#0F1830"/>
+          </g>
+        </g>
+
+        <!-- BASE SCENE (always visible) -->
+        <g id="base">
+          <rect x="0" y="332" width="960" height="188" fill="#4B4F58"/>
+          <rect x="55" y="316" width="330" height="16" fill="#C9C4B4"/>
+
+          <!-- building -->
+          <polygon points="45,176 220,112 395,176" fill="#252B3A"/>
+          <rect x="40" y="170" width="360" height="12" rx="2" fill="#2C3242"/>
+          <rect x="65" y="182" width="310" height="134" fill="#D9D5C8"/>
+          <rect x="97" y="212" width="52" height="52" rx="2" fill="#1c2130" stroke="#8a8470" stroke-width="2"/>
+          <line x1="123" y1="212" x2="123" y2="264" stroke="#8a8470" stroke-width="2"/>
+          <line x1="97" y1="238" x2="149" y2="238" stroke="#8a8470" stroke-width="2"/>
+          <rect x="291" y="212" width="52" height="52" rx="2" fill="#1c2130" stroke="#8a8470" stroke-width="2"/>
+          <line x1="317" y1="212" x2="317" y2="264" stroke="#8a8470" stroke-width="2"/>
+          <line x1="291" y1="238" x2="343" y2="238" stroke="#8a8470" stroke-width="2"/>
+          <rect x="188" y="240" width="66" height="12" rx="2" fill="#c98a2e"/>
+          <rect x="196" y="252" width="50" height="64" rx="2" fill="#2c3242"/>
+          <circle cx="234" cy="285" r="2" fill="#9aa1ad"/>
+
+          <!-- parking lines -->
+          <g stroke="#EDEAE0" stroke-width="4" opacity="0.85">
+            <line x1="460" y1="352" x2="460" y2="440"/>
+            <line x1="540" y1="352" x2="540" y2="440"/>
+            <line x1="620" y1="352" x2="620" y2="440"/>
+            <line x1="700" y1="352" x2="700" y2="440"/>
+            <line x1="780" y1="352" x2="780" y2="440"/>
+            <line x1="860" y1="352" x2="860" y2="440"/>
+          </g>
+
+          <!-- lamp posts -->
+          <rect x="446" y="330" width="5" height="52" fill="#2A2E38"/>
+          <circle cx="448.5" cy="326" r="7" fill="#2A2E38"/>
+          <rect x="866" y="330" width="5" height="52" fill="#2A2E38"/>
+          <circle cx="868.5" cy="326" r="7" fill="#2A2E38"/>
+
+          <!-- trees -->
+          <g>
+            <rect x="16" y="290" width="6" height="30" fill="#5b4632"/>
+            <circle cx="19" cy="278" r="20" fill="#3F6B52"/>
+          </g>
+          <g>
+            <rect x="415" y="300" width="5" height="26" fill="#5b4632"/>
+            <circle cx="417" cy="290" r="17" fill="#3F6B52"/>
+          </g>
+          <g>
+            <rect x="925" y="286" width="6" height="30" fill="#5b4632"/>
+            <circle cx="928" cy="274" r="20" fill="#3F6B52"/>
+          </g>
+        </g>
+
+        <!-- FOREGROUND: day -->
+        <g id="fg-day">
+          <ellipse cx="19" cy="322" rx="16" ry="4" fill="#2A2E38" opacity="0.25"/>
+          <ellipse cx="417" cy="330" rx="14" ry="3.5" fill="#2A2E38" opacity="0.25"/>
+          <ellipse cx="928" cy="318" rx="16" ry="4" fill="#2A2E38" opacity="0.25"/>
+          <rect x="97" y="212" width="52" height="52" fill="#BFE3F0" opacity="0.85"/>
+          <rect x="291" y="212" width="52" height="52" fill="#BFE3F0" opacity="0.85"/>
+
+          <g transform="translate(475,392)">
+            <rect x="0" y="6" width="66" height="24" rx="8" fill="#C9CDD3"/>
+            <rect x="12" y="-6" width="42" height="16" rx="6" fill="#D8DBDE"/>
+            <circle cx="14" cy="30" r="7" fill="#20242e"/>
+            <circle cx="52" cy="30" r="7" fill="#20242e"/>
+          </g>
+          <g transform="translate(635,392)">
+            <rect x="0" y="6" width="66" height="24" rx="8" fill="#7A94A8"/>
+            <rect x="12" y="-6" width="42" height="16" rx="6" fill="#8BA3B5"/>
+            <circle cx="14" cy="30" r="7" fill="#20242e"/>
+            <circle cx="52" cy="30" r="7" fill="#20242e"/>
+          </g>
+        </g>
+
+        <!-- FOREGROUND: night -->
+        <g id="fg-night">
+          <ellipse cx="19" cy="326" rx="20" ry="5" fill="#0a0e18" opacity="0.4"/>
+          <ellipse cx="417" cy="334" rx="18" ry="4.5" fill="#0a0e18" opacity="0.4"/>
+          <ellipse cx="928" cy="322" rx="20" ry="5" fill="#0a0e18" opacity="0.4"/>
+
+          <circle cx="123" cy="238" r="46" fill="url(#winGlow)"/>
+          <circle cx="317" cy="238" r="46" fill="url(#winGlow)"/>
+          <rect x="97" y="212" width="52" height="52" fill="#FFD98A" opacity="0.9"/>
+          <rect x="291" y="212" width="52" height="52" fill="#FFD98A" opacity="0.9"/>
+
+          <circle cx="448.5" cy="326" r="34" fill="url(#lampGlow)"/>
+          <circle cx="868.5" cy="326" r="34" fill="url(#lampGlow)"/>
+
+          <!-- reserved stall marker -->
+          <rect x="665" y="350" width="70" height="86" rx="4" fill="none" stroke="#F2A93B" stroke-width="2" stroke-dasharray="6 5" opacity="0.85"/>
+          <text x="700" y="340" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="1" fill="#F2A93B">RESERVED TONIGHT</text>
+
+          <!-- RV, position nudged by JS as the slider moves -->
+          <g id="rv-group" transform="translate(645,368)">
+            <rect x="0" y="14" width="118" height="34" rx="16" fill="#F2A93B"/>
+            <rect x="60" y="7" width="19" height="11" rx="3" fill="#C98A2E"/>
+            <rect x="7" y="20" width="26" height="21" rx="6" fill="#2A3040"/>
+            <rect x="49" y="21" width="26" height="17" rx="3" fill="#2A3040"/>
+            <rect x="84" y="21" width="24" height="17" rx="3" fill="#2A3040"/>
+            <rect x="0" y="41" width="118" height="5" fill="#356B52"/>
+            <circle cx="30" cy="53" r="12" fill="#1C202A" stroke="#5A616E" stroke-width="2"/>
+            <circle cx="30" cy="53" r="5" fill="#8890A0"/>
+            <circle cx="94" cy="53" r="12" fill="#1C202A" stroke="#5A616E" stroke-width="2"/>
+            <circle cx="94" cy="53" r="5" fill="#8890A0"/>
+          </g>
+
+          <g id="particles" fill="#F2C57C"></g>
+        </g>
+      </svg>
+
+      <div class="showcase-caption">
+        <div class="caption-inner" id="caption-day">
+          <span class="cap-icon">☀</span>
+          <div><b>Business Hours</b><span>Parking lot serving customers</span></div>
+        </div>
+        <div class="caption-inner" id="caption-night">
+          <span class="cap-icon">🌙</span>
+          <div><b>After Hours</b><span>Open for RV parking</span></div>
         </div>
       </div>
     </div>
+
+    <div class="showcase-chips">
+      <div class="chip"><span class="chip-icon" style="background:#356B52;">$</span><div><b>Increase Property Revenue</b><span>Earn passive income at night</span></div></div>
+      <div class="chip"><span class="chip-icon" style="background:#2E5E8C;">✓</span><div><b>Safe &amp; Secure</b><span>Verified RV travelers</span></div></div>
+      <div class="chip"><span class="chip-icon" style="background:#7A5CB8;">⟳</span><div><b>Easy to Manage</b><span>You stay in control</span></div></div>
+    </div>
   </div>
-</header>
+</section>
 
 <div class="strip">
   <span>✔ VERIFIED GUESTS ONLY</span><span>✔ AUTOMATED PAYOUTS</span><span>✔ YOU SET THE HOURS</span><span>✔ ZERO EQUIPMENT NEEDED</span>
@@ -581,46 +712,89 @@
 </footer>
 
 <script>
-  // Generate stars
-  const starsEl = document.getElementById('stars');
-  for(let i=0;i<18;i++){
-    const s = document.createElement('div');
-    s.className='star';
-    s.style.left = Math.random()*100+'%';
-    s.style.top = Math.random()*60+'%';
-    s.style.opacity = (0.3+Math.random()*0.7).toFixed(2);
-    starsEl.appendChild(s);
-  }
+  // ============================================
+  // SHOWCASE: interactive day/night parking lot scene
+  // ============================================
+  (function initShowcase(){
+    const starsGroup = document.getElementById('stars');
+    const particlesGroup = document.getElementById('particles');
+    const skyDay = document.getElementById('sky-day');
+    const skyNight = document.getElementById('sky-night');
+    const fgDay = document.getElementById('fg-day');
+    const fgNight = document.getElementById('fg-night');
+    const rvGroup = document.getElementById('rv-group');
+    const captionDay = document.getElementById('caption-day');
+    const captionNight = document.getElementById('caption-night');
+    const thumb = document.getElementById('slider-thumb');
+    const track = document.getElementById('slider-track');
+    const fill = document.getElementById('slider-fill');
+    const sliderRoot = document.getElementById('time-slider');
+    if(!starsGroup || !sliderRoot) return; // section not on this page
 
-  const hero = document.getElementById('hero');
-  const scene = document.getElementById('scene');
-  const switchBtn = document.getElementById('switch');
-  const clockLabel = document.getElementById('clock-label');
-  const toggleCopy = document.getElementById('toggle-copy');
-  const heroHeadline = document.getElementById('hero-headline');
-  let isDay = false;
-  let firstRender = true;
-
-  function render(){
-    hero.classList.toggle('is-day', isDay);
-    scene.classList.toggle('show-rv', !isDay);
-    clockLabel.textContent = isDay ? '2:00 PM' : '10:00 PM';
-    toggleCopy.textContent = isDay ? 'Business hours: lot in use' : 'After hours: open for RVs';
-
-    const newHeadline = isDay ? 'Open for business. Closed to RVs.' : 'Closed for business. Open for RVs.';
-    if(firstRender){
-      heroHeadline.textContent = newHeadline;
-      firstRender = false;
-    } else {
-      heroHeadline.style.opacity = '0';
-      setTimeout(() => {
-        heroHeadline.textContent = newHeadline;
-        heroHeadline.style.opacity = '1';
-      }, 180);
+    // Scatter stars once
+    for(let i=0;i<26;i++){
+      const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      c.setAttribute('cx', Math.random()*920+20);
+      c.setAttribute('cy', Math.random()*260+15);
+      c.setAttribute('r', (Math.random()*1.4+0.6).toFixed(1));
+      c.style.animationDelay = (Math.random()*3).toFixed(1)+'s';
+      starsGroup.appendChild(c);
     }
-  }
-  switchBtn.addEventListener('click', ()=>{ isDay = !isDay; render(); });
-  render();
+    // Scatter a few floating particles near the RV/lamp area
+    for(let i=0;i<7;i++){
+      const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      c.setAttribute('cx', 560 + Math.random()*300);
+      c.setAttribute('cy', 380 + Math.random()*80);
+      c.setAttribute('r', (Math.random()*1.2+0.8).toFixed(1));
+      c.style.animationDelay = (Math.random()*4).toFixed(1)+'s';
+      particlesGroup.appendChild(c);
+    }
+
+    let t = 0.7; // 1 = full day, 0 = full night — start leaning toward day
+
+    function render(){
+      const tDay = t;
+      const tNight = 1 - t;
+      skyDay.style.opacity = tDay;
+      skyNight.style.opacity = tNight;
+      fgDay.style.opacity = tDay;
+      fgNight.style.opacity = tNight;
+
+      // RV slides in the last stretch as it "parks" as day fades to night
+      const rvOffset = tNight * 40; // 0 = parked, 40 = eased back toward the entrance
+      rvGroup.setAttribute('transform', `translate(${645 + rvOffset},368)`);
+
+      captionDay.style.opacity = tDay > 0.5 ? 1 : 0;
+      captionNight.style.opacity = tDay > 0.5 ? 0 : 1;
+
+      const pct = tNight * 100; // thumb position: 0 at top (day), 100 at bottom (night)
+      thumb.style.top = pct + '%';
+      fill.style.height = (100 - pct) + '%';
+      sliderRoot.setAttribute('aria-valuenow', Math.round(pct));
+    }
+
+    function setFromClientY(clientY){
+      const rect = track.getBoundingClientRect();
+      let pct = (clientY - rect.top) / rect.height; // 0 at top, 1 at bottom
+      pct = Math.max(0, Math.min(1, pct));
+      t = 1 - pct; // top = day(1), bottom = night(0)
+      render();
+    }
+
+    let dragging = false;
+    thumb.addEventListener('pointerdown', (e) => { dragging = true; thumb.setPointerCapture(e.pointerId); });
+    window.addEventListener('pointermove', (e) => { if(dragging) setFromClientY(e.clientY); });
+    window.addEventListener('pointerup', () => { dragging = false; });
+    track.addEventListener('pointerdown', (e) => { setFromClientY(e.clientY); dragging = true; });
+
+    // Keyboard accessibility
+    sliderRoot.addEventListener('keydown', (e) => {
+      if(e.key === 'ArrowUp'){ t = Math.min(1, t + 0.06); render(); e.preventDefault(); }
+      if(e.key === 'ArrowDown'){ t = Math.max(0, t - 0.06); render(); e.preventDefault(); }
+    });
+
+    render();
+  })();
 
   // Tabs
   document.querySelectorAll('.tab-btn').forEach(btn=>{
