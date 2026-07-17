@@ -400,7 +400,10 @@
       body: {
         amount: currentPricing.totalCharged,
         guestEmail: guestEmail,
-        listingName: listing.business_name
+        listingName: listing.business_name,
+        partnerId: listing.id,
+        hostFeeAmount: currentPricing.hostFee,
+        travelerFeeAmount: currentPricing.travelerFee
       }
     });
 
