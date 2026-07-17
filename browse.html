@@ -137,7 +137,7 @@
           <div>${p.city}, ${p.state}</div>
           <div class="price">$${p.price_per_night}/night</div>
           <div class="meta">${p.spots_available} spot(s) · check-in ${formatTime12hr(p.arrival_time)} · check-out ${formatTime12hr(p.departure_time)}</div>
-          <a href="listing.html?id=${p.id}" style="display:inline-block; margin-top:8px; background:#141a2b; color:#f2a93b; padding:6px 12px; border-radius:2px; font-size:12px; font-weight:700; text-decoration:none; text-transform:uppercase;">View &amp; Book</a>
+          <a href="listing.html?id=${p.id}&from=map" style="display:inline-block; margin-top:8px; background:#141a2b; color:#f2a93b; padding:6px 12px; border-radius:2px; font-size:12px; font-weight:700; text-decoration:none; text-transform:uppercase;">View &amp; Book</a>
         </div>
       `);
       allMarkers.push({ marker, data: p });
