@@ -86,12 +86,12 @@
 <script>
   const SUPABASE_URL = 'https://icnhpciixqrhrqrzxkxg.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbmhwY2lpeHFyaHJxcnp4a3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2MDMsImV4cCI6MjA5OTczMjYwM30.5a8nNSiSA7U89f2kGAHGNPPfYpFra0Ve7PIFtOq3GDk';
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   let currentUser = null;
 
   async function init(){
-    const { data } = await supabase.auth.getSession();
+    const { data } = await supabaseClient.auth.getSession();
     if(!data.session){
       window.location.href = 'host-login.html?return=host-dashboard.html';
       return;
@@ -102,7 +102,7 @@
   }
 
   document.getElementById('logout-btn').addEventListener('click', async () => {
-    await supabase.auth.signOut();
+    await supabaseClient.auth.signOut();
     window.location.href = 'host-login.html';
   });
 
@@ -119,7 +119,7 @@
     const container = document.getElementById('listings-container');
     container.innerHTML = '<div class="empty">Loading...</div>';
 
-    const { data, error } = await supabase.from('partners').select('*').eq('host_id', currentUser.id).order('created_at', { ascending: false });
+    const { data, error } = await supabaseClient.from('partners').select('*').eq('host_id', currentUser.id).order('created_at', { ascending: false });
 
     if(error){
       container.innerHTML = '<div class="empty">Could not load listings: ' + error.message + '</div>';
@@ -164,7 +164,7 @@
       btn.addEventListener('click', async () => {
         const card = btn.closest('.card');
         const id = btn.dataset.id;
-        const { error } = await supabase.from('partners').update({
+        const { error } = await supabaseClient.from('partners').update({
           price_per_night: parseFloat(card.querySelector('.f-price').value),
           spots_available: parseInt(card.querySelector('.f-spots').value, 10),
           arrival_time: card.querySelector('.f-arrival').value,
@@ -188,7 +188,7 @@
     // Pause / reactivate
     document.querySelectorAll('.btn-pause, .btn-approve').forEach(btn => {
       btn.addEventListener('click', async () => {
-        await supabase.from('partners').update({ status: btn.dataset.status }).eq('id', btn.dataset.id);
+        await supabaseClient.from('partners').update({ status: btn.dataset.status }).eq('id', btn.dataset.id);
         loadListings();
       });
     });
@@ -237,7 +237,7 @@
 
     document.querySelectorAll('#bookings-container .card-actions button').forEach(btn => {
       btn.addEventListener('click', async () => {
-        await supabase.from('bookings').update({ status: btn.dataset.status }).eq('id', btn.dataset.id);
+        await supabaseClient.from('bookings').update({ status: btn.dataset.status }).eq('id', btn.dataset.id);
         loadBookings();
       });
     });
