@@ -121,11 +121,18 @@
     const { data, error } = await supabaseClient.functions.invoke('refresh-connect-status', { body: {} });
 
     if(error || !data || data.error){
+      let realMessage = data?.error || error?.message || 'unknown error';
+      if(error?.context && typeof error.context.json === 'function'){
+        try{
+          const body = await error.context.json();
+          if(body?.error) realMessage = body.error;
+        } catch(e){ /* body wasn't JSON or already consumed */ }
+      }
       banner.style.display = 'block';
       banner.style.background = '#fbeae0';
       banner.style.border = '2px solid #a4472b';
       banner.style.color = '#7a3520';
-      banner.textContent = 'Could not check payout status: ' + (data?.error || error?.message || 'unknown error');
+      banner.textContent = 'Could not check payout status: ' + realMessage;
       return;
     }
 
@@ -160,7 +167,15 @@
     });
 
     if(error || !data || data.error){
-      banner.textContent = 'Could not start payout setup: ' + (data?.error || error?.message || 'unknown error');
+      let realMessage = data?.error || error?.message || 'unknown error';
+      // Supabase's generic error hides the actual response body — dig it out if present
+      if(error?.context && typeof error.context.json === 'function'){
+        try{
+          const body = await error.context.json();
+          if(body?.error) realMessage = body.error;
+        } catch(e){ /* body wasn't JSON or already consumed */ }
+      }
+      banner.textContent = 'Could not start payout setup: ' + realMessage;
       return;
     }
 
