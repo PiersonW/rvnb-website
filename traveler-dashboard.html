@@ -175,7 +175,7 @@
       ` : ''}
 
       <div class="card-actions">
-        ${p ? `<a href="listing.html?id=${p.id}" class="btn-view">View Listing</a>` : ''}
+        ${p ? `<a href="listing.html?id=${p.id}&from=trips" class="btn-view">View Listing</a>` : ''}
         ${allowCancel && b.status !== 'cancelled' ? `<button class="btn-cancel" data-id="${b.id}">Cancel Trip</button>` : ''}
       </div>
     `;
