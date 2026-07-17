@@ -33,6 +33,12 @@
   .tab-panel.active{display:block;}
 
   .empty{color:var(--asphalt); font-family:'JetBrains Mono',monospace; font-size:13px; padding:40px 0; text-align:center;}
+  .archive-toggle{
+    width:100%; background:none; border:2px dashed var(--asphalt); color:var(--asphalt);
+    padding:12px; margin:8px 0 16px; font-family:'JetBrains Mono',monospace; font-size:12px;
+    text-transform:uppercase; letter-spacing:0.04em; border-radius:2px; cursor:pointer;
+  }
+  .archive-toggle:hover{border-color:var(--night); color:var(--night);}
 
   .card{background:#fff; border:2px solid var(--night); border-radius:3px; padding:20px; margin-bottom:16px;}
   .card-top{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;}
@@ -70,7 +76,10 @@
 
 <div class="wrap">
   <header>
-    <h1>Host Dashboard</h1>
+    <div>
+      <a href="index.html" style="font-family:'Oswald',sans-serif; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); text-decoration:none; display:block; margin-bottom:2px;">RVnB</a>
+      <h1>Host Dashboard</h1>
+    </div>
     <div style="display:flex; gap:10px;">
       <a href="index.html" style="border:2px solid var(--asphalt); color:var(--asphalt); padding:8px 16px; font-size:12px; text-transform:uppercase; font-weight:700; border-radius:2px; text-decoration:none; display:inline-flex; align-items:center;">← Home</a>
       <button id="logout-btn">Sign Out</button>
@@ -197,6 +206,8 @@
     });
   }
 
+  let showArchivedBookings = false;
+
   async function loadBookings(){
     const container = document.getElementById('bookings-container');
     container.innerHTML = '<div class="empty">Loading...</div>';
@@ -215,8 +226,36 @@
       return;
     }
 
+    const active = data.filter(b => b.status === 'pending' || b.status === 'confirmed');
+    const archived = data.filter(b => b.status === 'cancelled' || b.status === 'completed');
+
     container.innerHTML = '';
-    data.forEach(b => {
+    if(active.length === 0 && !showArchivedBookings){
+      container.innerHTML = '<div class="empty">No active bookings right now.</div>';
+    }
+    active.forEach(b => container.appendChild(renderBookingCard(b)));
+
+    if(archived.length > 0){
+      const toggleBtn = document.createElement('button');
+      toggleBtn.className = 'archive-toggle';
+      toggleBtn.textContent = showArchivedBookings
+        ? `Hide declined & completed (${archived.length})`
+        : `Show declined & completed (${archived.length})`;
+      toggleBtn.addEventListener('click', () => {
+        showArchivedBookings = !showArchivedBookings;
+        loadBookings();
+      });
+      container.appendChild(toggleBtn);
+
+      if(showArchivedBookings){
+        archived.forEach(b => container.appendChild(renderBookingCard(b)));
+      }
+    }
+
+    attachBookingActionListeners();
+  }
+
+  function renderBookingCard(b){
       const card = document.createElement('div');
       card.className = 'card';
       card.innerHTML = `
@@ -236,9 +275,10 @@
         </div>
         <div class="action-msg" id="booking-msg-${b.id}" style="font-size:12px; margin-top:8px; display:none;"></div>
       `;
-      container.appendChild(card);
-    });
+      return card;
+  }
 
+  function attachBookingActionListeners(){
     document.querySelectorAll('#bookings-container .card-actions button').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.dataset.id;
