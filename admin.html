@@ -266,7 +266,8 @@
             <h3>${b.guest_name}</h3>
             <div class="meta">
               <b>${spot}</b><br>
-              ${b.check_in} → ${b.check_out} · $${b.total_price}<br>
+              ${b.check_in} → ${b.check_out}<br>
+              Traveler pays: $${(b.total_charged ?? b.total_price)?.toFixed ? (b.total_charged ?? b.total_price).toFixed(2) : (b.total_charged ?? b.total_price)} · Host gets: $${b.host_payout ? Number(b.host_payout).toFixed(2) : '—'} · RVnB: $${b.traveler_fee && b.host_fee ? (Number(b.traveler_fee) + Number(b.host_fee)).toFixed(2) : '—'}<br>
               ${b.guest_email}${b.guest_phone ? ' · ' + b.guest_phone : ''}
             </div>
           </div>
