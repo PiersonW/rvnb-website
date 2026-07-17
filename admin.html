@@ -121,7 +121,7 @@
 <script>
   const SUPABASE_URL = 'https://icnhpciixqrhrqrzxkxg.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbmhwY2lpeHFyaHJxcnp4a3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2MDMsImV4cCI6MjA5OTczMjYwM30.5a8nNSiSA7U89f2kGAHGNPPfYpFra0Ve7PIFtOq3GDk';
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   const loginView = document.getElementById('login-view');
   const dashboardView = document.getElementById('dashboard-view');
@@ -129,7 +129,7 @@
   const container = document.getElementById('listings-container');
 
   async function checkSession(){
-    const { data } = await supabase.auth.getSession();
+    const { data } = await supabaseClient.auth.getSession();
     if(data.session){
       showDashboard();
     }
@@ -138,7 +138,7 @@
   document.getElementById('login-btn').addEventListener('click', async () => {
     const email = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value;
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
     if(error){
       loginError.style.display = 'block';
       loginError.textContent = error.message;
@@ -148,7 +148,7 @@
   });
 
   document.getElementById('logout-btn').addEventListener('click', async () => {
-    await supabase.auth.signOut();
+    await supabaseClient.auth.signOut();
     location.reload();
   });
 
@@ -217,9 +217,9 @@
         const status = btn.dataset.status;
         if(status === 'rejected'){
           if(!confirm('Permanently delete this listing?')) return;
-          await supabase.from('partners').delete().eq('id', id);
+          await supabaseClient.from('partners').delete().eq('id', id);
         } else {
-          await supabase.from('partners').update({ status }).eq('id', id);
+          await supabaseClient.from('partners').update({ status }).eq('id', id);
         }
         loadListings();
       });
@@ -272,7 +272,7 @@
 
     document.querySelectorAll('#bookings-container .card-actions button').forEach(btn => {
       btn.addEventListener('click', async () => {
-        await supabase.from('bookings').update({ status: btn.dataset.status }).eq('id', btn.dataset.id);
+        await supabaseClient.from('bookings').update({ status: btn.dataset.status }).eq('id', btn.dataset.id);
         loadBookings();
       });
     });
