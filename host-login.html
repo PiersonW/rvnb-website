@@ -48,6 +48,7 @@
     <input type="password" id="login-password" placeholder="Password" required>
     <div class="cf-turnstile" data-sitekey="0x4AAAAAAD3dYgYRVK0pvWHm" data-callback="onLoginCaptcha"></div>
     <button type="button" id="login-submit-btn" onclick="window.doLogin()">Log In</button>
+    <a href="#" id="forgot-password-link" style="font-size:12px; color:var(--lane); opacity:0.7; text-align:center; text-decoration:underline;">Forgot password?</a>
     <div class="msg" id="login-msg"></div>
     <div style="font-size:10px; color:#5a6472; font-family:monospace;" id="login-debug">debug: waiting</div>
     <script>document.getElementById('login-debug').textContent = 'debug: inline script ran (v2)';</script>
@@ -130,6 +131,26 @@
   }, 4000);
 
   // Log in
+  document.getElementById('forgot-password-link').addEventListener('click', async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('login-msg');
+    const email = document.getElementById('login-email').value.trim();
+
+    if(!email){
+      msg.className = 'msg show error';
+      msg.textContent = 'Enter your email above first, then click "Forgot password?"';
+      return;
+    }
+
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://tryrvnb.com/reset-password.html'
+    });
+
+    msg.className = 'msg show success';
+    // Same message whether or not the email exists — don't reveal which emails have accounts
+    msg.textContent = 'If an account exists for that email, a password reset link has been sent.';
+  });
+
   window.doLogin = async function(){
     try{
       const debugEl = document.getElementById('login-debug');
