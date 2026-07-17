@@ -374,13 +374,17 @@
     submitBtn.textContent = 'Request to Book';
   });
 
-  // Point "Back" wherever the person actually came from, not always the map
+  // Point "Back" wherever the person actually came from, not always the map.
+  // Prefer an explicit ?from= param (reliable) over document.referrer (often
+  // stripped by browsers for privacy, which is why referrer-only detection failed).
   (function setupBackLink(){
     const backLink = document.getElementById('back-link');
-    if(document.referrer.includes('traveler-dashboard.html')){
+    const fromParam = params.get('from');
+
+    if(fromParam === 'trips' || document.referrer.includes('traveler-dashboard.html')){
       backLink.href = 'traveler-dashboard.html';
       backLink.textContent = '← Back to My Trips';
-    } else if(document.referrer.includes('admin.html')){
+    } else if(fromParam === 'admin' || document.referrer.includes('admin.html')){
       backLink.href = 'admin.html';
       backLink.textContent = '← Back to Admin';
     } else {
