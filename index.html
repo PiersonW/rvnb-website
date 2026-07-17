@@ -247,16 +247,13 @@
   /* ---------- MARQUEE STRIP ---------- */
   .strip{
     background:var(--sign-green); color:var(--lane);
-    padding:10px 0; overflow:hidden; white-space:nowrap;
-    border-bottom:2px solid var(--night);
+    padding:12px 24px; border-bottom:2px solid var(--night);
+    display:flex; flex-wrap:wrap; justify-content:center; gap:8px 28px;
   }
-  .strip .track{
-    display:inline-block; font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:0.1em;
-    animation:scroll linear infinite;
-    animation-duration:60s;
+  .strip span{
+    font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:0.06em;
+    white-space:nowrap;
   }
-  @keyframes scroll{from{transform:translateX(0);} to{transform:translateX(-50%);}}
-  .strip .track span{margin:0 22px;}
 
   /* ---------- SECTION SHARED ---------- */
   section{padding:80px 0;}
@@ -472,10 +469,7 @@
 </header>
 
 <div class="strip">
-  <div class="track">
-    <span>✔ VERIFIED GUESTS ONLY</span><span>✔ AUTOMATED PAYOUTS</span><span>✔ YOU SET THE HOURS</span><span>✔ ZERO EQUIPMENT NEEDED</span>
-    <span>✔ VERIFIED GUESTS ONLY</span><span>✔ AUTOMATED PAYOUTS</span><span>✔ YOU SET THE HOURS</span><span>✔ ZERO EQUIPMENT NEEDED</span>
-  </div>
+  <span>✔ VERIFIED GUESTS ONLY</span><span>✔ AUTOMATED PAYOUTS</span><span>✔ YOU SET THE HOURS</span><span>✔ ZERO EQUIPMENT NEEDED</span>
 </div>
 
 <section id="how">
@@ -582,29 +576,6 @@
 </footer>
 
 <script>
-  // Set marquee speed based on actual content width, so it reads at the
-  // same true speed (pixels/sec) on every screen size — not a fixed timer.
-  // Re-measures several times over a few seconds and only ever keeps the
-  // SLOWEST (safest) result, since font-loading timing has proven unreliable
-  // to catch with a single measurement across different devices/browsers.
-  let slowestDurationSoFar = 0;
-  function setMarqueeSpeed(){
-    const track = document.querySelector('.strip .track');
-    if(!track) return;
-    const fullWidth = track.scrollWidth / 2; // content is duplicated once
-    const pixelsPerSecond = 30; // lower = slower / easier to read
-    const duration = Math.max(fullWidth / pixelsPerSecond, 45); // never faster than 45s
-    if(duration > slowestDurationSoFar){
-      slowestDurationSoFar = duration;
-      track.style.animationDuration = duration + 's';
-    }
-  }
-  [0, 300, 800, 1500, 2500, 4000].forEach(delay => setTimeout(setMarqueeSpeed, delay));
-  if(document.fonts && document.fonts.ready){
-    document.fonts.ready.then(setMarqueeSpeed);
-  }
-  window.addEventListener('load', setMarqueeSpeed);
-
   // Generate stars
   const starsEl = document.getElementById('stars');
   for(let i=0;i<18;i++){
