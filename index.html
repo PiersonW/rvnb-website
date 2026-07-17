@@ -380,15 +380,27 @@
     <div class="navlinks">
       <a href="#how">How It Works</a>
       <a href="#perfect">Who It's For</a>
-      <a href="#signup">Get Started</a>
     </div>
-    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
-      <a href="admin.html" id="admin-btn" class="btn btn-outline" style="padding:10px 16px; font-size:12px; border-color:var(--sign-green); color:var(--sign-green); display:none;">Admin</a>
-      <span id="signed-in-as" style="font-size:12px; color:var(--asphalt); display:none; white-space:nowrap; max-width:160px; overflow:hidden; text-overflow:ellipsis;"></span>
-      <button id="signout-btn" class="btn btn-outline" style="padding:10px 16px; font-size:12px; border-color:var(--asphalt); color:var(--asphalt); display:none; cursor:pointer;">Sign Out</button>
-      <a href="traveler-login.html" id="my-trips-link" style="font-size:12px; color:var(--asphalt); text-decoration:underline; white-space:nowrap;">My Trips</a>
-      <a href="host-login.html" id="host-login-link" class="btn btn-outline" style="padding:10px 16px; font-size:12px; border-color:var(--night); color:var(--night);">Host Login</a>
+
+    <!-- Logged OUT state -->
+    <div id="nav-logged-out" style="display:flex; gap:10px; align-items:center;">
+      <a href="traveler-login.html" style="font-size:12px; color:var(--asphalt); text-decoration:underline; white-space:nowrap;">My Trips</a>
+      <a href="host-login.html" class="btn btn-outline" style="padding:10px 16px; font-size:12px; border-color:var(--night); color:var(--night);">Host Login</a>
       <a href="#signup" class="btn btn-amber" style="padding:10px 18px; font-size:12px;">Get Started</a>
+    </div>
+
+    <!-- Logged IN state — single compact account menu instead of a row of buttons -->
+    <div id="nav-logged-in" style="display:none; position:relative;">
+      <button id="account-menu-btn" class="btn btn-outline" style="padding:10px 16px; font-size:12px; border-color:var(--night); color:var(--night); cursor:pointer; display:flex; align-items:center; gap:6px;">
+        <span id="account-email-short">Account</span> ▾
+      </button>
+      <div id="account-menu-dropdown" style="display:none; position:absolute; top:calc(100% + 8px); right:0; background:#fff; border:2px solid var(--night); border-radius:3px; min-width:190px; z-index:100; overflow:hidden; box-shadow:0 6px 16px rgba(0,0,0,0.2);">
+        <div id="account-email-full" style="padding:10px 14px; font-size:11px; color:var(--asphalt); border-bottom:1px solid #e0ddd0; word-break:break-all;"></div>
+        <a href="admin.html" id="admin-btn" style="display:none; padding:11px 14px; font-size:13px; font-weight:600; color:var(--sign-green); text-decoration:none; border-bottom:1px solid #e0ddd0;">Admin Dashboard</a>
+        <a href="traveler-dashboard.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #e0ddd0;">My Trips</a>
+        <a href="host-dashboard.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #e0ddd0;">Host Dashboard</a>
+        <button id="signout-btn" style="display:block; width:100%; text-align:left; padding:11px 14px; font-size:13px; font-weight:600; color:var(--red,#a4472b); background:none; border:none; cursor:pointer;">Sign Out</button>
+      </div>
     </div>
   </div>
 </nav>
@@ -718,7 +730,7 @@
     }
   });
 
-  // Show the Admin button, sign-in status, and Sign Out option based on login state
+  // Show the account dropdown (instead of a row of buttons) when logged in
   (function checkAuthStatus(){
     if(typeof window.supabase === 'undefined') return;
     const SUPABASE_URL = 'https://icnhpciixqrhrqrzxkxg.supabase.co';
@@ -727,34 +739,30 @@
     const authClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     authClient.auth.getSession().then(({ data }) => {
-      if(data.session && data.session.user){
-        const email = data.session.user.email;
+      if(!data.session || !data.session.user) return;
+      const email = data.session.user.email;
 
-        if(email === ADMIN_EMAIL){
-          const adminBtn = document.getElementById('admin-btn');
-          if(adminBtn) adminBtn.style.display = 'inline-flex';
-        }
+      document.getElementById('nav-logged-out').style.display = 'none';
+      document.getElementById('nav-logged-in').style.display = 'block';
+      document.getElementById('account-email-short').textContent = email.split('@')[0];
+      document.getElementById('account-email-full').textContent = email;
 
-        // Logged in — show who's signed in + Sign Out, hide the login prompts
-        const signedInEl = document.getElementById('signed-in-as');
-        const signoutBtn = document.getElementById('signout-btn');
-        const myTripsLink = document.getElementById('my-trips-link');
-        const hostLoginLink = document.getElementById('host-login-link');
-
-        if(signedInEl){ signedInEl.style.display = 'inline'; signedInEl.textContent = 'Signed in: ' + email; }
-        if(signoutBtn) signoutBtn.style.display = 'inline-flex';
-
-        // Don't hide these — just point them straight at the dashboard instead of the login screen
-        if(myTripsLink){ myTripsLink.href = 'traveler-dashboard.html'; myTripsLink.textContent = 'My Trips'; }
-        if(hostLoginLink){ hostLoginLink.href = 'host-dashboard.html'; hostLoginLink.textContent = 'Host Dashboard'; }
-
-        if(signoutBtn){
-          signoutBtn.addEventListener('click', async () => {
-            await authClient.auth.signOut();
-            window.location.reload();
-          });
-        }
+      if(email === ADMIN_EMAIL){
+        document.getElementById('admin-btn').style.display = 'block';
       }
+
+      const menuBtn = document.getElementById('account-menu-btn');
+      const dropdown = document.getElementById('account-menu-dropdown');
+      menuBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+      });
+      document.addEventListener('click', () => { dropdown.style.display = 'none'; });
+
+      document.getElementById('signout-btn').addEventListener('click', async () => {
+        await authClient.auth.signOut();
+        window.location.reload();
+      });
     });
   })();
 </script>
