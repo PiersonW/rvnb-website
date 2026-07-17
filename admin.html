@@ -274,17 +274,47 @@
           <span class="status ${b.status}">${b.status}</span>
         </div>
         <div class="card-actions">
-          ${b.status !== 'confirmed' ? `<button class="btn-approve" data-id="${b.id}" data-status="confirmed">Confirm</button>` : ''}
-          ${b.status !== 'cancelled' ? `<button class="btn-reject" data-id="${b.id}" data-status="cancelled">Cancel</button>` : ''}
-          ${b.status === 'confirmed' ? `<button class="btn-pause" data-id="${b.id}" data-status="completed">Mark Completed</button>` : ''}
+          ${b.status !== 'confirmed' && b.status !== 'cancelled' ? `<button class="btn-approve" data-id="${b.id}" data-action="capture">Confirm &amp; Charge</button>` : ''}
+          ${b.status !== 'cancelled' ? `<button class="btn-reject" data-id="${b.id}" data-action="cancel">Decline</button>` : ''}
+          ${b.status === 'confirmed' ? `<button class="btn-pause" data-id="${b.id}" data-action="complete">Mark Completed</button>` : ''}
         </div>
+        <div class="action-msg" id="booking-msg-${b.id}" style="font-size:12px; margin-top:8px; display:none;"></div>
       `;
       bContainer.appendChild(card);
     });
 
     document.querySelectorAll('#bookings-container .card-actions button').forEach(btn => {
       btn.addEventListener('click', async () => {
-        await supabaseClient.from('bookings').update({ status: btn.dataset.status }).eq('id', btn.dataset.id);
+        const id = btn.dataset.id;
+        const action = btn.dataset.action;
+        const msgEl = document.getElementById('booking-msg-' + id);
+
+        if(action === 'complete'){
+          await supabaseClient.from('bookings').update({ status: 'completed' }).eq('id', id);
+          loadBookings();
+          return;
+        }
+
+        const functionName = action === 'capture' ? 'capture-payment' : 'cancel-payment';
+        const confirmMsg = action === 'capture'
+          ? 'Confirm this booking and charge the traveler\'s card now?'
+          : 'Decline this booking? Any card hold will be released.';
+        if(!confirm(confirmMsg)) return;
+
+        btn.disabled = true;
+        btn.textContent = action === 'capture' ? 'Charging...' : 'Cancelling...';
+
+        const { data, error } = await supabaseClient.functions.invoke(functionName, { body: { bookingId: id } });
+
+        if(error || (data && data.error)){
+          msgEl.style.display = 'block';
+          msgEl.style.color = '#a4472b';
+          msgEl.textContent = 'Failed: ' + (data?.error || error?.message || 'unknown error');
+          btn.disabled = false;
+          btn.textContent = action === 'capture' ? 'Confirm & Charge' : 'Decline';
+          return;
+        }
+
         loadBookings();
       });
     });
