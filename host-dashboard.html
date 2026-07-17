@@ -226,7 +226,7 @@
         </div>
         <div class="meta">
           <b>${b.partners ? b.partners.business_name : ''}</b><br>
-          ${b.check_in} → ${b.check_out} · $${b.total_price}<br>
+          ${b.check_in} → ${b.check_out} · You receive: $${b.host_payout ? Number(b.host_payout).toFixed(2) : Number(b.total_price).toFixed(2)}<br>
           ${b.guest_email}${b.guest_phone ? ' · ' + b.guest_phone : ''}
         </div>
         <div class="card-actions">
