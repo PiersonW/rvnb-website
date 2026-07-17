@@ -159,7 +159,7 @@
 <script>
   const SUPABASE_URL = 'https://icnhpciixqrhrqrzxkxg.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbmhwY2lpeHFyaHJxcnp4a3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2MDMsImV4cCI6MjA5OTczMjYwM30.5a8nNSiSA7U89f2kGAHGNPPfYpFra0Ve7PIFtOq3GDk';
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   const params = new URLSearchParams(window.location.search);
   const listingId = params.get('id');
@@ -170,7 +170,7 @@
       document.getElementById('loading').textContent = 'No listing specified.';
       return;
     }
-    const { data, error } = await supabase.from('partners').select('*').eq('id', listingId).single();
+    const { data, error } = await supabaseClient.from('partners').select('*').eq('id', listingId).single();
     if(error || !data){
       document.getElementById('loading').textContent = 'Listing not found.';
       return;
@@ -290,7 +290,7 @@
       payment_status: 'unpaid'
     };
 
-    const { error } = await supabase.from('bookings').insert(bookingPayload);
+    const { error } = await supabaseClient.from('bookings').insert(bookingPayload);
 
     if(error){
       msg.className = 'msg show error';
