@@ -23,8 +23,8 @@
   form{display:flex; flex-direction:column; gap:12px;}
   form.hidden{display:none;}
   input{padding:12px 14px; border:2px solid #3a4256; background:#141a2b; color:var(--lane); border-radius:2px; font-family:'Inter',sans-serif;}
-  button[type=submit]{padding:13px; background:var(--amber); color:var(--night); font-weight:700; text-transform:uppercase; font-size:13px; border:none; border-radius:2px; cursor:pointer;}
-  button[type=submit]:disabled{opacity:0.6;}
+  button[type=submit], button[type=button]{padding:13px; background:var(--amber); color:var(--night); font-weight:700; text-transform:uppercase; font-size:13px; border:none; border-radius:2px; cursor:pointer;}
+  button[type=submit]:disabled, button[type=button]:disabled{opacity:0.6;}
   .msg{font-size:12px; margin-top:4px; display:none;}
   .msg.show{display:block;}
   .msg.error{color:#ff9d7a;}
@@ -47,7 +47,7 @@
     <input type="email" id="login-email" placeholder="Email" required>
     <input type="password" id="login-password" placeholder="Password" required>
     <div class="cf-turnstile" data-sitekey="0x4AAAAAAD3dYgYRVK0pvWHm" data-callback="onLoginCaptcha"></div>
-    <button type="button" id="login-submit-btn">Log In</button>
+    <button type="button" id="login-submit-btn" onclick="doLogin()">Log In</button>
     <div class="msg" id="login-msg"></div>
     <div style="font-size:10px; color:#5a6472; font-family:monospace;" id="login-debug">debug: waiting</div>
     <script>document.getElementById('login-debug').textContent = 'debug: inline script ran (v2)';</script>
@@ -62,7 +62,7 @@
     <input type="email" id="signup-email" placeholder="Email" required>
     <input type="password" id="signup-password" placeholder="Password (min 6 characters)" minlength="6" required>
     <div class="cf-turnstile" data-sitekey="0x4AAAAAAD3dYgYRVK0pvWHm" data-callback="onSignupCaptcha"></div>
-    <button type="button" id="signup-submit-btn">Create Account</button>
+    <button type="button" id="signup-submit-btn" onclick="doSignup()">Create Account</button>
     <div class="msg" id="signup-msg"></div>
   </form>
 
@@ -130,11 +130,12 @@
   }, 4000);
 
   // Log in
-  document.getElementById('login-submit-btn').addEventListener('click', async () => {
-    const msg = document.getElementById('login-msg');
+  async function doLogin(){
     const debugEl = document.getElementById('login-debug');
-    debugEl.textContent = 'debug: button clicked';
+    debugEl.style.color = '#ff9d7a';
+    debugEl.textContent = 'debug: doLogin() called ✓';
 
+    const msg = document.getElementById('login-msg');
     const email = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value;
 
@@ -182,10 +183,10 @@
       if(window.turnstile) window.turnstile.reset();
       loginCaptchaToken = null;
     }
-  });
+  }
 
   // Sign up
-  document.getElementById('signup-submit-btn').addEventListener('click', async () => {
+  async function doSignup(){
     const msg = document.getElementById('signup-msg');
 
     if(document.getElementById('hp-signup').value !== ''){
@@ -240,7 +241,7 @@
       if(window.turnstile) window.turnstile.reset();
       signupCaptchaToken = null;
     }
-  });
+  }
 </script>
 
 </body>
