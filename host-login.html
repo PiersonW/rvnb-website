@@ -47,7 +47,7 @@
     <input type="email" id="login-email" placeholder="Email" required>
     <input type="password" id="login-password" placeholder="Password" required>
     <div class="cf-turnstile" data-sitekey="0x4AAAAAAD3dYgYRVK0pvWHm" data-callback="onLoginCaptcha"></div>
-    <button type="submit">Log In</button>
+    <button type="button" id="login-submit-btn">Log In</button>
     <div class="msg" id="login-msg"></div>
     <div style="font-size:10px; color:#5a6472; font-family:monospace;" id="login-debug">debug: waiting</div>
     <script>document.getElementById('login-debug').textContent = 'debug: inline script ran (v2)';</script>
@@ -62,7 +62,7 @@
     <input type="email" id="signup-email" placeholder="Email" required>
     <input type="password" id="signup-password" placeholder="Password (min 6 characters)" minlength="6" required>
     <div class="cf-turnstile" data-sitekey="0x4AAAAAAD3dYgYRVK0pvWHm" data-callback="onSignupCaptcha"></div>
-    <button type="submit">Create Account</button>
+    <button type="button" id="signup-submit-btn">Create Account</button>
     <div class="msg" id="signup-msg"></div>
   </form>
 
@@ -130,11 +130,20 @@
   }, 4000);
 
   // Log in
-  document.getElementById('login-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
+  document.getElementById('login-submit-btn').addEventListener('click', async () => {
     const msg = document.getElementById('login-msg');
     const debugEl = document.getElementById('login-debug');
-    debugEl.textContent = 'debug: submit fired';
+    debugEl.textContent = 'debug: button clicked';
+
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+
+    if(!email || !password){
+      msg.className = 'msg show error';
+      msg.textContent = 'Please enter both email and password.';
+      debugEl.textContent = 'debug: missing email/password';
+      return;
+    }
 
     if(!loginCaptchaToken){
       msg.className = 'msg show error';
@@ -148,8 +157,7 @@
     try{
       const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out after 10s — possible network/ad-blocker issue')), 10000));
       const authCall = supabase.auth.signInWithPassword({
-        email: document.getElementById('login-email').value.trim(),
-        password: document.getElementById('login-password').value,
+        email, password,
         options: { captchaToken: loginCaptchaToken }
       });
 
@@ -177,12 +185,21 @@
   });
 
   // Sign up
-  document.getElementById('signup-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
+  document.getElementById('signup-submit-btn').addEventListener('click', async () => {
     const msg = document.getElementById('signup-msg');
 
     if(document.getElementById('hp-signup').value !== ''){
       return; // silently drop suspected bot submissions
+    }
+
+    const email = document.getElementById('signup-email').value.trim();
+    const name = document.getElementById('signup-name').value.trim();
+    const password = document.getElementById('signup-password').value;
+
+    if(!email || !password || !name){
+      msg.className = 'msg show error';
+      msg.textContent = 'Please fill in your name, email, and password.';
+      return;
     }
 
     if(!signupCaptchaToken){
@@ -190,10 +207,6 @@
       msg.textContent = 'Please complete the verification check above before creating an account.';
       return;
     }
-
-    const email = document.getElementById('signup-email').value.trim();
-    const name = document.getElementById('signup-name').value.trim();
-    const password = document.getElementById('signup-password').value;
 
     try{
       const { data, error } = await supabase.auth.signUp({
