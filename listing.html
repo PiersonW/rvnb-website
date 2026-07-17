@@ -84,7 +84,7 @@
 <header>
   <div class="wrap">
     <span class="brand">RVnB</span>
-    <a class="back" href="browse.html">← Back to map</a>
+    <a class="back" href="browse.html" id="back-link">← Back</a>
   </div>
 </header>
 
@@ -373,6 +373,21 @@
     submitBtn.disabled = false;
     submitBtn.textContent = 'Request to Book';
   });
+
+  // Point "Back" wherever the person actually came from, not always the map
+  (function setupBackLink(){
+    const backLink = document.getElementById('back-link');
+    if(document.referrer.includes('traveler-dashboard.html')){
+      backLink.href = 'traveler-dashboard.html';
+      backLink.textContent = '← Back to My Trips';
+    } else if(document.referrer.includes('admin.html')){
+      backLink.href = 'admin.html';
+      backLink.textContent = '← Back to Admin';
+    } else {
+      backLink.href = 'browse.html';
+      backLink.textContent = '← Back to Map';
+    }
+  })();
 
   loadListing();
   checkTravelerSession();
