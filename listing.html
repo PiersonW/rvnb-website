@@ -116,6 +116,7 @@
 
     <form id="booking-form">
       <h2>Request to Book</h2>
+      <div id="login-banner" style="display:none; background:#20402f; color:#8fd8ac; padding:10px 14px; border-radius:2px; font-size:13px; margin-bottom:4px;"></div>
       <div style="position:absolute; left:-9999px;" aria-hidden="true">
         <label for="website">Leave this field blank</label>
         <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
@@ -164,6 +165,31 @@
   const params = new URLSearchParams(window.location.search);
   const listingId = params.get('id');
   let listing = null;
+  let loggedInTraveler = null;
+
+  async function checkTravelerSession(){
+    const { data } = await supabaseClient.auth.getSession();
+    const banner = document.getElementById('login-banner');
+    if(data.session && data.session.user){
+      loggedInTraveler = data.session.user;
+      banner.style.display = 'block';
+      banner.innerHTML = `Booking as <b>${loggedInTraveler.email}</b> — this trip will show up in your <a href="traveler-dashboard.html" style="color:#8fd8ac; text-decoration:underline;">My Trips</a> page. <a href="#" id="not-you-link" style="color:#8fd8ac; text-decoration:underline;">Not you?</a>`;
+      document.getElementById('guest_email').value = loggedInTraveler.email;
+      const notYou = document.getElementById('not-you-link');
+      if(notYou){
+        notYou.addEventListener('click', async (e) => {
+          e.preventDefault();
+          await supabaseClient.auth.signOut();
+          location.reload();
+        });
+      }
+    } else {
+      banner.style.display = 'block';
+      banner.style.background = '#1d2438';
+      banner.style.color = '#f2a93b';
+      banner.innerHTML = `<a href="traveler-login.html?return=${encodeURIComponent(location.pathname + location.search)}" style="color:#f2a93b; text-decoration:underline;">Log in</a> to track this trip in your booking history — or just book below as a guest.`;
+    }
+  }
 
   async function loadListing(){
     if(!listingId){
@@ -286,6 +312,7 @@
       guest_name: document.getElementById('guest_name').value.trim(),
       guest_email: document.getElementById('guest_email').value.trim(),
       guest_phone: document.getElementById('guest_phone').value.trim(),
+      traveler_id: loggedInTraveler ? loggedInTraveler.id : null,
       status: 'pending',
       payment_status: 'unpaid'
     };
@@ -336,6 +363,7 @@
   });
 
   loadListing();
+  checkTravelerSession();
 </script>
 
 </body>
