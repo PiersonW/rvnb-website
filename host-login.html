@@ -47,7 +47,7 @@
     <input type="email" id="login-email" placeholder="Email" required>
     <input type="password" id="login-password" placeholder="Password" required>
     <div class="cf-turnstile" data-sitekey="0x4AAAAAAD3dYgYRVK0pvWHm" data-callback="onLoginCaptcha"></div>
-    <button type="button" id="login-submit-btn" onclick="alert('BUTTON CLICK REGISTERED'); doLogin();">Log In</button>
+    <button type="button" id="login-submit-btn" onclick="try{ window.doLogin(); }catch(e){ alert('ERROR calling doLogin: ' + e.message); }">Log In</button>
     <div class="msg" id="login-msg"></div>
     <div style="font-size:10px; color:#5a6472; font-family:monospace;" id="login-debug">debug: waiting</div>
     <script>document.getElementById('login-debug').textContent = 'debug: inline script ran (v2)';</script>
@@ -130,32 +130,32 @@
   }, 4000);
 
   // Log in
-  async function doLogin(){
-    const debugEl = document.getElementById('login-debug');
-    debugEl.style.color = '#ff9d7a';
-    debugEl.textContent = 'debug: doLogin() called ✓';
-
-    const msg = document.getElementById('login-msg');
-    const email = document.getElementById('login-email').value.trim();
-    const password = document.getElementById('login-password').value;
-
-    if(!email || !password){
-      msg.className = 'msg show error';
-      msg.textContent = 'Please enter both email and password.';
-      debugEl.textContent = 'debug: missing email/password';
-      return;
-    }
-
-    if(!loginCaptchaToken){
-      msg.className = 'msg show error';
-      msg.textContent = 'Please complete the verification check above before logging in.';
-      debugEl.textContent = 'debug: no captcha token yet';
-      return;
-    }
-
-    debugEl.textContent = 'debug: calling supabase...';
-
+  window.doLogin = async function(){
     try{
+      const debugEl = document.getElementById('login-debug');
+      debugEl.style.color = '#ff9d7a';
+      debugEl.textContent = 'debug: doLogin() called ✓';
+
+      const msg = document.getElementById('login-msg');
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+
+      if(!email || !password){
+        msg.className = 'msg show error';
+        msg.textContent = 'Please enter both email and password.';
+        debugEl.textContent = 'debug: missing email/password';
+        return;
+      }
+
+      if(!loginCaptchaToken){
+        msg.className = 'msg show error';
+        msg.textContent = 'Please complete the verification check above before logging in.';
+        debugEl.textContent = 'debug: no captcha token yet';
+        return;
+      }
+
+      debugEl.textContent = 'debug: calling supabase...';
+
       const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out after 10s — possible network/ad-blocker issue')), 10000));
       const authCall = supabase.auth.signInWithPassword({
         email, password,
@@ -177,13 +177,11 @@
       debugEl.textContent = 'debug: success, redirecting...';
       window.location.href = returnTo;
     } catch(err){
-      msg.className = 'msg show error';
-      msg.textContent = 'Something went wrong: ' + err.message;
-      debugEl.textContent = 'debug: exception — ' + err.message;
-      if(window.turnstile) window.turnstile.reset();
-      loginCaptchaToken = null;
+      alert('doLogin() crashed: ' + err.message);
+      const debugEl = document.getElementById('login-debug');
+      if(debugEl) debugEl.textContent = 'debug: CRASH — ' + err.message;
     }
-  }
+  };
 
   // Sign up
   async function doSignup(){
