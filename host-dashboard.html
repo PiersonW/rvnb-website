@@ -86,6 +86,8 @@
     </div>
   </header>
 
+  <div id="payout-banner" style="display:none; padding:16px 18px; border-radius:3px; margin-bottom:24px; font-size:14px;"></div>
+
   <div class="tabs">
     <button class="tab-btn active" data-tab="listings">My Listings</button>
     <button class="tab-btn" data-tab="bookings">Bookings</button>
@@ -111,6 +113,58 @@
     currentUser = data.session.user;
     loadListings();
     loadBookings();
+    checkPayoutStatus();
+  }
+
+  async function checkPayoutStatus(){
+    const banner = document.getElementById('payout-banner');
+    const { data, error } = await supabaseClient.functions.invoke('refresh-connect-status', { body: {} });
+
+    if(error || !data || data.error){
+      banner.style.display = 'block';
+      banner.style.background = '#fbeae0';
+      banner.style.border = '2px solid #a4472b';
+      banner.style.color = '#7a3520';
+      banner.textContent = 'Could not check payout status: ' + (data?.error || error?.message || 'unknown error');
+      return;
+    }
+
+    banner.style.display = 'block';
+
+    if(data.payoutsEnabled){
+      banner.style.background = '#e4efe8';
+      banner.style.border = '2px solid #356b52';
+      banner.style.color = '#1f4a35';
+      banner.textContent = '✓ Payouts active — confirmed bookings will pay out to your bank automatically.';
+    } else if(data.connected){
+      banner.style.background = '#fbeccf';
+      banner.style.border = '2px solid #c98a2e';
+      banner.style.color = '#6b4a10';
+      banner.innerHTML = 'Your payout setup is incomplete. <button id="finish-payout-btn" style="background:#c98a2e; color:#fff; border:none; padding:6px 14px; border-radius:2px; font-weight:700; cursor:pointer; margin-left:8px;">Finish Setup</button>';
+      document.getElementById('finish-payout-btn').addEventListener('click', startPayoutOnboarding);
+    } else {
+      banner.style.background = '#1d2438';
+      banner.style.border = '2px solid #f2a93b';
+      banner.style.color = '#f2a93b';
+      banner.innerHTML = 'You haven\'t set up payouts yet — bookings can still come in, but you won\'t get paid automatically until this is done. <button id="setup-payout-btn" style="background:#f2a93b; color:#141a2b; border:none; padding:6px 14px; border-radius:2px; font-weight:700; cursor:pointer; margin-left:8px;">Set Up Payouts</button>';
+      document.getElementById('setup-payout-btn').addEventListener('click', startPayoutOnboarding);
+    }
+  }
+
+  async function startPayoutOnboarding(){
+    const banner = document.getElementById('payout-banner');
+    banner.textContent = 'Redirecting to Stripe...';
+
+    const { data, error } = await supabaseClient.functions.invoke('create-connect-account', {
+      body: { returnUrl: window.location.href }
+    });
+
+    if(error || !data || data.error){
+      banner.textContent = 'Could not start payout setup: ' + (data?.error || error?.message || 'unknown error');
+      return;
+    }
+
+    window.location.href = data.onboardingUrl;
   }
 
   document.getElementById('logout-btn').addEventListener('click', async () => {
