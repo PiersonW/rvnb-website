@@ -127,6 +127,11 @@
       <span id="l-rules"></span>
     </div>
 
+    <div class="reviews-section" id="reviews-section" style="display:none; margin-bottom:32px;">
+      <h2 style="font-size:18px; margin-bottom:12px;">Reviews <span id="review-avg" style="color:var(--sign-green);"></span></h2>
+      <div id="reviews-list"></div>
+    </div>
+
     <form id="booking-form">
       <h2>Request to Book</h2>
       <div id="login-banner" style="display:none; background:#20402f; color:#8fd8ac; padding:10px 14px; border-radius:2px; font-size:13px; margin-bottom:4px;"></div>
@@ -284,6 +289,32 @@
     }
 
     loadBookedDates();
+    loadReviews();
+  }
+
+  async function loadReviews(){
+    const { data, error } = await supabaseClient
+      .from('reviews')
+      .select('rating, comment, created_at')
+      .eq('partner_id', listing.id)
+      .eq('reviewer_type', 'traveler')
+      .order('created_at', { ascending: false });
+
+    if(error || !data || data.length === 0) return;
+
+    const section = document.getElementById('reviews-section');
+    const list = document.getElementById('reviews-list');
+    section.style.display = 'block';
+
+    const avg = (data.reduce((sum, r) => sum + r.rating, 0) / data.length).toFixed(1);
+    document.getElementById('review-avg').textContent = `★ ${avg} (${data.length} review${data.length !== 1 ? 's' : ''})`;
+
+    list.innerHTML = data.map(r => `
+      <div style="background:#fff; border:2px solid var(--night); border-radius:2px; padding:14px 16px; margin-bottom:10px;">
+        <div style="color:var(--amber); font-size:14px;">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
+        ${r.comment ? `<div style="font-size:14px; color:#2a2f3a; margin-top:6px;">${r.comment}</div>` : ''}
+      </div>
+    `).join('');
   }
 
   async function loadBookedDates(){
