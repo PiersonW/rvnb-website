@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leave a Review — RVnB</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{ --night:#141a2b; --amber:#f2a93b; --lane:#eeeae0; --sign-green:#356b52; --asphalt:#545b66; }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Inter',sans-serif; background:var(--lane); color:var(--night); line-height:1.6;}
+  .wrap{max-width:520px; margin:0 auto; padding:0 24px;}
+  header{background:var(--night); color:var(--lane); padding:16px 0;}
+  header .wrap{display:flex; justify-content:space-between; align-items:center;}
+  header a{color:var(--amber); text-decoration:none; font-size:14px;}
+  h1{font-family:'Oswald',sans-serif; text-transform:uppercase; font-size:clamp(24px,4vw,32px); margin:36px 0 6px;}
+  .sub{color:var(--asphalt); margin-bottom:28px;}
+  #loading, #error, #already{padding:60px 0; text-align:center; color:var(--asphalt); font-family:'JetBrains Mono',monospace;}
+  #error{display:none;} #already{display:none;}
+  #form-area{display:none;}
+  .stars{display:flex; gap:8px; margin:20px 0;}
+  .star-btn{
+    font-size:36px; background:none; border:none; cursor:pointer; color:#d9d4c6; padding:0; line-height:1;
+    transition:color 0.15s ease;
+  }
+  .star-btn.active, .star-btn:hover, .star-btn.hover{color:var(--amber);}
+  textarea{
+    width:100%; padding:14px; border:2px solid var(--night); border-radius:2px; font-family:'Inter',sans-serif;
+    font-size:15px; min-height:120px; resize:vertical; margin-bottom:16px;
+  }
+  button[type=submit]{
+    padding:15px 28px; background:var(--amber); color:var(--night); font-weight:700;
+    text-transform:uppercase; font-size:14px; border:none; border-radius:2px; cursor:pointer;
+  }
+  button[type=submit]:disabled{opacity:0.6;}
+  .msg{font-size:13px; margin-top:12px; padding:10px; border-radius:2px; display:none;}
+  .msg.show{display:block;}
+  .msg.error{background:#fbeae0; color:#a4472b;}
+  .msg.success{background:#e4efe8; color:#1f4a35;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <span style="font-family:'Oswald',sans-serif; font-weight:700; text-transform:uppercase;">RVnB</span>
+    <a href="index.html">← Home</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <div id="loading">Loading...</div>
+  <div id="error">This review link is invalid, already used, or the booking isn't completed yet.</div>
+  <div id="already">You've already submitted this review — thank you!</div>
+
+  <div id="form-area">
+    <h1 id="review-title">Leave a Review</h1>
+    <p class="sub" id="review-sub"></p>
+
+    <form id="review-form">
+      <div class="stars" id="star-picker">
+        <button type="button" class="star-btn" data-value="1">★</button>
+        <button type="button" class="star-btn" data-value="2">★</button>
+        <button type="button" class="star-btn" data-value="3">★</button>
+        <button type="button" class="star-btn" data-value="4">★</button>
+        <button type="button" class="star-btn" data-value="5">★</button>
+      </div>
+      <textarea id="comment" placeholder="Optional — tell us about the experience"></textarea>
+      <button type="submit" id="submit-btn">Submit Review</button>
+      <div class="msg" id="form-msg"></div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://icnhpciixqrhrqrzxkxg.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbmhwY2lpeHFyaHJxcnp4a3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2MDMsImV4cCI6MjA5OTczMjYwM30.5a8nNSiSA7U89f2kGAHGNPPfYpFra0Ve7PIFtOq3GDk';
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const params = new URLSearchParams(window.location.search);
+  const bookingId = params.get('booking');
+  const role = params.get('as'); // 'traveler' or 'host'
+
+  let bookingData = null;
+  let rating = 0;
+
+  async function init(){
+    if(!bookingId || (role !== 'traveler' && role !== 'host')){
+      show('error');
+      return;
+    }
+
+    const { data, error } = await supabaseClient
+      .from('bookings')
+      .select('*, partners(id, business_name, host_id)')
+      .eq('id', bookingId)
+      .single();
+
+    if(error || !data){
+      show('error');
+      return;
+    }
+    if(data.status !== 'completed'){
+      show('error');
+      return;
+    }
+    bookingData = data;
+
+    // Check if this review already exists
+    const { data: existing } = await supabaseClient
+      .from('reviews')
+      .select('id')
+      .eq('booking_id', bookingId)
+      .eq('reviewer_type', role)
+      .maybeSingle();
+
+    if(existing){
+      show('already');
+      return;
+    }
+
+    const title = document.getElementById('review-title');
+    const sub = document.getElementById('review-sub');
+    if(role === 'traveler'){
+      title.textContent = 'Rate Your Stay';
+      sub.textContent = `How was your stay at ${data.partners.business_name}?`;
+    } else {
+      title.textContent = 'Rate Your Guest';
+      sub.textContent = `How was your experience hosting ${data.guest_name}?`;
+    }
+
+    show('form-area');
+  }
+
+  function show(id){
+    ['loading','error','already','form-area'].forEach(x => {
+      document.getElementById(x).style.display = (x === id) ? 'block' : 'none';
+    });
+  }
+
+  document.querySelectorAll('.star-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      rating = parseInt(btn.dataset.value, 10);
+      document.querySelectorAll('.star-btn').forEach(b => {
+        b.classList.toggle('active', parseInt(b.dataset.value,10) <= rating);
+      });
+    });
+  });
+
+  document.getElementById('review-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('form-msg');
+    const btn = document.getElementById('submit-btn');
+
+    if(rating === 0){
+      msg.className = 'msg show error';
+      msg.textContent = 'Please select a star rating.';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Submitting...';
+
+    const payload = {
+      booking_id: bookingId,
+      reviewer_type: role,
+      rating: rating,
+      comment: document.getElementById('comment').value.trim(),
+    };
+
+    if(role === 'traveler'){
+      payload.partner_id = bookingData.partners.id;
+      payload.host_id = bookingData.partners.host_id;
+    } else {
+      payload.traveler_email = bookingData.guest_email;
+    }
+
+    const { error } = await supabaseClient.from('reviews').insert(payload);
+
+    if(error){
+      msg.className = 'msg show error';
+      msg.textContent = 'Something went wrong: ' + error.message;
+      btn.disabled = false;
+      btn.textContent = 'Submit Review';
+      return;
+    }
+
+    document.getElementById('review-form').style.display = 'none';
+    msg.className = 'msg show success';
+    msg.textContent = 'Thanks for your review!';
+  });
+
+  init();
+</script>
+
+</body>
+</html>
