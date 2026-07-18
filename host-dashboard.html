@@ -420,9 +420,33 @@
           return;
         }
 
+        notifyTraveler(id, action);
         loadBookings();
       });
     });
+  }
+
+  async function notifyTraveler(bookingId, action){
+    const { data: booking } = await supabaseClient
+      .from('bookings')
+      .select('guest_name, guest_email, check_in, check_out, partners(business_name, city, state)')
+      .eq('id', bookingId)
+      .single();
+    if(!booking || !booking.guest_email) return;
+
+    const spot = booking.partners ? `${booking.partners.business_name} (${booking.partners.city}, ${booking.partners.state})` : 'your listing';
+
+    const subject = action === 'capture'
+      ? `Booking confirmed — ${spot}`
+      : `Booking update — ${spot}`;
+
+    const html = action === 'capture'
+      ? `<p>Hi ${booking.guest_name},</p><p>Your booking at <b>${spot}</b> for ${booking.check_in} → ${booking.check_out} is confirmed! Your card has been charged.</p><p>Remember: your vehicle must leave the lot each morning and return after the host's arrival time — every night of your stay.</p><p>Safe travels!</p>`
+      : `<p>Hi ${booking.guest_name},</p><p>Unfortunately your booking request at <b>${spot}</b> for ${booking.check_in} → ${booking.check_out} was not able to be confirmed. Your card was not charged — any authorization hold will be released automatically by your bank within a few days.</p><p>Feel free to look for another spot on RVnB.</p>`;
+
+    supabaseClient.functions.invoke('send-email', {
+      body: { to: booking.guest_email, subject, html }
+    }).catch(() => {});
   }
 
   init();
