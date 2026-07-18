@@ -117,6 +117,7 @@
         <h1>Admin</h1>
       </div>
       <div style="display:flex; gap:10px;">
+        <a href="analytics.html" style="border:2px solid var(--sign-green); color:var(--sign-green); padding:8px 16px; font-size:12px; text-transform:uppercase; font-weight:700; border-radius:2px; text-decoration:none; display:inline-flex; align-items:center;">Analytics</a>
         <a href="index.html" style="border:2px solid var(--asphalt); color:var(--asphalt); padding:8px 16px; font-size:12px; text-transform:uppercase; font-weight:700; border-radius:2px; text-decoration:none; display:inline-flex; align-items:center;">← Home</a>
         <button id="logout-btn">Sign Out</button>
       </div>
@@ -323,6 +324,46 @@
       return card;
   }
 
+  async function sendReviewRequests(bookingId){
+    const { data: booking } = await supabaseClient
+      .from('bookings')
+      .select('guest_name, guest_email, partners(business_name, host_id)')
+      .eq('id', bookingId)
+      .single();
+    if(!booking) return;
+
+    const reviewBase = 'https://tryrvnb.com/review.html?booking=' + bookingId;
+
+    // Email the traveler, asking them to review the host
+    if(booking.guest_email){
+      supabaseClient.functions.invoke('send-email', {
+        body: {
+          to: booking.guest_email,
+          subject: `How was your stay at ${booking.partners.business_name}?`,
+          html: `<p>Hi ${booking.guest_name},</p><p>Thanks for staying at <b>${booking.partners.business_name}</b> through RVnB. Mind leaving a quick review?</p><p><a href="${reviewBase}&as=traveler">Leave a review →</a></p>`
+        }
+      }).catch(() => {});
+    }
+
+    // Email the host, asking them to review the traveler
+    if(booking.partners && booking.partners.host_id){
+      const { data: hostProfile } = await supabaseClient
+        .from('profiles')
+        .select('email')
+        .eq('id', booking.partners.host_id)
+        .single();
+      if(hostProfile && hostProfile.email){
+        supabaseClient.functions.invoke('send-email', {
+          body: {
+            to: hostProfile.email,
+            subject: `How was hosting ${booking.guest_name}?`,
+            html: `<p>Hi,</p><p>Your guest <b>${booking.guest_name}</b> just completed their stay. Mind leaving a quick review?</p><p><a href="${reviewBase}&as=host">Leave a review →</a></p>`
+          }
+        }).catch(() => {});
+      }
+    }
+  }
+
   function attachBookingActionListeners(){
     document.querySelectorAll('#bookings-container .card-actions button').forEach(btn => {
       btn.addEventListener('click', async () => {
@@ -332,6 +373,7 @@
 
         if(action === 'complete'){
           await supabaseClient.from('bookings').update({ status: 'completed' }).eq('id', id);
+          sendReviewRequests(id);
           loadBookings();
           return;
         }
