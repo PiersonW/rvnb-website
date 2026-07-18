@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analytics — RVnB</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --night:#141a2b; --amber:#f2a93b; --lane:#eeeae0; --sign-green:#356b52;
+    --asphalt:#545b66; --red:#a4472b;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Inter',sans-serif; background:var(--lane); color:var(--night);}
+  h1,h2,h3{font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:0.02em;}
+  a{color:inherit;}
+  .wrap{max-width:1000px; margin:0 auto; padding:32px 24px 80px;}
+
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:28px; padding-bottom:16px; border-bottom:2px solid var(--night);
+  }
+  header a{
+    border:2px solid var(--asphalt); color:var(--asphalt); padding:8px 16px; font-size:12px;
+    text-transform:uppercase; font-weight:700; border-radius:2px; text-decoration:none;
+  }
+
+  #login-view{
+    min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--night);
+  }
+  .login-box{ background:#1d2438; padding:40px; border-radius:4px; width:100%; max-width:340px; }
+  .login-box h1{color:var(--amber); font-size:22px; margin-bottom:20px;}
+  .login-box input{
+    width:100%; padding:12px 14px; margin-bottom:12px; border:2px solid #3a4256; background:#141a2b;
+    color:var(--lane); border-radius:2px; font-family:'Inter',sans-serif;
+  }
+  .login-box button{
+    width:100%; padding:13px; background:var(--amber); color:var(--night); font-weight:700;
+    text-transform:uppercase; font-size:13px; border:none; border-radius:2px; cursor:pointer;
+  }
+  .login-error{color:#ff9d7a; font-size:12px; margin-top:8px;}
+
+  #dashboard-view{display:none;}
+  .empty{color:var(--asphalt); font-family:'JetBrains Mono',monospace; font-size:13px; text-align:center; padding:40px 0;}
+
+  .kpi-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:36px;}
+  @media(max-width:760px){.kpi-grid{grid-template-columns:repeat(2,1fr);}}
+  .kpi-card{background:#fff; border:2px solid var(--night); border-radius:3px; padding:18px;}
+  .kpi-label{font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; color:var(--asphalt); letter-spacing:0.05em;}
+  .kpi-value{font-family:'Oswald',sans-serif; font-size:30px; margin-top:6px;}
+  .kpi-sub{font-size:12px; color:var(--asphalt); margin-top:4px;}
+
+  .section-title{font-size:16px; margin:36px 0 14px;}
+  .panel{background:#fff; border:2px solid var(--night); border-radius:3px; padding:20px; margin-bottom:20px;}
+
+  .chart-row{display:flex; align-items:flex-end; gap:10px; height:140px; margin-top:16px;}
+  .chart-bar-wrap{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%;}
+  .chart-bar{width:100%; background:var(--sign-green); border-radius:2px 2px 0 0; min-height:2px;}
+  .chart-label{font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--asphalt); margin-top:6px;}
+  .chart-value{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--night); margin-bottom:4px;}
+
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th, td{text-align:left; padding:8px 10px; border-bottom:1px solid #e0ddd0;}
+  th{font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; color:var(--asphalt);}
+  .status-pill{
+    font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase;
+    padding:2px 8px; border-radius:10px; display:inline-block;
+  }
+  .status-pill.approved, .status-pill.confirmed, .status-pill.completed{background:#d8ebe0; color:var(--sign-green);}
+  .status-pill.pending{background:#f2e4c4; color:#8a6415;}
+  .status-pill.paused, .status-pill.cancelled{background:#e6e6e6; color:var(--asphalt);}
+</style>
+</head>
+<body>
+
+<div id="login-view">
+  <div class="login-box">
+    <h1>RVnB Analytics</h1>
+    <input type="email" id="login-email" placeholder="Email">
+    <input type="password" id="login-password" placeholder="Password">
+    <button type="button" id="login-btn">Sign In</button>
+    <div class="login-error" id="login-error" style="display:none;"></div>
+  </div>
+</div>
+
+<div id="dashboard-view">
+  <div class="wrap">
+    <header>
+      <h1>Analytics</h1>
+      <a href="admin.html">← Admin</a>
+    </header>
+
+    <div class="kpi-grid" id="kpi-grid">
+      <div class="empty">Loading...</div>
+    </div>
+
+    <div class="section-title">Bookings, last 6 months</div>
+    <div class="panel">
+      <div class="chart-row" id="bookings-chart"></div>
+    </div>
+
+    <div class="section-title">Revenue breakdown</div>
+    <div class="panel" id="revenue-panel"></div>
+
+    <div class="section-title">Recent bookings</div>
+    <div class="panel"><table id="recent-bookings-table"><thead><tr><th>Guest</th><th>Listing</th><th>Dates</th><th>Total</th><th>Status</th></tr></thead><tbody></tbody></table></div>
+
+    <div class="section-title">Recent signups</div>
+    <div class="panel"><table id="recent-signups-table"><thead><tr><th>Email</th><th>Role</th><th>Joined</th></tr></thead><tbody></tbody></table></div>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://icnhpciixqrhrqrzxkxg.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbmhwY2lpeHFyaHJxcnp4a3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2MDMsImV4cCI6MjA5OTczMjYwM30.5a8nNSiSA7U89f2kGAHGNPPfYpFra0Ve7PIFtOq3GDk';
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const ADMIN_EMAIL = 'pierson.willhite@gmail.com';
+
+  async function checkSession(){
+    const { data } = await supabaseClient.auth.getSession();
+    if(data.session && data.session.user && data.session.user.email === ADMIN_EMAIL){
+      showDashboard();
+    }
+  }
+
+  document.getElementById('login-btn').addEventListener('click', async () => {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const errEl = document.getElementById('login-error');
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if(error || data.user.email !== ADMIN_EMAIL){
+      errEl.style.display = 'block';
+      errEl.textContent = error ? error.message : 'Not authorized.';
+      return;
+    }
+    showDashboard();
+  });
+
+  function showDashboard(){
+    document.getElementById('login-view').style.display = 'none';
+    document.getElementById('dashboard-view').style.display = 'block';
+    loadAnalytics();
+  }
+
+  async function loadAnalytics(){
+    const [profilesRes, partnersRes, bookingsRes] = await Promise.all([
+      supabaseClient.from('profiles').select('id, email, role, created_at').order('created_at', { ascending: false }),
+      supabaseClient.from('partners').select('id, business_name, status'),
+      supabaseClient.from('bookings').select('*, partners(business_name)').order('created_at', { ascending: false }),
+    ]);
+
+    const profiles = profilesRes.data || [];
+    const partners = partnersRes.data || [];
+    const bookings = bookingsRes.data || [];
+
+    renderKpis(profiles, partners, bookings);
+    renderBookingsChart(bookings);
+    renderRevenue(bookings);
+    renderRecentBookings(bookings.slice(0, 10));
+    renderRecentSignups(profiles.slice(0, 10));
+  }
+
+  function renderKpis(profiles, partners, bookings){
+    const hosts = profiles.filter(p => p.role === 'host').length;
+    const travelers = profiles.filter(p => p.role === 'traveler').length;
+    const approvedListings = partners.filter(p => p.status === 'approved').length;
+    const confirmedBookings = bookings.filter(b => b.status === 'confirmed' || b.status === 'completed').length;
+    const pendingBookings = bookings.filter(b => b.status === 'pending').length;
+    const totalRevenue = bookings
+      .filter(b => b.payment_status === 'paid')
+      .reduce((sum, b) => sum + (Number(b.traveler_fee || 0) + Number(b.host_fee || 0)), 0);
+
+    document.getElementById('kpi-grid').innerHTML = `
+      <div class="kpi-card">
+        <div class="kpi-label">Total Signups</div>
+        <div class="kpi-value">${profiles.length}</div>
+        <div class="kpi-sub">${hosts} hosts · ${travelers} travelers</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Live Listings</div>
+        <div class="kpi-value">${approvedListings}</div>
+        <div class="kpi-sub">${partners.length} total submitted</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Bookings</div>
+        <div class="kpi-value">${confirmedBookings}</div>
+        <div class="kpi-sub">${pendingBookings} awaiting review</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">RVnB Revenue</div>
+        <div class="kpi-value">$${totalRevenue.toFixed(2)}</div>
+        <div class="kpi-sub">from completed payments</div>
+      </div>
+    `;
+  }
+
+  function renderBookingsChart(bookings){
+    const months = [];
+    const now = new Date();
+    for(let i=5; i>=0; i--){
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({ key: d.getFullYear()+'-'+d.getMonth(), label: d.toLocaleDateString('en-US',{month:'short'}), count: 0 });
+    }
+    bookings.forEach(b => {
+      const d = new Date(b.created_at);
+      const key = d.getFullYear()+'-'+d.getMonth();
+      const m = months.find(m => m.key === key);
+      if(m) m.count++;
+    });
+    const max = Math.max(...months.map(m => m.count), 1);
+    document.getElementById('bookings-chart').innerHTML = months.map(m => `
+      <div class="chart-bar-wrap">
+        <div class="chart-value">${m.count}</div>
+        <div class="chart-bar" style="height:${Math.max((m.count/max)*100, 2)}%;"></div>
+        <div class="chart-label">${m.label}</div>
+      </div>
+    `).join('');
+  }
+
+  function renderRevenue(bookings){
+    const paid = bookings.filter(b => b.payment_status === 'paid');
+    const travelerFees = paid.reduce((s,b) => s + Number(b.traveler_fee || 0), 0);
+    const hostFees = paid.reduce((s,b) => s + Number(b.host_fee || 0), 0);
+    const hostPayouts = paid.reduce((s,b) => s + Number(b.host_payout || 0), 0);
+    const totalCharged = paid.reduce((s,b) => s + Number(b.total_charged || 0), 0);
+
+    document.getElementById('revenue-panel').innerHTML = `
+      <table>
+        <tr><td>Total charged to travelers</td><td style="text-align:right;">$${totalCharged.toFixed(2)}</td></tr>
+        <tr><td>Traveler fees (8%) — RVnB revenue</td><td style="text-align:right; color:var(--sign-green); font-weight:700;">$${travelerFees.toFixed(2)}</td></tr>
+        <tr><td>Host fees (12%) — RVnB revenue</td><td style="text-align:right; color:var(--sign-green); font-weight:700;">$${hostFees.toFixed(2)}</td></tr>
+        <tr><td>Paid out to hosts</td><td style="text-align:right;">$${hostPayouts.toFixed(2)}</td></tr>
+      </table>
+      <div style="font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--asphalt); margin-top:10px;">
+        Based on ${paid.length} completed payment${paid.length !== 1 ? 's' : ''}. Stripe's own processing fees are not subtracted here.
+      </div>
+    `;
+  }
+
+  function renderRecentBookings(bookings){
+    const tbody = document.querySelector('#recent-bookings-table tbody');
+    if(bookings.length === 0){
+      tbody.innerHTML = '<tr><td colspan="5" class="empty">No bookings yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = bookings.map(b => `
+      <tr>
+        <td>${b.guest_name}</td>
+        <td>${b.partners ? b.partners.business_name : '—'}</td>
+        <td>${b.check_in} → ${b.check_out}</td>
+        <td>$${b.total_charged ? Number(b.total_charged).toFixed(2) : Number(b.total_price || 0).toFixed(2)}</td>
+        <td><span class="status-pill ${b.status}">${b.status}</span></td>
+      </tr>
+    `).join('');
+  }
+
+  function renderRecentSignups(profiles){
+    const tbody = document.querySelector('#recent-signups-table tbody');
+    if(profiles.length === 0){
+      tbody.innerHTML = '<tr><td colspan="3" class="empty">No signups yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = profiles.map(p => `
+      <tr>
+        <td>${p.email}</td>
+        <td>${p.role}</td>
+        <td>${new Date(p.created_at).toLocaleDateString()}</td>
+      </tr>
+    `).join('');
+  }
+
+  checkSession();
+</script>
+
+</body>
+</html>
