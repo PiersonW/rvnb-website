@@ -177,6 +177,10 @@
         <div id="card-element"></div>
         <div id="card-errors" role="alert"></div>
       </div>
+      <label id="terms-check-wrap" style="display:flex; align-items:flex-start; gap:8px; font-size:13px; color:var(--lane); cursor:pointer;">
+        <input type="checkbox" id="terms-checkbox" style="margin-top:3px; flex-shrink:0; width:16px; height:16px;">
+        <span>I agree to RVnB's <a href="terms.html" target="_blank" style="color:var(--amber); text-decoration:underline;">Terms of Service</a> and <a href="cancellation-policy.html" target="_blank" style="color:var(--amber); text-decoration:underline;">Cancellation Policy</a>.</span>
+      </label>
       <button type="submit" id="submit-btn">Request to Book</button>
       <div class="note">Your card will be authorized now but not charged until the host confirms. If declined, you're never charged.</div>
       <div class="msg" id="form-msg"></div>
@@ -424,6 +428,12 @@
       return;
     }
 
+    if(!document.getElementById('terms-checkbox').checked){
+      msg.className = 'msg show error';
+      msg.textContent = 'Please agree to the Terms of Service and Cancellation Policy before booking.';
+      return;
+    }
+
     const guestName = document.getElementById('guest_name').value.trim();
     const guestEmail = document.getElementById('guest_email').value.trim();
     const guestPhone = document.getElementById('guest_phone').value.trim();
@@ -497,10 +507,11 @@
       traveler_id: loggedInTraveler ? loggedInTraveler.id : null,
       payment_intent_id: paymentIntent.id,
       status: 'pending',
-      payment_status: 'authorized'
+      payment_status: 'authorized',
+      terms_accepted_at: new Date().toISOString()
     };
 
-    const { error } = await supabaseClient.from('bookings').insert(bookingPayload);
+    const { data: insertedBooking, error } = await supabaseClient.from('bookings').insert(bookingPayload).select().single();
 
     if(error){
       msg.className = 'msg show error';
@@ -516,7 +527,41 @@
     }
 
     msg.className = 'msg show success';
-    msg.textContent = 'Request sent! The host will confirm shortly. Remember: your vehicle must leave the lot each morning by the departure time and return after arrival time — every night of your stay.';
+    msg.textContent = 'Request sent! Check your email for a confirmation. The host will confirm shortly. Remember: your vehicle must leave the lot each morning by the departure time and return after arrival time — every night of your stay.';
+
+    const cancelLink = 'https://tryrvnb.com/cancel-booking.html?booking=' + insertedBooking.id;
+
+    // Confirm to the guest, with everything they need — including how to cancel without an account
+    supabaseClient.functions.invoke('send-email', {
+      body: {
+        to: bookingPayload.guest_email,
+        subject: `Request received — ${listing.business_name}`,
+        html: `
+          <p>Hi ${bookingPayload.guest_name},</p>
+          <p>We got your booking request. The host will confirm shortly — you'll get another email the moment they do.</p>
+          <table style="border-collapse:collapse; margin:14px 0;">
+            <tr><td style="padding:4px 12px 4px 0; color:#555;">Location</td><td><b>${listing.business_name}</b></td></tr>
+            <tr><td style="padding:4px 12px 4px 0; color:#555;">Address</td><td>${listing.address}, ${listing.city}, ${listing.state}</td></tr>
+            <tr><td style="padding:4px 12px 4px 0; color:#555;">Dates</td><td>${ci} → ${co}</td></tr>
+            <tr><td style="padding:4px 12px 4px 0; color:#555;">Total</td><td>$${currentPricing.totalCharged.toFixed(2)}</td></tr>
+          </table>
+          <p>Need to cancel? <a href="${cancelLink}">Cancel this trip</a> — no account needed.</p>
+        `
+      }
+    }).catch(() => {});
+
+    // Notify the host directly, not just the admin inbox
+    supabaseClient.from('profiles').select('email').eq('id', listing.host_id).single().then(({ data: hostProfile }) => {
+      if(hostProfile && hostProfile.email){
+        supabaseClient.functions.invoke('send-email', {
+          body: {
+            to: hostProfile.email,
+            subject: `New booking request — ${listing.business_name}`,
+            html: `<p>Hi,</p><p>You have a new booking request from <b>${bookingPayload.guest_name}</b> for ${ci} → ${co}.</p><p>Log into your <a href="https://tryrvnb.com/host-dashboard.html">host dashboard</a> to confirm or decline.</p>`
+          }
+        }).catch(() => {});
+      }
+    }).catch(() => {});
 
     // Notify admin inbox immediately instead of relying on manually checking the dashboard
     fetch('https://api.web3forms.com/submit', {

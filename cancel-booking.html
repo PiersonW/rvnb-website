@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cancel Trip — RVnB</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{ --night:#141a2b; --amber:#f2a93b; --lane:#eeeae0; --sign-green:#356b52; --asphalt:#545b66; --red:#a4472b; }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Inter',sans-serif; background:var(--lane); color:var(--night); line-height:1.6;}
+  .wrap{max-width:520px; margin:0 auto; padding:0 24px;}
+  header{background:var(--night); color:var(--lane); padding:16px 0;}
+  header .wrap{display:flex; justify-content:space-between; align-items:center;}
+  header a{color:var(--amber); text-decoration:none; font-size:14px;}
+  h1{font-family:'Oswald',sans-serif; text-transform:uppercase; font-size:clamp(24px,4vw,30px); margin:36px 0 20px;}
+  #loading, #error{padding:60px 0; text-align:center; color:var(--asphalt); font-family:'JetBrains Mono',monospace;}
+  #error{display:none;}
+  #content{display:none;}
+  .trip-card{background:#fff; border:2px solid var(--night); border-radius:3px; padding:20px; margin-bottom:24px;}
+  .trip-card .row{display:flex; justify-content:space-between; padding:6px 0; font-size:14px; border-bottom:1px solid #e0ddd0;}
+  .trip-card .row:last-child{border-bottom:none;}
+  .trip-card .label{color:var(--asphalt); font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase;}
+  button{
+    width:100%; padding:15px; background:var(--red); color:#fff; font-weight:700;
+    text-transform:uppercase; font-size:14px; border:none; border-radius:2px; cursor:pointer;
+  }
+  button:disabled{opacity:0.6;}
+  .msg{font-size:13px; margin-top:14px; padding:12px; border-radius:2px; display:none;}
+  .msg.show{display:block;}
+  .msg.error{background:#fbeae0; color:#a4472b;}
+  .msg.success{background:#e4efe8; color:#1f4a35;}
+  .note{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--asphalt); margin-top:12px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <span style="font-family:'Oswald',sans-serif; font-weight:700; text-transform:uppercase;">RVnB</span>
+    <a href="index.html">← Home</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <div id="loading">Loading your trip...</div>
+  <div id="error">This link is invalid, or the trip can no longer be cancelled here — contact us if you need help.</div>
+
+  <div id="content">
+    <h1>Cancel This Trip?</h1>
+    <div class="trip-card" id="trip-details"></div>
+    <button id="cancel-btn">Yes, Cancel My Trip</button>
+    <div class="note">If a card hold was placed, it will be released — you were never actually charged unless the host had already confirmed and captured payment.</div>
+    <div class="msg" id="form-msg"></div>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://icnhpciixqrhrqrzxkxg.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbmhwY2lpeHFyaHJxcnp4a3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2MDMsImV4cCI6MjA5OTczMjYwM30.5a8nNSiSA7U89f2kGAHGNPPfYpFra0Ve7PIFtOq3GDk';
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const params = new URLSearchParams(window.location.search);
+  const bookingId = params.get('booking');
+
+  async function init(){
+    if(!bookingId){
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('error').style.display = 'block';
+      return;
+    }
+
+    const { data, error } = await supabaseClient.functions.invoke('traveler-cancel-booking', {
+      body: { bookingId, confirm: false }
+    });
+
+    document.getElementById('loading').style.display = 'none';
+
+    if(error || !data || data.error){
+      document.getElementById('error').textContent = data?.error || 'This link is invalid, or the trip can no longer be cancelled here — contact us if you need help.';
+      document.getElementById('error').style.display = 'block';
+      return;
+    }
+    if(data.alreadyCancelled){
+      document.getElementById('error').textContent = 'This trip has already been cancelled.';
+      document.getElementById('error').style.display = 'block';
+      return;
+    }
+
+    const b = data.booking;
+    document.getElementById('trip-details').innerHTML = `
+      <div class="row"><span class="label">Location</span><span>${b.business_name || '—'}</span></div>
+      <div class="row"><span class="label">Dates</span><span>${b.check_in} → ${b.check_out}</span></div>
+      <div class="row"><span class="label">Status</span><span>${b.status}</span></div>
+      ${b.total_charged ? `<div class="row"><span class="label">Total</span><span>$${Number(b.total_charged).toFixed(2)}</span></div>` : ''}
+    `;
+    document.getElementById('content').style.display = 'block';
+  }
+
+  document.getElementById('cancel-btn').addEventListener('click', async () => {
+    if(!confirm('Are you sure you want to cancel this trip?')) return;
+    const btn = document.getElementById('cancel-btn');
+    const msg = document.getElementById('form-msg');
+    btn.disabled = true;
+    btn.textContent = 'Cancelling...';
+
+    const { data, error } = await supabaseClient.functions.invoke('traveler-cancel-booking', {
+      body: { bookingId, confirm: true }
+    });
+
+    if(error || (data && data.error)){
+      msg.className = 'msg show error';
+      msg.textContent = 'Could not cancel: ' + (data?.error || error?.message || 'unknown error');
+      btn.disabled = false;
+      btn.textContent = 'Yes, Cancel My Trip';
+      return;
+    }
+
+    msg.className = 'msg show success';
+    msg.textContent = 'Your trip has been cancelled. The host has been notified.';
+    btn.style.display = 'none';
+  });
+
+  init();
+</script>
+
+</body>
+</html>

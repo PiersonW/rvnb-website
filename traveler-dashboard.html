@@ -186,8 +186,18 @@
     const cancelBtn = card.querySelector('.btn-cancel');
     if(cancelBtn){
       cancelBtn.addEventListener('click', async () => {
-        if(!confirm('Cancel this trip?')) return;
-        await supabaseClient.from('bookings').update({ status: 'cancelled' }).eq('id', cancelBtn.dataset.id);
+        if(!confirm('Cancel this trip? The host will be notified.')) return;
+        cancelBtn.disabled = true;
+        cancelBtn.textContent = 'Cancelling...';
+        const { data, error } = await supabaseClient.functions.invoke('traveler-cancel-booking', {
+          body: { bookingId: cancelBtn.dataset.id, confirm: true }
+        });
+        if(error || (data && data.error)){
+          alert('Could not cancel: ' + (data?.error || error?.message || 'unknown error'));
+          cancelBtn.disabled = false;
+          cancelBtn.textContent = 'Cancel Trip';
+          return;
+        }
         loadTrips();
       });
     }
