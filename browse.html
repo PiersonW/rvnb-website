@@ -52,6 +52,31 @@
     font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.03em;
     cursor:pointer; box-shadow:0 3px 10px rgba(0,0,0,0.3); display:none;
   }
+  #filters-toggle-btn{
+    position:absolute; top:76px; right:16px; z-index:1000;
+    background:#fff; color:var(--night); border:2px solid var(--night);
+    padding:11px 16px; border-radius:3px; font-family:'Inter',sans-serif;
+    font-size:13px; font-weight:600; cursor:pointer; box-shadow:0 3px 10px rgba(0,0,0,0.15);
+  }
+  #filters-panel{
+    position:absolute; top:128px; right:16px; z-index:1000;
+    background:#fff; border:2px solid var(--night); border-radius:3px;
+    padding:16px; width:250px; box-shadow:0 6px 16px rgba(0,0,0,0.2);
+  }
+  .filter-row{margin-bottom:14px;}
+  .filter-row label{
+    display:block; font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase;
+    color:var(--asphalt); margin-bottom:6px; letter-spacing:0.04em;
+  }
+  .filter-row select, .filter-row input{
+    width:100%; padding:9px 10px; border:2px solid var(--night); border-radius:2px; font-family:'Inter',sans-serif; font-size:13px;
+  }
+  #filters-apply-btn, #filters-clear-btn{
+    flex:1; padding:9px; border:none; border-radius:2px; font-size:12px; font-weight:700;
+    text-transform:uppercase; cursor:pointer;
+  }
+  #filters-apply-btn{background:var(--amber); color:var(--night);}
+  #filters-clear-btn{background:#e6e6e6; color:var(--night);}
 </style>
   <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "36911a5edb0f4bdf95ab6da85ceccd46"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
@@ -66,6 +91,34 @@
   <input type="text" id="search-input" placeholder="Search city or business name...">
   <button id="search-clear">✕</button>
   <button id="search-btn">Search</button>
+</div>
+<button id="filters-toggle-btn">Filters ▾</button>
+<div id="filters-panel" style="display:none;">
+  <div class="filter-row">
+    <label for="filter-type">Business type</label>
+    <select id="filter-type">
+      <option value="">All types</option>
+      <option value="church">Church</option>
+      <option value="gym">Gym</option>
+      <option value="restaurant">Restaurant</option>
+      <option value="office">Office</option>
+      <option value="warehouse">Warehouse / Industrial</option>
+      <option value="retail">Retail / Strip Mall</option>
+      <option value="other">Other</option>
+    </select>
+  </div>
+  <div class="filter-row">
+    <label>Price per night</label>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <input type="number" id="filter-min-price" placeholder="Min $" min="0">
+      <span style="color:#8890a0;">–</span>
+      <input type="number" id="filter-max-price" placeholder="Max $" min="0">
+    </div>
+  </div>
+  <div style="display:flex; gap:8px;">
+    <button id="filters-apply-btn">Apply</button>
+    <button id="filters-clear-btn">Clear</button>
+  </div>
 </div>
 <button id="search-area-btn">Search This Area</button>
 
@@ -158,35 +211,77 @@
   const searchBtn = document.getElementById('search-btn');
   const clearBtn = document.getElementById('search-clear');
 
+  let activeTypeFilter = '';
+  let activeMinPrice = null;
+  let activeMaxPrice = null;
+
+  function matchesFilters(data){
+    if(activeTypeFilter && data.business_type !== activeTypeFilter) return false;
+    if(activeMinPrice !== null && Number(data.price_per_night) < activeMinPrice) return false;
+    if(activeMaxPrice !== null && Number(data.price_per_night) > activeMaxPrice) return false;
+    return true;
+  }
+
   function showAllMarkers(){
     allMarkers.forEach(({ marker }) => { if(!map.hasLayer(marker)) marker.addTo(map); });
   }
 
+  function applyAllVisibility(){
+    const query = searchInput.value.trim().toLowerCase();
+    const hasFilters = activeTypeFilter || activeMinPrice !== null || activeMaxPrice !== null;
+
+    let matches = allMarkers;
+    if(query){
+      matches = matches.filter(({ data }) =>
+        data.business_name.toLowerCase().includes(query) || data.city.toLowerCase().includes(query)
+      );
+    }
+    matches = matches.filter(({ data }) => matchesFilters(data));
+
+    allMarkers.forEach(({ marker }) => map.removeLayer(marker));
+    matches.forEach(({ marker }) => marker.addTo(map));
+
+    if(matches.length === 0){
+      statusEl.style.display = 'block';
+      statusEl.textContent = hasFilters || query ? 'No listings match your search/filters' : 'No approved listings yet';
+      return;
+    }
+    statusEl.style.display = 'none';
+
+    if(matches.length === 1){
+      moveMapProgrammatically(() => map.setView(matches[0].marker.getLatLng(), 13));
+    } else {
+      moveMapProgrammatically(() => map.fitBounds(L.featureGroup(matches.map(m => m.marker)).getBounds(), { padding: [40,40] }));
+    }
+  }
+
   async function runSearch(){
     const query = searchInput.value.trim();
-    if(!query){ showAllMarkers(); clearBtn.style.display = 'none'; return; }
+    if(!query){
+      clearBtn.style.display = 'none';
+      applyAllVisibility();
+      return;
+    }
 
     clearBtn.style.display = 'block';
     const q = query.toLowerCase();
     const matches = allMarkers.filter(({ data }) =>
       data.business_name.toLowerCase().includes(q) || data.city.toLowerCase().includes(q)
-    );
+    ).filter(({ data }) => matchesFilters(data));
 
     if(matches.length > 0){
-      // Show only matching pins, hide the rest, zoom to fit them
-      allMarkers.forEach(({ marker }) => map.removeLayer(marker));
-      matches.forEach(({ marker }) => marker.addTo(map));
-      if(matches.length === 1){
-        moveMapProgrammatically(() => map.setView(matches[0].marker.getLatLng(), 13));
-        matches[0].marker.openPopup();
-      } else {
-        moveMapProgrammatically(() => map.fitBounds(L.featureGroup(matches.map(m => m.marker)).getBounds(), { padding: [40,40] }));
-      }
-      statusEl.style.display = 'none';
+      applyAllVisibility();
       return;
     }
 
     // No listing matched by name/city — try treating it as a place to search
+    // (only when no filters are active, since a place match ignoring filters would be confusing)
+    const hasFilters = activeTypeFilter || activeMinPrice !== null || activeMaxPrice !== null;
+    if(hasFilters){
+      applyAllVisibility();
+      return;
+    }
+
     showAllMarkers();
     statusEl.style.display = 'block';
     statusEl.textContent = 'Searching for "' + query + '"...';
@@ -212,7 +307,39 @@
     searchInput.value = '';
     clearBtn.style.display = 'none';
     areaBtn.style.display = 'none';
-    showAllMarkers();
+    applyAllVisibility();
+  });
+
+  // ============================================
+  // Filters panel — business type + price range
+  // ============================================
+  const filtersToggleBtn = document.getElementById('filters-toggle-btn');
+  const filtersPanel = document.getElementById('filters-panel');
+  filtersToggleBtn.addEventListener('click', () => {
+    filtersPanel.style.display = filtersPanel.style.display === 'block' ? 'none' : 'block';
+  });
+
+  document.getElementById('filters-apply-btn').addEventListener('click', () => {
+    activeTypeFilter = document.getElementById('filter-type').value;
+    const minVal = document.getElementById('filter-min-price').value;
+    const maxVal = document.getElementById('filter-max-price').value;
+    activeMinPrice = minVal !== '' ? Number(minVal) : null;
+    activeMaxPrice = maxVal !== '' ? Number(maxVal) : null;
+    filtersToggleBtn.textContent = (activeTypeFilter || activeMinPrice !== null || activeMaxPrice !== null) ? 'Filters ●' : 'Filters ▾';
+    filtersPanel.style.display = 'none';
+    applyAllVisibility();
+  });
+
+  document.getElementById('filters-clear-btn').addEventListener('click', () => {
+    document.getElementById('filter-type').value = '';
+    document.getElementById('filter-min-price').value = '';
+    document.getElementById('filter-max-price').value = '';
+    activeTypeFilter = '';
+    activeMinPrice = null;
+    activeMaxPrice = null;
+    filtersToggleBtn.textContent = 'Filters ▾';
+    filtersPanel.style.display = 'none';
+    applyAllVisibility();
   });
 
   // ============================================
