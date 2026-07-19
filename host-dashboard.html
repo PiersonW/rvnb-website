@@ -44,6 +44,23 @@
   }
   .archive-toggle:hover{border-color:var(--night); color:var(--night);}
 
+  .kpi-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:28px;}
+  @media(max-width:640px){.kpi-grid{grid-template-columns:1fr;}}
+  .kpi-card{background:#fff; border:2px solid var(--night); border-radius:3px; padding:18px;}
+  .kpi-label{font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; color:var(--asphalt); letter-spacing:0.05em;}
+  .kpi-value{font-family:'Oswald',sans-serif; font-size:28px; margin-top:6px;}
+  .kpi-sub{font-size:12px; color:var(--asphalt); margin-top:4px;}
+
+  .chart-row{display:flex; align-items:flex-end; gap:10px; height:130px; margin:16px 0 28px;}
+  .chart-bar-wrap{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%;}
+  .chart-bar{width:100%; background:var(--sign-green); border-radius:2px 2px 0 0; min-height:2px;}
+  .chart-label{font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--asphalt); margin-top:6px;}
+  .chart-value{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--night); margin-bottom:4px;}
+
+  table.revenue-table{width:100%; border-collapse:collapse; font-size:13px; background:#fff; border:2px solid var(--night); border-radius:3px; overflow:hidden;}
+  table.revenue-table th, table.revenue-table td{text-align:left; padding:10px 12px; border-bottom:1px solid #e0ddd0;}
+  table.revenue-table th{font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; color:var(--asphalt); background:#f5f2e9;}
+
   .card{background:#fff; border:2px solid var(--night); border-radius:3px; padding:20px; margin-bottom:16px;}
   .card-top{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;}
   .card h3{font-size:18px;}
@@ -96,10 +113,12 @@
   <div class="tabs">
     <button class="tab-btn active" data-tab="listings">My Listings</button>
     <button class="tab-btn" data-tab="bookings">Bookings</button>
+    <button class="tab-btn" data-tab="revenue">Revenue</button>
   </div>
 
   <div id="listings-container" class="tab-panel active"><div class="empty">Loading...</div></div>
   <div id="bookings-container" class="tab-panel"></div>
+  <div id="revenue-container" class="tab-panel"></div>
 </div>
 
 <script>
@@ -119,6 +138,7 @@
     loadListings();
     loadBookings();
     checkPayoutStatus();
+    loadRevenue();
   }
 
   async function checkPayoutStatus(){
@@ -200,6 +220,114 @@
       document.getElementById(btn.dataset.tab + '-container').classList.add('active');
     });
   });
+
+  async function loadRevenue(){
+    const container = document.getElementById('revenue-container');
+    container.innerHTML = '<div class="empty">Loading...</div>';
+
+    // Get this host's own listing IDs first, since bookings don't store host_id directly
+    const { data: myListings } = await supabaseClient
+      .from('partners')
+      .select('id, business_name')
+      .eq('host_id', currentUser.id);
+
+    if(!myListings || myListings.length === 0){
+      container.innerHTML = '<div class="empty">No listings yet — revenue will show up here once you have bookings.</div>';
+      return;
+    }
+    const listingNameById = {};
+    myListings.forEach(l => listingNameById[l.id] = l.business_name);
+    const listingIds = myListings.map(l => l.id);
+
+    const { data: bookings, error } = await supabaseClient
+      .from('bookings')
+      .select('*')
+      .in('partner_id', listingIds)
+      .order('created_at', { ascending: false });
+
+    if(error){
+      container.innerHTML = '<div class="empty">Could not load revenue: ' + error.message + '</div>';
+      return;
+    }
+    if(!bookings || bookings.length === 0){
+      container.innerHTML = '<div class="empty">No bookings yet.</div>';
+      return;
+    }
+
+    const paid = bookings.filter(b => b.payment_status === 'paid');
+    const totalRevenue = paid.reduce((s,b) => s + Number(b.host_payout || 0), 0);
+
+    const now = new Date();
+    const thisMonthRevenue = paid
+      .filter(b => { const d = new Date(b.created_at); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); })
+      .reduce((s,b) => s + Number(b.host_payout || 0), 0);
+
+    const pendingRevenue = bookings
+      .filter(b => b.status === 'pending' || (b.status === 'confirmed' && b.payment_status !== 'paid'))
+      .reduce((s,b) => s + Number(b.host_payout || 0), 0);
+
+    // Monthly chart, last 6 months
+    const months = [];
+    for(let i=5; i>=0; i--){
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({ key: d.getFullYear()+'-'+d.getMonth(), label: d.toLocaleDateString('en-US',{month:'short'}), total: 0 });
+    }
+    paid.forEach(b => {
+      const d = new Date(b.created_at);
+      const key = d.getFullYear()+'-'+d.getMonth();
+      const m = months.find(m => m.key === key);
+      if(m) m.total += Number(b.host_payout || 0);
+    });
+    const maxMonth = Math.max(...months.map(m => m.total), 1);
+
+    container.innerHTML = `
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Total Earned</div>
+          <div class="kpi-value">$${totalRevenue.toFixed(2)}</div>
+          <div class="kpi-sub">${paid.length} paid booking${paid.length !== 1 ? 's' : ''}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">This Month</div>
+          <div class="kpi-value">$${thisMonthRevenue.toFixed(2)}</div>
+          <div class="kpi-sub">${now.toLocaleDateString('en-US',{month:'long'})}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Pending</div>
+          <div class="kpi-value">$${pendingRevenue.toFixed(2)}</div>
+          <div class="kpi-sub">awaiting confirmation/payment</div>
+        </div>
+      </div>
+
+      <h3 style="font-size:15px; margin-bottom:4px;">Last 6 Months</h3>
+      <div class="chart-row">
+        ${months.map(m => `
+          <div class="chart-bar-wrap">
+            <div class="chart-value">$${m.total.toFixed(0)}</div>
+            <div class="chart-bar" style="height:${Math.max((m.total/maxMonth)*100, 2)}%;"></div>
+            <div class="chart-label">${m.label}</div>
+          </div>
+        `).join('')}
+      </div>
+
+      <h3 style="font-size:15px; margin-bottom:12px;">All Transactions</h3>
+      <table class="revenue-table">
+        <thead><tr><th>Date</th><th>Listing</th><th>Guest</th><th>Dates</th><th>You Received</th><th>Status</th></tr></thead>
+        <tbody>
+          ${bookings.map(b => `
+            <tr>
+              <td>${new Date(b.created_at).toLocaleDateString()}</td>
+              <td>${listingNameById[b.partner_id] || '—'}</td>
+              <td>${b.guest_name}</td>
+              <td>${b.check_in} → ${b.check_out}</td>
+              <td>${b.payment_status === 'paid' ? '$' + Number(b.host_payout || 0).toFixed(2) : '—'}</td>
+              <td><span class="status ${b.status}">${b.status}</span></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  }
 
   async function loadListings(){
     const container = document.getElementById('listings-container');
@@ -459,22 +587,46 @@
     });
   }
 
+  function formatTime12hr(hhmm){
+    if(!hhmm) return '';
+    const [h, m] = hhmm.split(':').map(Number);
+    const period = h >= 12 ? 'PM' : 'AM';
+    const hour12 = h % 12 === 0 ? 12 : h % 12;
+    return `${hour12}:${String(m).padStart(2,'0')} ${period}`;
+  }
+
   async function notifyTraveler(bookingId, action){
     const { data: booking } = await supabaseClient
       .from('bookings')
-      .select('guest_name, guest_email, check_in, check_out, partners(business_name, city, state)')
+      .select('guest_name, guest_email, check_in, check_out, total_charged, partners(business_name, address, city, state, arrival_time, departure_time, rules)')
       .eq('id', bookingId)
       .single();
     if(!booking || !booking.guest_email) return null;
 
-    const spot = booking.partners ? `${booking.partners.business_name} (${booking.partners.city}, ${booking.partners.state})` : 'your listing';
+    const p = booking.partners;
+    const spot = p ? `${p.business_name} (${p.city}, ${p.state})` : 'your listing';
 
     const subject = action === 'capture'
       ? `Booking confirmed — ${spot}`
       : `Booking update — ${spot}`;
 
     const html = action === 'capture'
-      ? `<p>Hi ${booking.guest_name},</p><p>Your booking at <b>${spot}</b> for ${booking.check_in} → ${booking.check_out} is confirmed! Your card has been charged.</p><p>Remember: your vehicle must leave the lot each morning and return after the host's arrival time — every night of your stay.</p><p>Safe travels!</p>`
+      ? `
+        <p>Hi ${booking.guest_name},</p>
+        <p>Your booking is confirmed! Your card has been charged. Here are your trip details:</p>
+        <table style="border-collapse:collapse; margin:14px 0;">
+          <tr><td style="padding:4px 12px 4px 0; color:#555;">Location</td><td><b>${p ? p.business_name : ''}</b></td></tr>
+          <tr><td style="padding:4px 12px 4px 0; color:#555;">Address</td><td>${p ? p.address + ', ' + p.city + ', ' + p.state : ''}</td></tr>
+          <tr><td style="padding:4px 12px 4px 0; color:#555;">Check-in date</td><td>${booking.check_in}</td></tr>
+          <tr><td style="padding:4px 12px 4px 0; color:#555;">Check-out date</td><td>${booking.check_out}</td></tr>
+          <tr><td style="padding:4px 12px 4px 0; color:#555;">Arrive after</td><td>${p ? formatTime12hr(p.arrival_time) : ''}</td></tr>
+          <tr><td style="padding:4px 12px 4px 0; color:#555;">Leave by</td><td>${p ? formatTime12hr(p.departure_time) : ''}</td></tr>
+          ${booking.total_charged ? `<tr><td style="padding:4px 12px 4px 0; color:#555;">Total paid</td><td>$${Number(booking.total_charged).toFixed(2)}</td></tr>` : ''}
+        </table>
+        ${p && p.rules ? `<p><b>Host rules:</b><br>${p.rules}</p>` : ''}
+        <p><b>⚠ Daily departure required.</b> Even for multi-night stays, your vehicle must leave the lot by <b>${p ? formatTime12hr(p.departure_time) : 'the departure time'}</b> each morning and may not return until <b>${p ? formatTime12hr(p.arrival_time) : 'the arrival time'}</b> that evening — every night of your stay, not just once.</p>
+        <p>Safe travels!</p>
+      `
       : `<p>Hi ${booking.guest_name},</p><p>Unfortunately your booking request at <b>${spot}</b> for ${booking.check_in} → ${booking.check_out} was not able to be confirmed. Your card was not charged — any authorization hold will be released automatically by your bank within a few days.</p><p>Feel free to look for another spot on RVnB.</p>`;
 
     const { data, error } = await supabaseClient.functions.invoke('send-email', {
