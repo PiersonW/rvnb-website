@@ -329,7 +329,13 @@
 
     const note = document.getElementById('booked-dates-note');
     note.style.display = 'block';
-    note.textContent = 'Already booked: ' + data.map(b => `${b.check_in} to ${b.check_out}`).join(', ');
+    const dateList = data.map(b => `${b.check_in} to ${b.check_out}`).join(', ');
+
+    if(listing.spots_available > 1){
+      note.textContent = `Other travelers have reserved: ${dateList}. This listing has ${listing.spots_available} spots, so it may still be available — try your dates and you'll be told right away if it's full.`;
+    } else {
+      note.textContent = 'Already booked: ' + dateList;
+    }
   }
 
   // ============================================
@@ -498,8 +504,8 @@
 
     if(error){
       msg.className = 'msg show error';
-      if(error.code === '23P01'){
-        msg.textContent = 'Sorry, those dates were just booked by someone else. Please choose different dates. Your card was not charged, but contact us if you see a pending authorization.';
+      if(error.message && error.message.includes('fully booked')){
+        msg.textContent = 'Sorry, this listing is fully booked for those dates — all spots are taken. Please choose different dates. Your card was authorized but not charged; the hold will release automatically.';
         loadBookedDates();
       } else {
         msg.textContent = 'Your card was authorized but saving your request failed: ' + error.message + '. Please contact us — do not try again without checking first.';
