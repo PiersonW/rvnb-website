@@ -246,10 +246,35 @@
           await supabaseClient.from('partners').delete().eq('id', id);
         } else {
           await supabaseClient.from('partners').update({ status }).eq('id', id);
+          if(status === 'approved') notifyHostOfApproval(id);
         }
         loadListings();
       });
     });
+  }
+
+  async function notifyHostOfApproval(partnerId){
+    const { data: partner } = await supabaseClient
+      .from('partners')
+      .select('business_name, host_id')
+      .eq('id', partnerId)
+      .single();
+    if(!partner || !partner.host_id) return;
+
+    const { data: hostProfile } = await supabaseClient
+      .from('profiles')
+      .select('email')
+      .eq('id', partner.host_id)
+      .single();
+    if(!hostProfile || !hostProfile.email) return;
+
+    supabaseClient.functions.invoke('send-email', {
+      body: {
+        to: hostProfile.email,
+        subject: `Your listing is live — ${partner.business_name}`,
+        html: `<p>Hi,</p><p>Good news — <b>${partner.business_name}</b> has been approved and is now live on RVnB. Travelers can start booking it right away.</p><p>Check it out on your <a href="https://tryrvnb.com/host-dashboard.html">host dashboard</a>.</p>`
+      }
+    }).catch(() => {});
   }
 
   let showArchivedBookings = false;
@@ -441,19 +466,35 @@
   async function notifyTraveler(bookingId, action){
     const { data: booking } = await supabaseClient
       .from('bookings')
-      .select('guest_name, guest_email, check_in, check_out, partners(business_name, city, state)')
+      .select('guest_name, guest_email, check_in, check_out, total_charged, partners(business_name, address, city, state, arrival_time, departure_time, rules)')
       .eq('id', bookingId)
       .single();
     if(!booking || !booking.guest_email) return null;
 
-    const spot = booking.partners ? `${booking.partners.business_name} (${booking.partners.city}, ${booking.partners.state})` : 'your listing';
+    const p = booking.partners;
+    const spot = p ? `${p.business_name} (${p.city}, ${p.state})` : 'your listing';
 
     const subject = action === 'capture'
       ? `Booking confirmed — ${spot}`
       : `Booking update — ${spot}`;
 
     const html = action === 'capture'
-      ? `<p>Hi ${booking.guest_name},</p><p>Your booking at <b>${spot}</b> for ${booking.check_in} → ${booking.check_out} is confirmed! Your card has been charged.</p><p>Remember: your vehicle must leave the lot each morning and return after the host's arrival time — every night of your stay.</p><p>Safe travels!</p>`
+      ? `
+        <p>Hi ${booking.guest_name},</p>
+        <p>Your booking is confirmed! Your card has been charged. Here are your trip details:</p>
+        <table style="border-collapse:collapse; margin:14px 0;">
+          <tr><td style="padding:4px 12px 4px 0; color:#555;">Location</td><td><b>${p ? p.business_name : ''}</b></td></tr>
+          <tr><td style="padding:4px 12px 4px 0; color:#555;">Address</td><td>${p ? p.address + ', ' + p.city + ', ' + p.state : ''}</td></tr>
+          <tr><td style="padding:4px 12px 4px 0; color:#555;">Check-in date</td><td>${booking.check_in}</td></tr>
+          <tr><td style="padding:4px 12px 4px 0; color:#555;">Check-out date</td><td>${booking.check_out}</td></tr>
+          <tr><td style="padding:4px 12px 4px 0; color:#555;">Arrive after</td><td>${p ? formatTime12hr(p.arrival_time) : ''}</td></tr>
+          <tr><td style="padding:4px 12px 4px 0; color:#555;">Leave by</td><td>${p ? formatTime12hr(p.departure_time) : ''}</td></tr>
+          ${booking.total_charged ? `<tr><td style="padding:4px 12px 4px 0; color:#555;">Total paid</td><td>$${Number(booking.total_charged).toFixed(2)}</td></tr>` : ''}
+        </table>
+        ${p && p.rules ? `<p><b>Host rules:</b><br>${p.rules}</p>` : ''}
+        <p><b>⚠ Daily departure required.</b> Even for multi-night stays, your vehicle must leave the lot by <b>${p ? formatTime12hr(p.departure_time) : 'the departure time'}</b> each morning and may not return until <b>${p ? formatTime12hr(p.arrival_time) : 'the arrival time'}</b> that evening — every night of your stay, not just once.</p>
+        <p>Safe travels!</p>
+      `
       : `<p>Hi ${booking.guest_name},</p><p>Unfortunately your booking request at <b>${spot}</b> for ${booking.check_in} → ${booking.check_out} was not able to be confirmed. Your card was not charged — any authorization hold will be released automatically by your bank within a few days.</p><p>Feel free to look for another spot on RVnB.</p>`;
 
     const { data, error } = await supabaseClient.functions.invoke('send-email', {
