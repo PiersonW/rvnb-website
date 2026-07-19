@@ -107,6 +107,10 @@
     <input type="email" id="auth-email" placeholder="Email" required>
     <input type="password" id="auth-password" placeholder="Password (min 6 characters)" required>
     <div class="cf-turnstile" data-sitekey="0x4AAAAAAD3dYgYRVK0pvWHm" data-callback="onAuthCaptcha" style="margin:6px 0;"></div>
+    <label id="auth-terms-wrap" style="display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--night); cursor:pointer;">
+      <input type="checkbox" id="auth-terms-checkbox" style="margin-top:2px; flex-shrink:0; width:15px; height:15px;">
+      <span>I agree to RVnB's <a href="terms.html" target="_blank" style="color:var(--sign-green); text-decoration:underline;">Terms of Service</a>.</span>
+    </label>
     <button id="auth-submit" type="button">Create Account &amp; Continue</button>
     <div class="msg" id="auth-msg"></div>
     <p class="auth-note">Already have a listing? <a href="host-dashboard.html" style="color:var(--sign-green); font-weight:600;">Go to your dashboard</a> instead.</p>
@@ -241,6 +245,7 @@
       document.getElementById('auth-note').textContent = authMode === 'signup'
         ? 'Create an account so you can come back later to edit your listing and manage bookings.'
         : 'Log in to add another listing under your existing account.';
+      document.getElementById('auth-terms-wrap').style.display = authMode === 'signup' ? 'flex' : 'none';
     });
   });
 
@@ -255,6 +260,12 @@
     if(!authCaptchaToken){
       authMsg.className = 'msg show error';
       authMsg.textContent = 'Please complete the verification check.';
+      return;
+    }
+
+    if(authMode === 'signup' && !document.getElementById('auth-terms-checkbox').checked){
+      authMsg.className = 'msg show error';
+      authMsg.textContent = 'Please agree to the Terms of Service to create an account.';
       return;
     }
 
@@ -279,11 +290,19 @@
     currentUser = result.data.user;
 
     // Ensure a matching profiles row exists (required by the foreign key on partners.host_id)
-    await supabaseClient.from('profiles').upsert({
-      id: currentUser.id,
-      email: currentUser.email,
-      role: 'host'
-    });
+    const profileUpsert = { id: currentUser.id, email: currentUser.email, role: 'host' };
+    if(authMode === 'signup') profileUpsert.terms_accepted_at = new Date().toISOString();
+    const { error: profileError } = await supabaseClient.from('profiles').upsert(profileUpsert);
+    if(profileError){
+      console.error('Profile creation failed:', profileError.message);
+      supabaseClient.functions.invoke('send-email', {
+        body: {
+          to: 'pierson.willhite@gmail.com',
+          subject: '⚠ Profile creation failed for new host signup',
+          html: `<p>A new host account was created (${currentUser.email}) but the profiles row failed to save:</p><p>${profileError.message}</p><p>Run a fix similar to fix-melissa-profile.sql for this email (using role 'host').</p>`
+        }
+      }).catch(() => {});
+    }
 
     authMsg.className = '';
     document.getElementById('auth-gate').style.display = 'none';
@@ -305,6 +324,45 @@
   // Free geocoding via OpenStreetMap's Nominatim — no API key needed.
   // Fine for this volume of submissions; if listings ever scale into the
   // hundreds per day, a paid geocoding service would be more appropriate.
+  // Compresses a photo client-side before upload — resizes to a reasonable max
+  // dimension and re-encodes as JPEG at moderate quality. Runs entirely in the
+  // browser via Canvas, no external library or server round-trip needed.
+  function compressImage(file, maxDimension = 1600, quality = 0.8){
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const reader = new FileReader();
+
+      reader.onload = (e) => { img.src = e.target.result; };
+      reader.onerror = reject;
+
+      img.onload = () => {
+        let { width, height } = img;
+        if(width > maxDimension || height > maxDimension){
+          if(width > height){
+            height = Math.round(height * (maxDimension / width));
+            width = maxDimension;
+          } else {
+            width = Math.round(width * (maxDimension / height));
+            height = maxDimension;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob((blob) => {
+          if(!blob){ reject(new Error('Image compression failed')); return; }
+          resolve(new File([blob], file.name.replace(/\.(png|heic|heif)$/i, '.jpg'), { type: 'image/jpeg' }));
+        }, 'image/jpeg', quality);
+      };
+      img.onerror = () => reject(new Error('Could not read image file'));
+
+      reader.readAsDataURL(file);
+    });
+  }
+
   async function geocode(address, city, state){
     const query = encodeURIComponent(`${address}, ${city}, ${state}`);
     const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1`);
@@ -339,14 +397,24 @@
       return;
     }
 
-    submitBtn.textContent = 'Uploading photos...';
-    showMsg('Uploading photos...', 'loading');
+    submitBtn.textContent = 'Compressing photos...';
+    showMsg('Compressing photos...', 'loading');
 
     const photoFiles = Array.from(document.getElementById('photos').files).slice(0, 5);
     const photoUrls = [];
     for(const file of photoFiles){
-      const filePath = `${Date.now()}-${Math.random().toString(36).slice(2)}-${file.name}`;
-      const { error: uploadError } = await supabaseClient.storage.from('listing-photos').upload(filePath, file);
+      let uploadFile = file;
+      try{
+        uploadFile = await compressImage(file);
+      } catch(err){
+        console.error('Compression failed, uploading original:', err.message);
+      }
+
+      submitBtn.textContent = 'Uploading photos...';
+      showMsg('Uploading photos...', 'loading');
+
+      const filePath = `${Date.now()}-${Math.random().toString(36).slice(2)}-${uploadFile.name}`;
+      const { error: uploadError } = await supabaseClient.storage.from('listing-photos').upload(filePath, uploadFile);
       if(uploadError){
         showMsg('Photo upload failed: ' + uploadError.message, 'error');
         submitBtn.disabled = false;

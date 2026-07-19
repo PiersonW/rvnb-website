@@ -64,6 +64,10 @@
     <input type="email" id="signup-email" placeholder="Email" required>
     <input type="password" id="signup-password" placeholder="Password (min 6 characters)" minlength="6" required>
     <div class="cf-turnstile" data-sitekey="0x4AAAAAAD3dYgYRVK0pvWHm" data-callback="onSignupCaptcha"></div>
+    <label style="display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--lane); opacity:0.85; cursor:pointer;">
+      <input type="checkbox" id="signup-terms-checkbox" style="margin-top:2px; flex-shrink:0; width:15px; height:15px;">
+      <span>I agree to RVnB's <a href="terms.html" target="_blank" style="color:var(--amber); text-decoration:underline;">Terms of Service</a>.</span>
+    </label>
     <button type="button" id="signup-submit-btn" onclick="doSignup()">Create Account</button>
     <div class="msg" id="signup-msg"></div>
   </form>
@@ -96,6 +100,20 @@
   const params = new URLSearchParams(window.location.search);
   const returnTo = params.get('return') || 'traveler-dashboard.html';
 
+  // Links any bookings made as a guest (before this account existed) to the
+  // account now that we know it's really them — matched by email, and only
+  // bookings not already claimed by someone else.
+  async function claimGuestBookings(email){
+    if(!email) return;
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if(!user) return;
+    await supabaseClient
+      .from('bookings')
+      .update({ traveler_id: user.id })
+      .eq('guest_email', email)
+      .is('traveler_id', null);
+  }
+
   // Tabs
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -105,6 +123,11 @@
       document.getElementById('signup-form').classList.toggle('hidden', btn.dataset.tab !== 'signup');
     });
   });
+
+  // Allow linking directly to the Sign Up tab via ?tab=signup
+  if(params.get('tab') === 'signup'){
+    document.querySelector('.tab-btn[data-tab="signup"]').click();
+  }
 
   // Already logged in? Skip straight to dashboard.
   supabaseClient.auth.getSession().then(({ data }) => {
@@ -196,6 +219,7 @@
         return;
       }
       debugEl.textContent = 'debug: success, redirecting...';
+      await claimGuestBookings(document.getElementById('login-email').value.trim());
       window.location.href = returnTo;
     } catch(err){
       const debugEl = document.getElementById('login-debug');
@@ -223,6 +247,12 @@
       return;
     }
 
+    if(!document.getElementById('signup-terms-checkbox').checked){
+      msg.className = 'msg show error';
+      msg.textContent = 'Please agree to the Terms of Service to create an account.';
+      return;
+    }
+
     if(!signupCaptchaToken){
       msg.className = 'msg show error';
       msg.textContent = 'Please complete the verification check above before creating an account.';
@@ -244,16 +274,29 @@
 
       // Create the matching profile row
       if(data.user){
-        await supabaseClient.from('profiles').insert({
+        const { error: profileError } = await supabaseClient.from('profiles').insert({
           id: data.user.id,
           email: email,
           full_name: name,
-          role: 'traveler'
+          role: 'traveler',
+          terms_accepted_at: new Date().toISOString()
         });
+        if(profileError){
+          console.error('Profile creation failed:', profileError.message);
+          // Alert the admin so this can be fixed proactively instead of surfacing later as a broken booking
+          supabaseClient.functions.invoke('send-email', {
+            body: {
+              to: 'pierson.willhite@gmail.com',
+              subject: '⚠ Profile creation failed for new traveler signup',
+              html: `<p>A new traveler account was created (${email}) but the profiles row failed to save:</p><p>${profileError.message}</p><p>Run a fix similar to fix-melissa-profile.sql for this email.</p>`
+            }
+          }).catch(() => {});
+        }
       }
 
       msg.className = 'msg show success';
       msg.textContent = 'Account created! Redirecting...';
+      await claimGuestBookings(email);
       setTimeout(() => { window.location.href = returnTo; }, 1200);
     } catch(err){
       msg.className = 'msg show error';

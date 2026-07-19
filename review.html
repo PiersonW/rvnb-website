@@ -17,7 +17,7 @@
   h1{font-family:'Oswald',sans-serif; text-transform:uppercase; font-size:clamp(24px,4vw,32px); margin:36px 0 6px;}
   .sub{color:var(--asphalt); margin-bottom:28px;}
   #loading, #error, #already{padding:60px 0; text-align:center; color:var(--asphalt); font-family:'JetBrains Mono',monospace;}
-  #error{display:none;} #already{display:none;}
+  #error-invalid, #error-notfound, #error-notcomplete{display:none;} #already{display:none;}
   #form-area{display:none;}
   .stars{display:flex; gap:8px; margin:20px 0;}
   .star-btn{
@@ -52,8 +52,10 @@
 
 <div class="wrap">
   <div id="loading">Loading...</div>
-  <div id="error">This review link is invalid, already used, or the booking isn't completed yet.</div>
-  <div id="already">You've already submitted this review — thank you!</div>
+  <div id="error-invalid">This review link doesn't look right — it may be missing information. Please use the link exactly as it appeared in your email.</div>
+  <div id="error-notfound">We couldn't find this booking. The link may be broken.</div>
+  <div id="error-notcomplete">This booking isn't marked as completed yet, so it's not ready for a review.</div>
+  <div id="already">A review has already been submitted for this booking. Thank you!</div>
 
   <div id="form-area">
     <h1 id="review-title">Leave a Review</h1>
@@ -88,7 +90,7 @@
 
   async function init(){
     if(!bookingId || (role !== 'traveler' && role !== 'host')){
-      show('error');
+      show('error-invalid');
       return;
     }
 
@@ -99,11 +101,11 @@
       .single();
 
     if(error || !data){
-      show('error');
+      show('error-notfound');
       return;
     }
     if(data.status !== 'completed'){
-      show('error');
+      show('error-notcomplete');
       return;
     }
     bookingData = data;
@@ -135,7 +137,7 @@
   }
 
   function show(id){
-    ['loading','error','already','form-area'].forEach(x => {
+    ['loading','error-invalid','error-notfound','error-notcomplete','already','form-area'].forEach(x => {
       document.getElementById(x).style.display = (x === id) ? 'block' : 'none';
     });
   }
