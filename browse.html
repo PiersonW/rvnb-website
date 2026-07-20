@@ -4,52 +4,53 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Find a Spot — RVnB</title>
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
-    --night:#141a2b; --amber:#f2a93b; --lane:#eeeae0; --sign-green:#356b52; --asphalt:#545b66;
+    --night:#0B1220; --amber:#FFB547; --lane:#FAF7F0; --sign-green:#2F7D5B; --asphalt:#64748B;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{font-family:'Inter',sans-serif; background:var(--lane);}
   header{
     background:var(--night); color:var(--lane);
     padding:16px 24px; display:flex; align-items:center; justify-content:space-between;
-    font-family:'Oswald',sans-serif; text-transform:uppercase; font-weight:700; letter-spacing:0.03em;
+    font-family:'Manrope',sans-serif; text-transform:uppercase; font-weight:700; letter-spacing:0.03em;
   }
   header a{color:var(--amber); text-decoration:none; font-size:14px;}
-  #page-body{ display:flex; height:calc(100vh - 60px); }
+  #page-body{ display:flex; height:calc(100vh - 60px); position:relative; }
   #map{ flex:1; height:100%; min-width:0; }
   #carousel-panel{
-    width:340px; flex-shrink:0; background:#fff; border-left:2px solid var(--night);
-    overflow-y:auto; display:flex; flex-direction:column;
+    position:absolute; top:16px; right:16px; bottom:16px; width:320px;
+    background:#fff; border-radius:20px; box-shadow:0 14px 40px rgba(11,18,32,0.22);
+    overflow-y:auto; display:flex; flex-direction:column; z-index:450;
   }
   @media(max-width:820px){ #carousel-panel{ display:none; } }
   #carousel-header{
-    padding:16px 18px; font-family:'Oswald',sans-serif; text-transform:uppercase; font-weight:700;
-    font-size:13px; letter-spacing:0.03em; border-bottom:2px solid var(--night); background:var(--lane);
-    position:sticky; top:0;
+    padding:16px 18px; font-weight:700;
+    font-size:13px; letter-spacing:0.02em; border-bottom:1px solid #eee; background:#fff;
+    position:sticky; top:0; border-radius:20px 20px 0 0;
   }
   #carousel-count{font-family:'JetBrains Mono',monospace; font-weight:400; color:var(--asphalt); font-size:11px;}
   #carousel-list{padding:12px;}
   .carousel-card{
-    display:flex; gap:10px; padding:10px; border:2px solid transparent; border-radius:4px;
+    display:flex; gap:10px; padding:10px; border:2px solid transparent; border-radius:14px;
     cursor:pointer; margin-bottom:8px; transition:border-color 0.15s ease, background 0.15s ease;
   }
   .carousel-card:hover, .carousel-card.active{ border-color:var(--amber); background:#fdf6e8; }
   .carousel-card img{
-    width:74px; height:74px; object-fit:cover; border-radius:3px; flex-shrink:0; background:#e6e2d4;
+    width:74px; height:74px; object-fit:cover; border-radius:10px; flex-shrink:0; background:#e6e2d4;
   }
   .carousel-card .no-photo{
-    width:74px; height:74px; border-radius:3px; flex-shrink:0; background:#e6e2d4;
+    width:74px; height:74px; border-radius:10px; flex-shrink:0; background:#e6e2d4;
     display:flex; align-items:center; justify-content:center; font-size:10px; color:var(--asphalt);
     font-family:'JetBrains Mono',monospace; text-align:center;
   }
   .carousel-card .info{min-width:0;}
   .carousel-card h4{
-    font-family:'Oswald',sans-serif; font-size:14px; text-transform:uppercase; margin-bottom:3px;
+    font-family:'Manrope',sans-serif; font-size:14px; text-transform:uppercase; margin-bottom:3px;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
   .carousel-card .addr{
@@ -61,10 +62,14 @@
   .carousel-empty{
     padding:30px 18px; text-align:center; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--asphalt);
   }
-  .map-pin-wrapper{ transition:transform 0.15s ease; transform-origin:center center; }
-  .map-pin-wrapper.pin-enlarged{ transform:scale(1.7); z-index:1000 !important; }
+  .map-pin-wrapper{ transition:transform 0.18s cubic-bezier(.34,1.56,.64,1); transform-origin:center bottom; }
+  .map-pin-wrapper.pin-enlarged{
+    transform:scale(2.2) translateY(-4px);
+    filter:drop-shadow(0 6px 8px rgba(11,18,32,0.45));
+    z-index:1000 !important;
+  }
   .rv-popup{ font-family:'Inter',sans-serif; }
-  .rv-popup h3{ font-family:'Oswald',sans-serif; font-size:15px; margin-bottom:4px; }
+  .rv-popup h3{ font-family:'Manrope',sans-serif; font-size:15px; margin-bottom:4px; }
   .rv-popup .price{ color:var(--sign-green); font-weight:700; }
   .rv-popup .meta{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--asphalt); margin-top:4px; }
   #status{
@@ -75,7 +80,7 @@
   #search-bar{
     position:absolute; top:76px; left:50%; transform:translateX(-50%);
     z-index:1000; display:flex; gap:0; box-shadow:0 3px 10px rgba(0,0,0,0.25);
-    border-radius:3px; overflow:hidden; width:90%; max-width:380px;
+    border-radius:10px; overflow:hidden; width:90%; max-width:380px;
   }
   #search-input{
     flex:1; border:none; padding:12px 14px; font-family:'Inter',sans-serif; font-size:14px;
@@ -95,14 +100,14 @@
     cursor:pointer; box-shadow:0 3px 10px rgba(0,0,0,0.3); display:none;
   }
   #filters-toggle-btn{
-    position:absolute; top:76px; right:16px; z-index:1000;
+    position:absolute; top:76px; left:16px; z-index:1000;
     background:#fff; color:var(--night); border:2px solid var(--night);
-    padding:11px 16px; border-radius:3px; font-family:'Inter',sans-serif;
+    padding:11px 16px; border-radius:10px; font-family:'Inter',sans-serif;
     font-size:13px; font-weight:600; cursor:pointer; box-shadow:0 3px 10px rgba(0,0,0,0.15);
   }
   #filters-panel{
-    position:absolute; top:128px; right:16px; z-index:1000;
-    background:#fff; border:2px solid var(--night); border-radius:3px;
+    position:absolute; top:128px; left:16px; z-index:1000;
+    background:#fff; border:2px solid var(--night); border-radius:10px;
     padding:16px; width:250px; box-shadow:0 6px 16px rgba(0,0,0,0.2);
   }
   .filter-row{margin-bottom:14px;}
@@ -111,10 +116,10 @@
     color:var(--asphalt); margin-bottom:6px; letter-spacing:0.04em;
   }
   .filter-row select, .filter-row input{
-    width:100%; padding:9px 10px; border:2px solid var(--night); border-radius:2px; font-family:'Inter',sans-serif; font-size:13px;
+    width:100%; padding:9px 10px; border:2px solid var(--night); border-radius:10px; font-family:'Inter',sans-serif; font-size:13px;
   }
   #filters-apply-btn, #filters-clear-btn{
-    flex:1; padding:9px; border:none; border-radius:2px; font-size:12px; font-weight:700;
+    flex:1; padding:9px; border:none; border-radius:10px; font-size:12px; font-weight:700;
     text-transform:uppercase; cursor:pointer;
   }
   #filters-apply-btn{background:var(--amber); color:var(--night);}
@@ -148,6 +153,10 @@
       <option value="retail">Retail / Strip Mall</option>
       <option value="other">Other</option>
     </select>
+  </div>
+  <div class="filter-row">
+    <label for="filter-rig-length">Your rig length (ft)</label>
+    <input type="number" id="filter-rig-length" placeholder="e.g. 32" min="0">
   </div>
   <div class="filter-row">
     <label>Price per night</label>
@@ -191,7 +200,7 @@
 
   const amberIcon = L.divIcon({
     className: 'map-pin-wrapper',
-    html: '<div style="background:#f2a93b;width:16px;height:16px;border-radius:50%;border:3px solid #141a2b;"></div>',
+    html: '<div style="background:#FFB547;width:16px;height:16px;border-radius:50%;border:3px solid #0B1220;"></div>',
     iconSize: [16,16],
   });
 
@@ -279,7 +288,7 @@
     data.forEach(p => {
       const marker = L.marker([p.latitude, p.longitude], { icon: amberIcon }).addTo(map);
       const photos = (p.photo_urls || '').split(',').map(s => s.trim()).filter(Boolean);
-      const thumb = photos.length > 0 ? `<img src="${photos[0]}" style="width:100%; height:90px; object-fit:cover; border-radius:2px; margin-bottom:6px;">` : '';
+      const thumb = photos.length > 0 ? `<img src="${photos[0]}" style="width:100%; height:90px; object-fit:cover; border-radius:10px; margin-bottom:6px;">` : '';
       marker.bindPopup(`
         <div class="rv-popup">
           ${thumb}
@@ -287,7 +296,7 @@
           <div>${p.city}, ${p.state}</div>
           <div class="price">$${p.price_per_night}/night</div>
           <div class="meta">${p.spots_available} spot(s) · check-in ${formatTime12hr(p.arrival_time)} · check-out ${formatTime12hr(p.departure_time)}</div>
-          <a href="listing.html?id=${p.id}&from=map" style="display:inline-block; margin-top:8px; background:#141a2b; color:#f2a93b; padding:6px 12px; border-radius:2px; font-size:12px; font-weight:700; text-decoration:none; text-transform:uppercase;">View &amp; Book</a>
+          <a href="listing.html?id=${p.id}&from=map" style="display:inline-block; margin-top:8px; background:#0B1220; color:#FFB547; padding:6px 12px; border-radius:10px; font-size:12px; font-weight:700; text-decoration:none; text-transform:uppercase;">View &amp; Book</a>
         </div>
       `);
       allMarkers.push({ marker, data: p });
@@ -312,11 +321,14 @@
   let activeTypeFilter = '';
   let activeMinPrice = null;
   let activeMaxPrice = null;
+  let activeRigLength = null;
 
   function matchesFilters(data){
     if(activeTypeFilter && data.business_type !== activeTypeFilter) return false;
     if(activeMinPrice !== null && Number(data.price_per_night) < activeMinPrice) return false;
     if(activeMaxPrice !== null && Number(data.price_per_night) > activeMaxPrice) return false;
+    // A listing with no stated limit is assumed to fit any rig
+    if(activeRigLength !== null && data.max_rig_length_ft && Number(data.max_rig_length_ft) < activeRigLength) return false;
     return true;
   }
 
@@ -327,7 +339,7 @@
 
   function applyAllVisibility(){
     const query = searchInput.value.trim().toLowerCase();
-    const hasFilters = activeTypeFilter || activeMinPrice !== null || activeMaxPrice !== null;
+    const hasFilters = activeTypeFilter || activeMinPrice !== null || activeMaxPrice !== null || activeRigLength !== null;
 
     let matches = allMarkers;
     if(query){
@@ -377,7 +389,7 @@
 
     // No listing matched by name/city — try treating it as a place to search
     // (only when no filters are active, since a place match ignoring filters would be confusing)
-    const hasFilters = activeTypeFilter || activeMinPrice !== null || activeMaxPrice !== null;
+    const hasFilters = activeTypeFilter || activeMinPrice !== null || activeMaxPrice !== null || activeRigLength !== null;
     if(hasFilters){
       applyAllVisibility();
       return;
@@ -424,9 +436,11 @@
     activeTypeFilter = document.getElementById('filter-type').value;
     const minVal = document.getElementById('filter-min-price').value;
     const maxVal = document.getElementById('filter-max-price').value;
+    const rigVal = document.getElementById('filter-rig-length').value;
     activeMinPrice = minVal !== '' ? Number(minVal) : null;
     activeMaxPrice = maxVal !== '' ? Number(maxVal) : null;
-    filtersToggleBtn.textContent = (activeTypeFilter || activeMinPrice !== null || activeMaxPrice !== null) ? 'Filters ●' : 'Filters ▾';
+    activeRigLength = rigVal !== '' ? Number(rigVal) : null;
+    filtersToggleBtn.textContent = (activeTypeFilter || activeMinPrice !== null || activeMaxPrice !== null || activeRigLength !== null) ? 'Filters ●' : 'Filters ▾';
     filtersPanel.style.display = 'none';
     applyAllVisibility();
   });
@@ -435,9 +449,11 @@
     document.getElementById('filter-type').value = '';
     document.getElementById('filter-min-price').value = '';
     document.getElementById('filter-max-price').value = '';
+    document.getElementById('filter-rig-length').value = '';
     activeTypeFilter = '';
     activeMinPrice = null;
     activeMaxPrice = null;
+    activeRigLength = null;
     filtersToggleBtn.textContent = 'Filters ▾';
     filtersPanel.style.display = 'none';
     applyAllVisibility();
