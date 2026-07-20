@@ -243,9 +243,17 @@
         const status = btn.dataset.status;
         if(status === 'rejected'){
           if(!confirm('Permanently delete this listing?')) return;
-          await supabaseClient.from('partners').delete().eq('id', id);
+          const { error } = await supabaseClient.from('partners').delete().eq('id', id);
+          if(error){
+            alert('Delete failed: ' + error.message);
+            return;
+          }
         } else {
-          await supabaseClient.from('partners').update({ status }).eq('id', id);
+          const { error } = await supabaseClient.from('partners').update({ status }).eq('id', id);
+          if(error){
+            alert('Update failed: ' + error.message);
+            return;
+          }
           if(status === 'approved') notifyHostOfApproval(id);
         }
         loadListings();
