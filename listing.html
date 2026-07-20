@@ -85,7 +85,7 @@
     text-transform:uppercase; font-size:14px; border:none; border-radius:10px; cursor:pointer;
   }
   button[type=submit]:disabled{opacity:0.6;}
-  .note{font-family:'JetBrains Mono',monospace; font-size:11px; color:#8a92a0;}
+  .note{font-family:'JetBrains Mono',monospace; font-size:11px; color:#8a92a0; min-width:0; overflow-wrap:break-word;}
   .msg{font-family:'JetBrains Mono',monospace; font-size:13px; padding:12px; border-radius:10px; display:none;}
   .msg.show{display:block;}
   .msg.success{background:#20402f; color:#8fd8ac;}
@@ -135,7 +135,7 @@
 
     <form id="booking-form">
       <h2>Request to Book</h2>
-      <div id="login-banner" style="display:none; background:#20402f; color:#8fd8ac; padding:10px 14px; border-radius:10px; font-size:13px; margin-bottom:4px;"></div>
+      <div id="login-banner" style="display:none; background:#20402f; color:#8fd8ac; padding:10px 14px; border-radius:10px; font-size:13px; margin-bottom:4px; min-width:0; overflow-wrap:break-word;"></div>
       <div id="daily-turnover-notice" style="background:#402a10; color:#f5c877; padding:12px 14px; border-radius:10px; font-size:13px; line-height:1.5; margin-bottom:4px;"></div>
       <div style="position:absolute; left:-9999px;" aria-hidden="true">
         <label for="website">Leave this field blank</label>
