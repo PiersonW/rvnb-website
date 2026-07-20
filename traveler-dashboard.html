@@ -4,16 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Trips — RVnB</title>
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
-    --night:#141a2b; --amber:#f2a93b; --lane:#eeeae0; --sign-green:#356b52;
-    --asphalt:#545b66; --red:#a4472b;
+    --night:#0B1220; --amber:#FFB547; --lane:#FAF7F0; --sign-green:#2F7D5B;
+    --asphalt:#64748B; --red:#a4472b;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{font-family:'Inter',sans-serif; background:var(--lane); color:var(--night);}
-  h1,h2,h3{font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:0.02em;}
+  h1,h2,h3{font-family:'Manrope',sans-serif; text-transform:uppercase; letter-spacing:0.02em;}
   a{color:inherit;}
   .wrap{max-width:800px; margin:0 auto; padding:32px 24px 80px;}
 
@@ -25,7 +25,7 @@
   header a, header button{
     background:none; border:2px solid var(--asphalt); color:var(--asphalt);
     padding:8px 16px; font-size:12px; text-transform:uppercase; font-weight:700;
-    border-radius:2px; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center;
+    border-radius:10px; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center;
   }
 
   .section-title{
@@ -35,7 +35,7 @@
   .section-title:first-of-type{margin-top:0;}
   .empty{color:var(--asphalt); font-family:'JetBrains Mono',monospace; font-size:13px; padding:24px 0;}
 
-  .card{background:#fff; border:2px solid var(--night); border-radius:3px; padding:20px; margin-bottom:14px;}
+  .card{background:#fff; border:2px solid var(--night); border-radius:10px; padding:20px; margin-bottom:14px;}
   .card-top{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;}
   .card h3{font-size:17px;}
   .status{font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; padding:3px 8px; border-radius:10px;}
@@ -47,7 +47,7 @@
   .meta b{color:var(--night);}
   .card-actions{margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;}
   .trip-details{
-    margin-top:16px; padding-top:14px; border-top:1px solid #d9d4c6;
+    margin-top:16px; padding-top:14px; border-top:1px solid #e8e2d4;
     display:grid; grid-template-columns:1fr 1fr; gap:10px 20px;
   }
   .detail-row{font-size:13px;}
@@ -58,14 +58,14 @@
   }
   .turnover-reminder{
     margin-top:14px; background:#402a10; color:#f5c877; padding:10px 12px;
-    border-radius:2px; font-size:12px; line-height:1.5;
+    border-radius:10px; font-size:12px; line-height:1.5;
   }
   .btn-view{
-    padding:8px 16px; border-radius:2px; font-size:12px; font-weight:700; text-transform:uppercase;
+    padding:8px 16px; border-radius:10px; font-size:12px; font-weight:700; text-transform:uppercase;
     border:2px solid var(--night); color:var(--night); text-decoration:none; display:inline-flex; align-items:center;
   }
   .btn-cancel{
-    padding:8px 16px; border-radius:2px; font-size:12px; font-weight:700; text-transform:uppercase;
+    padding:8px 16px; border-radius:10px; font-size:12px; font-weight:700; text-transform:uppercase;
     border:none; cursor:pointer; background:var(--red); color:#fff;
   }
 </style>
@@ -76,7 +76,7 @@
 <div class="wrap">
   <header>
     <div>
-      <a href="index.html" style="font-family:'Oswald',sans-serif; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.05em; color:var(--sign-green); text-decoration:none; display:block; margin-bottom:2px;">RVnB</a>
+      <a href="index.html" style="font-family:'Manrope',sans-serif; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.05em; color:var(--sign-green); text-decoration:none; display:block; margin-bottom:2px;">RVnB</a>
       <h1>My Trips</h1>
     </div>
     <div class="btns">

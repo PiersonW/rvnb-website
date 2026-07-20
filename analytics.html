@@ -4,16 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Analytics — RVnB</title>
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
-    --night:#141a2b; --amber:#f2a93b; --lane:#eeeae0; --sign-green:#356b52;
-    --asphalt:#545b66; --red:#a4472b;
+    --night:#0B1220; --amber:#FFB547; --lane:#FAF7F0; --sign-green:#2F7D5B;
+    --asphalt:#64748B; --red:#a4472b;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{font-family:'Inter',sans-serif; background:var(--lane); color:var(--night);}
-  h1,h2,h3{font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:0.02em;}
+  h1,h2,h3{font-family:'Manrope',sans-serif; text-transform:uppercase; letter-spacing:0.02em;}
   a{color:inherit;}
   .wrap{max-width:1000px; margin:0 auto; padding:32px 24px 80px;}
 
@@ -23,21 +23,21 @@
   }
   header a{
     border:2px solid var(--asphalt); color:var(--asphalt); padding:8px 16px; font-size:12px;
-    text-transform:uppercase; font-weight:700; border-radius:2px; text-decoration:none;
+    text-transform:uppercase; font-weight:700; border-radius:10px; text-decoration:none;
   }
 
   #login-view{
     min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--night);
   }
-  .login-box{ background:#1d2438; padding:40px; border-radius:4px; width:100%; max-width:340px; }
+  .login-box{ background:#141b2e; padding:40px; border-radius:12px; width:100%; max-width:340px; }
   .login-box h1{color:var(--amber); font-size:22px; margin-bottom:20px;}
   .login-box input{
-    width:100%; padding:12px 14px; margin-bottom:12px; border:2px solid #3a4256; background:#141a2b;
-    color:var(--lane); border-radius:2px; font-family:'Inter',sans-serif;
+    width:100%; padding:12px 14px; margin-bottom:12px; border:2px solid #3d4657; background:#0B1220;
+    color:var(--lane); border-radius:10px; font-family:'Inter',sans-serif;
   }
   .login-box button{
     width:100%; padding:13px; background:var(--amber); color:var(--night); font-weight:700;
-    text-transform:uppercase; font-size:13px; border:none; border-radius:2px; cursor:pointer;
+    text-transform:uppercase; font-size:13px; border:none; border-radius:10px; cursor:pointer;
   }
   .login-error{color:#ff9d7a; font-size:12px; margin-top:8px;}
 
@@ -46,17 +46,17 @@
 
   .kpi-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:36px;}
   @media(max-width:760px){.kpi-grid{grid-template-columns:repeat(2,1fr);}}
-  .kpi-card{background:#fff; border:2px solid var(--night); border-radius:3px; padding:18px;}
+  .kpi-card{background:#fff; border:2px solid var(--night); border-radius:10px; padding:18px;}
   .kpi-label{font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; color:var(--asphalt); letter-spacing:0.05em;}
-  .kpi-value{font-family:'Oswald',sans-serif; font-size:30px; margin-top:6px;}
+  .kpi-value{font-family:'Manrope',sans-serif; font-size:30px; margin-top:6px;}
   .kpi-sub{font-size:12px; color:var(--asphalt); margin-top:4px;}
 
   .section-title{font-size:16px; margin:36px 0 14px;}
-  .panel{background:#fff; border:2px solid var(--night); border-radius:3px; padding:20px; margin-bottom:20px;}
+  .panel{background:#fff; border:2px solid var(--night); border-radius:10px; padding:20px; margin-bottom:20px;}
 
   .chart-row{display:flex; align-items:flex-end; gap:10px; height:140px; margin-top:16px;}
   .chart-bar-wrap{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%;}
-  .chart-bar{width:100%; background:var(--sign-green); border-radius:2px 2px 0 0; min-height:2px;}
+  .chart-bar{width:100%; background:var(--sign-green); border-radius:10px 2px 0 0; min-height:2px;}
   .chart-label{font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--asphalt); margin-top:6px;}
   .chart-value{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--night); margin-bottom:4px;}
 

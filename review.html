@@ -4,37 +4,37 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Leave a Review — RVnB</title>
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  :root{ --night:#141a2b; --amber:#f2a93b; --lane:#eeeae0; --sign-green:#356b52; --asphalt:#545b66; }
+  :root{ --night:#0B1220; --amber:#FFB547; --lane:#FAF7F0; --sign-green:#2F7D5B; --asphalt:#64748B; }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{font-family:'Inter',sans-serif; background:var(--lane); color:var(--night); line-height:1.6;}
   .wrap{max-width:520px; margin:0 auto; padding:0 24px;}
   header{background:var(--night); color:var(--lane); padding:16px 0;}
   header .wrap{display:flex; justify-content:space-between; align-items:center;}
   header a{color:var(--amber); text-decoration:none; font-size:14px;}
-  h1{font-family:'Oswald',sans-serif; text-transform:uppercase; font-size:clamp(24px,4vw,32px); margin:36px 0 6px;}
+  h1{font-family:'Manrope',sans-serif; text-transform:uppercase; font-size:clamp(24px,4vw,32px); margin:36px 0 6px;}
   .sub{color:var(--asphalt); margin-bottom:28px;}
   #loading, #error, #already{padding:60px 0; text-align:center; color:var(--asphalt); font-family:'JetBrains Mono',monospace;}
   #error-invalid, #error-notfound, #error-notcomplete{display:none;} #already{display:none;}
   #form-area{display:none;}
   .stars{display:flex; gap:8px; margin:20px 0;}
   .star-btn{
-    font-size:36px; background:none; border:none; cursor:pointer; color:#d9d4c6; padding:0; line-height:1;
+    font-size:36px; background:none; border:none; cursor:pointer; color:#e8e2d4; padding:0; line-height:1;
     transition:color 0.15s ease;
   }
   .star-btn.active, .star-btn:hover, .star-btn.hover{color:var(--amber);}
   textarea{
-    width:100%; padding:14px; border:2px solid var(--night); border-radius:2px; font-family:'Inter',sans-serif;
+    width:100%; padding:14px; border:2px solid var(--night); border-radius:10px; font-family:'Inter',sans-serif;
     font-size:15px; min-height:120px; resize:vertical; margin-bottom:16px;
   }
   button[type=submit]{
     padding:15px 28px; background:var(--amber); color:var(--night); font-weight:700;
-    text-transform:uppercase; font-size:14px; border:none; border-radius:2px; cursor:pointer;
+    text-transform:uppercase; font-size:14px; border:none; border-radius:10px; cursor:pointer;
   }
   button[type=submit]:disabled{opacity:0.6;}
-  .msg{font-size:13px; margin-top:12px; padding:10px; border-radius:2px; display:none;}
+  .msg{font-size:13px; margin-top:12px; padding:10px; border-radius:10px; display:none;}
   .msg.show{display:block;}
   .msg.error{background:#fbeae0; color:#a4472b;}
   .msg.success{background:#e4efe8; color:#1f4a35;}
@@ -45,7 +45,7 @@
 
 <header>
   <div class="wrap">
-    <span style="font-family:'Oswald',sans-serif; font-weight:700; text-transform:uppercase;">RVnB</span>
+    <span style="font-family:'Manrope',sans-serif; font-weight:700; text-transform:uppercase;">RVnB</span>
     <a href="index.html">← Home</a>
   </div>
 </header>
