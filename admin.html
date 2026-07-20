@@ -87,6 +87,7 @@
   .status.pending{background:#f2e4c4; color:#8a6415;}
   .status.approved{background:#d8ebe0; color:var(--sign-green);}
   .status.paused{background:#e6e6e6; color:var(--asphalt);}
+  .status.deleted{background:#f0dcd6; color:var(--red);}
   .card .meta{font-size:13px; color:var(--asphalt); margin-top:6px; line-height:1.7;}
   .card .meta b{color:var(--night);}
   .card .rules{font-size:13px; color:var(--asphalt); margin-top:10px; font-style:italic;}
@@ -194,6 +195,9 @@
     return `${hour12}:${String(m).padStart(2,'0')} ${period}`;
   }
 
+  let showPausedListings = false;
+  let showDeletedListings = false;
+
   async function loadListings(){
     container.innerHTML = '<div class="empty">Loading listings...</div>';
     const { data, error } = await supabaseClient
@@ -210,8 +214,53 @@
       return;
     }
 
+    const active = data.filter(p => p.status !== 'paused' && p.status !== 'deleted');
+    const paused = data.filter(p => p.status === 'paused');
+    const deleted = data.filter(p => p.status === 'deleted');
+
     container.innerHTML = '';
-    data.forEach(p => {
+
+    if(active.length === 0 && !showPausedListings && !showDeletedListings){
+      container.innerHTML = '<div class="empty">No active listings right now.</div>';
+    }
+    active.forEach(p => container.appendChild(renderListingCard(p)));
+
+    if(paused.length > 0){
+      const toggleBtn = document.createElement('button');
+      toggleBtn.className = 'archive-toggle';
+      toggleBtn.textContent = showPausedListings
+        ? `Hide paused listings (${paused.length})`
+        : `Show paused listings (${paused.length})`;
+      toggleBtn.addEventListener('click', () => {
+        showPausedListings = !showPausedListings;
+        loadListings();
+      });
+      container.appendChild(toggleBtn);
+      if(showPausedListings){
+        paused.forEach(p => container.appendChild(renderListingCard(p)));
+      }
+    }
+
+    if(deleted.length > 0){
+      const toggleBtn = document.createElement('button');
+      toggleBtn.className = 'archive-toggle';
+      toggleBtn.textContent = showDeletedListings
+        ? `Hide deleted listings (${deleted.length})`
+        : `Show deleted listings (${deleted.length})`;
+      toggleBtn.addEventListener('click', () => {
+        showDeletedListings = !showDeletedListings;
+        loadListings();
+      });
+      container.appendChild(toggleBtn);
+      if(showDeletedListings){
+        deleted.forEach(p => container.appendChild(renderListingCard(p)));
+      }
+    }
+
+    attachListingActionListeners();
+  }
+
+  function renderListingCard(p){
       const card = document.createElement('div');
       card.className = 'card';
       card.innerHTML = `
@@ -229,20 +278,36 @@
           <span class="status ${p.status}">${p.status}</span>
         </div>
         <div class="card-actions">
-          ${p.status !== 'approved' ? `<button class="btn-approve" data-id="${p.id}" data-status="approved">Approve</button>` : ''}
-          ${p.status !== 'paused' ? `<button class="btn-pause" data-id="${p.id}" data-status="paused">Pause</button>` : ''}
+          ${p.status !== 'approved' ? `<button class="btn-approve" data-id="${p.id}" data-status="approved">${p.status === 'deleted' ? 'Restore' : 'Approve'}</button>` : ''}
+          ${p.status !== 'paused' && p.status !== 'deleted' ? `<button class="btn-pause" data-id="${p.id}" data-status="paused">Pause</button>` : ''}
           <button class="btn-reject" data-id="${p.id}" data-status="rejected">Delete</button>
         </div>
       `;
-      container.appendChild(card);
-    });
+      return card;
+  }
 
+  function attachListingActionListeners(){
     document.querySelectorAll('.card-actions button').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.dataset.id;
         const status = btn.dataset.status;
         if(status === 'rejected'){
-          if(!confirm('Permanently delete this listing?')) return;
+          if(!confirm('Delete this listing?')) return;
+
+          // Check for real history first — never silently destroy booking/payment records
+          const { count: bookingCount } = await supabaseClient
+            .from('bookings').select('id', { count: 'exact', head: true }).eq('partner_id', id);
+          const { count: reviewCount } = await supabaseClient
+            .from('reviews').select('id', { count: 'exact', head: true }).eq('partner_id', id);
+
+          if((bookingCount && bookingCount > 0) || (reviewCount && reviewCount > 0)){
+            // Has real history — soft-delete instead of destroying records
+            const { error } = await supabaseClient.from('partners').update({ status: 'deleted' }).eq('id', id);
+            if(error){ alert('Could not hide listing: ' + error.message); return; }
+            loadListings();
+            return;
+          }
+
           const { error } = await supabaseClient.from('partners').delete().eq('id', id);
           if(error){
             alert('Delete failed: ' + error.message);
