@@ -4,22 +4,22 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Listing — RVnB</title>
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://js.stripe.com/v3/"></script>
 <style>
   :root{
-    --night:#141a2b; --amber:#f2a93b; --lane:#eeeae0; --sign-green:#356b52; --asphalt:#545b66;
+    --night:#0B1220; --amber:#FFB547; --lane:#FAF7F0; --sign-green:#2F7D5B; --asphalt:#64748B;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{font-family:'Inter',sans-serif; background:var(--lane); color:var(--night); line-height:1.5;}
-  h1,h2{font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:0.02em;}
+  h1,h2{font-family:'Manrope',sans-serif; text-transform:uppercase; letter-spacing:0.02em;}
   a{color:inherit;}
   .wrap{max-width:640px; margin:0 auto; padding:0 24px;}
 
   header{background:var(--night); color:var(--lane); padding:16px 0;}
   header .wrap{display:flex; align-items:center; justify-content:space-between;}
-  header .brand{font-family:'Oswald',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:0.03em;}
+  header .brand{font-family:'Manrope',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:0.03em;}
   header a.back{color:var(--amber); text-decoration:none; font-size:14px;}
 
   #loading{padding:60px 24px; text-align:center; color:var(--asphalt); font-family:'JetBrains Mono',monospace;}
@@ -31,45 +31,45 @@
   .listing-head .addr{color:var(--asphalt); margin-top:6px;}
   .price-tag{
     display:inline-block; margin-top:14px; background:var(--night); color:var(--amber);
-    padding:8px 16px; font-family:'Oswald',sans-serif; font-weight:700; font-size:18px; border-radius:2px;
+    padding:8px 16px; font-family:'Manrope',sans-serif; font-weight:700; font-size:18px; border-radius:10px;
   }
 
   .photo-gallery{margin:20px 0;}
   .photo-main{
-    width:100%; aspect-ratio:16/10; object-fit:cover; border-radius:3px; border:2px solid var(--night);
+    width:100%; aspect-ratio:16/10; object-fit:cover; border-radius:10px; border:2px solid var(--night);
     background:#ddd; cursor:pointer;
   }
   .photo-thumbs{display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;}
   .photo-thumbs img{
-    width:64px; height:64px; object-fit:cover; border-radius:2px; border:2px solid var(--night);
+    width:64px; height:64px; object-fit:cover; border-radius:10px; border:2px solid var(--night);
     cursor:pointer; opacity:0.6; transition:opacity 0.2s ease;
   }
   .photo-thumbs img.active{opacity:1;}
   .no-photos{
-    background:#e2ddce; border:2px dashed var(--asphalt); border-radius:3px; padding:24px;
+    background:#e2ddce; border:2px dashed var(--asphalt); border-radius:10px; padding:24px;
     text-align:center; color:var(--asphalt); font-family:'JetBrains Mono',monospace; font-size:12px;
     margin:20px 0;
   }
 
   .details{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:24px 0; font-family:'JetBrains Mono',monospace; font-size:13px;}
-  .details div{background:#fff; border:2px solid var(--night); padding:12px 14px; border-radius:2px;}
+  .details div{background:#fff; border:2px solid var(--night); padding:12px 14px; border-radius:10px;}
   .details b{display:block; color:var(--asphalt); font-size:10px; text-transform:uppercase; margin-bottom:4px;}
-  .rules-box{background:#fff; border:2px solid var(--night); padding:16px; border-radius:2px; margin-bottom:32px;}
+  .rules-box{background:#fff; border:2px solid var(--night); padding:16px; border-radius:10px; margin-bottom:32px;}
   .rules-box b{display:block; font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; color:var(--asphalt); margin-bottom:6px;}
 
-  form{background:var(--night); color:var(--lane); padding:28px; border-radius:4px; margin-bottom:60px; display:flex; flex-direction:column; gap:14px;}
+  form{background:var(--night); color:var(--lane); padding:28px; border-radius:12px; margin-bottom:60px; display:flex; flex-direction:column; gap:14px;}
   form h2{color:var(--amber); font-size:20px; margin-bottom:4px;}
   label{font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--lane); opacity:0.8; display:block; margin-bottom:6px;}
-  input{width:100%; padding:12px 14px; border:2px solid #3a4256; background:#1d2438; color:var(--lane); border-radius:2px; font-family:'Inter',sans-serif; font-size:14px;}
+  input{width:100%; padding:12px 14px; border:2px solid #3d4657; background:#141b2e; color:var(--lane); border-radius:10px; font-family:'Inter',sans-serif; font-size:14px;}
   .row2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
   @media(max-width:480px){.row2{grid-template-columns:1fr;}}
   .price-breakdown{
     font-family:'JetBrains Mono',monospace; font-size:13px;
-    border-top:1px solid #3a4256; padding-top:10px; display:flex; flex-direction:column; gap:6px;
+    border-top:1px solid #3d4657; padding-top:10px; display:flex; flex-direction:column; gap:6px;
   }
   .pb-row{display:flex; justify-content:space-between; color:#c5cad4;}
   .pb-row.pb-total{
-    border-top:1px solid #3a4256; padding-top:8px; margin-top:2px;
+    border-top:1px solid #3d4657; padding-top:8px; margin-top:2px;
     font-size:15px; color:var(--amber); font-weight:700;
   }
   #card-field-wrap label{
@@ -77,16 +77,16 @@
     letter-spacing:0.05em; color:var(--lane); opacity:0.8; display:block; margin-bottom:6px;
   }
   #card-element{
-    padding:13px 14px; background:#1d2438; border:2px solid #3a4256; border-radius:2px;
+    padding:13px 14px; background:#141b2e; border:2px solid #3d4657; border-radius:10px;
   }
   #card-errors{ color:#ff9d7a; font-size:12px; margin-top:6px; min-height:16px; }
   button[type=submit]{
     margin-top:6px; padding:15px; background:var(--amber); color:var(--night); font-weight:700;
-    text-transform:uppercase; font-size:14px; border:none; border-radius:2px; cursor:pointer;
+    text-transform:uppercase; font-size:14px; border:none; border-radius:10px; cursor:pointer;
   }
   button[type=submit]:disabled{opacity:0.6;}
   .note{font-family:'JetBrains Mono',monospace; font-size:11px; color:#8a92a0;}
-  .msg{font-family:'JetBrains Mono',monospace; font-size:13px; padding:12px; border-radius:2px; display:none;}
+  .msg{font-family:'JetBrains Mono',monospace; font-size:13px; padding:12px; border-radius:10px; display:none;}
   .msg.show{display:block;}
   .msg.success{background:#20402f; color:#8fd8ac;}
   .msg.error{background:#402020; color:#ff9d7a;}
@@ -135,8 +135,8 @@
 
     <form id="booking-form">
       <h2>Request to Book</h2>
-      <div id="login-banner" style="display:none; background:#20402f; color:#8fd8ac; padding:10px 14px; border-radius:2px; font-size:13px; margin-bottom:4px;"></div>
-      <div id="daily-turnover-notice" style="background:#402a10; color:#f5c877; padding:12px 14px; border-radius:2px; font-size:13px; line-height:1.5; margin-bottom:4px;"></div>
+      <div id="login-banner" style="display:none; background:#20402f; color:#8fd8ac; padding:10px 14px; border-radius:10px; font-size:13px; margin-bottom:4px;"></div>
+      <div id="daily-turnover-notice" style="background:#402a10; color:#f5c877; padding:12px 14px; border-radius:10px; font-size:13px; line-height:1.5; margin-bottom:4px;"></div>
       <div style="position:absolute; left:-9999px;" aria-hidden="true">
         <label for="website">Leave this field blank</label>
         <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
@@ -197,7 +197,7 @@
   const stripeElements = stripe.elements();
   const cardElement = stripeElements.create('card', {
     style: {
-      base: { color: '#eeeae0', fontFamily: 'Inter, sans-serif', fontSize: '15px', '::placeholder': { color: '#7a8291' } },
+      base: { color: '#FAF7F0', fontFamily: 'Inter, sans-serif', fontSize: '15px', '::placeholder': { color: '#7a8291' } },
       invalid: { color: '#ff9d7a' }
     }
   });
@@ -229,9 +229,9 @@
       }
     } else {
       banner.style.display = 'block';
-      banner.style.background = '#1d2438';
-      banner.style.color = '#f2a93b';
-      banner.innerHTML = `<a href="traveler-login.html?return=${encodeURIComponent(location.pathname + location.search)}" style="color:#f2a93b; text-decoration:underline;">Log in</a> to track this trip in your booking history — or just book below as a guest.`;
+      banner.style.background = '#141b2e';
+      banner.style.color = '#FFB547';
+      banner.innerHTML = `<a href="traveler-login.html?return=${encodeURIComponent(location.pathname + location.search)}" style="color:#FFB547; text-decoration:underline;">Log in</a> to track this trip in your booking history — or just book below as a guest.`;
     }
   }
 
@@ -315,7 +315,7 @@
     document.getElementById('review-avg').textContent = `★ ${avg} (${data.length} review${data.length !== 1 ? 's' : ''})`;
 
     list.innerHTML = data.map(r => `
-      <div style="background:#fff; border:2px solid var(--night); border-radius:2px; padding:14px 16px; margin-bottom:10px;">
+      <div style="background:#fff; border:2px solid var(--night); border-radius:10px; padding:14px 16px; margin-bottom:10px;">
         <div style="color:var(--amber); font-size:14px;">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
         ${r.comment ? `<div style="font-size:14px; color:#2a2f3a; margin-top:6px;">${r.comment}</div>` : ''}
       </div>
