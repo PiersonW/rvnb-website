@@ -96,6 +96,11 @@
       <div class="empty">Loading...</div>
     </div>
 
+    <div class="section-title">Website traffic, last 30 days</div>
+    <div class="panel" id="traffic-panel">
+      <div class="empty">Loading traffic data...</div>
+    </div>
+
     <div class="section-title">Bookings, last 6 months</div>
     <div class="panel">
       <div class="chart-row" id="bookings-chart"></div>
@@ -160,6 +165,49 @@
     renderRevenue(bookings);
     renderRecentBookings(bookings.slice(0, 10));
     renderRecentSignups(profiles.slice(0, 10));
+    loadTraffic();
+  }
+
+  async function loadTraffic(){
+    const panel = document.getElementById('traffic-panel');
+    const { data, error } = await supabaseClient.functions.invoke('get-cloudflare-stats', { body: {} });
+
+    if(error || !data || data.error){
+      panel.innerHTML = `<div class="empty">Could not load traffic data: ${data?.error || error?.message || 'unknown error'}</div>`;
+      return;
+    }
+
+    const days = data.byDate || [];
+    const maxVal = Math.max(...days.map(d => d.visits), 1);
+
+    panel.innerHTML = `
+      <div class="kpi-grid" style="margin-bottom:20px;">
+        <div class="kpi-card">
+          <div class="kpi-label">Visits</div>
+          <div class="kpi-value">${data.totalVisits}</div>
+          <div class="kpi-sub">last 30 days</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Page Views</div>
+          <div class="kpi-value">${data.totalPageviews}</div>
+          <div class="kpi-sub">last 30 days</div>
+        </div>
+      </div>
+      <div class="chart-row" id="traffic-chart"></div>
+    `;
+
+    const chartEl = document.getElementById('traffic-chart');
+    if(days.length === 0){
+      chartEl.innerHTML = '<div class="empty">No traffic recorded yet in this window.</div>';
+      return;
+    }
+    chartEl.innerHTML = days.map(d => `
+      <div class="chart-bar-wrap">
+        <div class="chart-value">${d.visits}</div>
+        <div class="chart-bar" style="height:${Math.max((d.visits/maxVal)*100, 2)}%;"></div>
+        <div class="chart-label">${d.date ? d.date.slice(5) : ''}</div>
+      </div>
+    `).join('');
   }
 
   function renderKpis(profiles, partners, bookings){
