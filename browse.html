@@ -193,7 +193,8 @@
   const statusEl = document.getElementById('status');
 
   // Center map on Utah County by default
-  const map = L.map('map').setView([40.35, -111.75], 10);
+  const map = L.map('map', { zoomControl: false }).setView([40.35, -111.75], 10);
+  L.control.zoom({ position: 'bottomleft' }).addTo(map);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);

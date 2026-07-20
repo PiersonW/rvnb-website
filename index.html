@@ -103,18 +103,18 @@
   .hero::before{
     content:'';
     position:absolute;
-    top:-20px; left:-20px; right:-20px; bottom:-20px;
+    inset:0;
     background-image:url('hero-bg.jpg');
     background-size:cover;
     background-position:center 60%;
-    filter:blur(7px);
     z-index:0;
   }
-  .hero::after{
-    content:'';
-    position:absolute; inset:0;
-    background:rgba(250,247,240,0.7);
-    z-index:1;
+  .hero-text-panel{
+    backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px);
+    background:rgba(250,247,240,0.6);
+    border-radius:28px;
+    padding:40px 44px;
   }
   .hero .wrap{
     position:relative; z-index:2;
@@ -440,7 +440,7 @@
 
 <header class="hero" id="hero">
   <div class="wrap" style="grid-template-columns:1fr; max-width:760px;">
-    <div>
+    <div class="hero-text-panel">
       <div class="eyebrow">Overnight RV parking marketplace</div>
       <h1 id="hero-headline">Sleep anywhere.<br>Discover everywhere.</h1>
       <p class="sub-copy">RVnB connects travelers with unused overnight parking from trusted businesses — restaurants, churches, gyms, offices. Verified guests, automated payouts, zero disruption to your day.</p>
