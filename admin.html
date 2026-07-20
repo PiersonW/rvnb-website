@@ -4,16 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin — RVnB</title>
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
-    --night:#141a2b; --amber:#f2a93b; --lane:#eeeae0; --sign-green:#356b52;
-    --asphalt:#545b66; --red:#a4472b;
+    --night:#0B1220; --amber:#FFB547; --lane:#FAF7F0; --sign-green:#2F7D5B;
+    --asphalt:#64748B; --red:#a4472b;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{font-family:'Inter',sans-serif; background:var(--lane); color:var(--night);}
-  h1{font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:0.02em;}
+  h1{font-family:'Manrope',sans-serif; text-transform:uppercase; letter-spacing:0.02em;}
   .wrap{max-width:880px; margin:0 auto; padding:32px 24px 80px;}
 
   /* Login screen */
@@ -22,18 +22,18 @@
     background:var(--night);
   }
   .login-box{
-    background:#1d2438; padding:40px; border-radius:4px; width:100%; max-width:340px;
+    background:#141b2e; padding:40px; border-radius:12px; width:100%; max-width:340px;
     display:flex; flex-direction:column; gap:14px;
   }
   .login-box h1{color:var(--amber); font-size:22px; margin-bottom:6px;}
   .login-box p{color:var(--lane); font-size:13px; opacity:0.7; margin-bottom:10px;}
   .login-box input{
-    padding:12px 14px; border:2px solid #3a4256; background:#141a2b; color:var(--lane);
-    border-radius:2px; font-family:'Inter',sans-serif;
+    padding:12px 14px; border:2px solid #3d4657; background:#0B1220; color:var(--lane);
+    border-radius:10px; font-family:'Inter',sans-serif;
   }
   .login-box button{
     padding:13px; background:var(--amber); color:var(--night); font-weight:700;
-    text-transform:uppercase; font-size:13px; border:none; border-radius:2px; cursor:pointer;
+    text-transform:uppercase; font-size:13px; border:none; border-radius:10px; cursor:pointer;
   }
   .login-error{color:#ff9d7a; font-size:12px; display:none;}
 
@@ -47,7 +47,7 @@
   header button{
     background:none; border:2px solid var(--asphalt); color:var(--asphalt);
     padding:8px 16px; font-size:12px; text-transform:uppercase; font-weight:700;
-    border-radius:2px; cursor:pointer;
+    border-radius:10px; cursor:pointer;
   }
   .empty{color:var(--asphalt); font-family:'JetBrains Mono',monospace; font-size:13px; padding:40px 0; text-align:center;}
   .traveler-rating{
@@ -57,11 +57,11 @@
   .archive-toggle{
     width:100%; background:none; border:2px dashed var(--asphalt); color:var(--asphalt);
     padding:12px; margin:8px 0 16px; font-family:'JetBrains Mono',monospace; font-size:12px;
-    text-transform:uppercase; letter-spacing:0.04em; border-radius:2px; cursor:pointer;
+    text-transform:uppercase; letter-spacing:0.04em; border-radius:10px; cursor:pointer;
   }
   .archive-toggle:hover{border-color:var(--night); color:var(--night);}
 
-  .tabs{display:flex; gap:0; border:2px solid var(--night); width:fit-content; margin-bottom:24px; border-radius:2px; overflow:hidden;}
+  .tabs{display:flex; gap:0; border:2px solid var(--night); width:fit-content; margin-bottom:24px; border-radius:10px; overflow:hidden;}
   .tab-btn{
     padding:10px 20px; font-weight:700; font-size:12px; text-transform:uppercase; letter-spacing:0.03em;
     background:#fff; color:var(--night); border:none; cursor:pointer;
@@ -75,11 +75,11 @@
   .status.completed{background:#dbe4ea; color:#3a5f7a;}
 
   .card{
-    background:#fff; border:2px solid var(--night); border-radius:3px;
+    background:#fff; border:2px solid var(--night); border-radius:10px;
     padding:20px; margin-bottom:16px;
   }
   .card-top{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;}
-  .card h3{font-family:'Oswald',sans-serif; font-size:18px; text-transform:uppercase;}
+  .card h3{font-family:'Manrope',sans-serif; font-size:18px; text-transform:uppercase;}
   .card .status{
     font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase;
     padding:3px 8px; border-radius:10px; letter-spacing:0.05em;
@@ -88,12 +88,13 @@
   .status.approved{background:#d8ebe0; color:var(--sign-green);}
   .status.paused{background:#e6e6e6; color:var(--asphalt);}
   .status.deleted{background:#f0dcd6; color:var(--red);}
+  .status.waitlist{background:#d8ebe0; color:var(--sign-green);}
   .card .meta{font-size:13px; color:var(--asphalt); margin-top:6px; line-height:1.7;}
   .card .meta b{color:var(--night);}
   .card .rules{font-size:13px; color:var(--asphalt); margin-top:10px; font-style:italic;}
   .card-actions{display:flex; gap:8px; margin-top:16px; flex-wrap:wrap;}
   .card-actions button{
-    padding:9px 16px; border-radius:2px; font-size:12px; font-weight:700; text-transform:uppercase;
+    padding:9px 16px; border-radius:10px; font-size:12px; font-weight:700; text-transform:uppercase;
     border:none; cursor:pointer;
   }
   .btn-approve{background:var(--sign-green); color:#fff;}
@@ -119,12 +120,12 @@
   <div class="wrap">
     <header>
       <div>
-        <a href="index.html" style="font-family:'Oswald',sans-serif; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); text-decoration:none; display:block; margin-bottom:2px;">RVnB</a>
+        <a href="index.html" style="font-family:'Manrope',sans-serif; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); text-decoration:none; display:block; margin-bottom:2px;">RVnB</a>
         <h1>Admin</h1>
       </div>
       <div style="display:flex; gap:10px;">
-        <a href="analytics.html" style="border:2px solid var(--sign-green); color:var(--sign-green); padding:8px 16px; font-size:12px; text-transform:uppercase; font-weight:700; border-radius:2px; text-decoration:none; display:inline-flex; align-items:center;">Analytics</a>
-        <a href="index.html" style="border:2px solid var(--asphalt); color:var(--asphalt); padding:8px 16px; font-size:12px; text-transform:uppercase; font-weight:700; border-radius:2px; text-decoration:none; display:inline-flex; align-items:center;">← Home</a>
+        <a href="analytics.html" style="border:2px solid var(--sign-green); color:var(--sign-green); padding:8px 16px; font-size:12px; text-transform:uppercase; font-weight:700; border-radius:10px; text-decoration:none; display:inline-flex; align-items:center;">Analytics</a>
+        <a href="index.html" style="border:2px solid var(--asphalt); color:var(--asphalt); padding:8px 16px; font-size:12px; text-transform:uppercase; font-weight:700; border-radius:10px; text-decoration:none; display:inline-flex; align-items:center;">← Home</a>
         <button id="logout-btn">Sign Out</button>
       </div>
     </header>
@@ -197,6 +198,7 @@
 
   let showPausedListings = false;
   let showDeletedListings = false;
+  let showWaitlistListings = false;
 
   async function loadListings(){
     container.innerHTML = '<div class="empty">Loading listings...</div>';
@@ -214,16 +216,35 @@
       return;
     }
 
-    const active = data.filter(p => p.status !== 'paused' && p.status !== 'deleted');
+    const active = data.filter(p => p.status !== 'paused' && p.status !== 'deleted' && p.status !== 'waitlist');
     const paused = data.filter(p => p.status === 'paused');
     const deleted = data.filter(p => p.status === 'deleted');
+    const waitlist = data.filter(p => p.status === 'waitlist');
 
     container.innerHTML = '';
 
-    if(active.length === 0 && !showPausedListings && !showDeletedListings){
+    if(active.length === 0 && !showPausedListings && !showDeletedListings && !showWaitlistListings){
       container.innerHTML = '<div class="empty">No active listings right now.</div>';
     }
     active.forEach(p => container.appendChild(renderListingCard(p)));
+
+    if(waitlist.length > 0){
+      const toggleBtn = document.createElement('button');
+      toggleBtn.className = 'archive-toggle';
+      toggleBtn.style.borderColor = 'var(--sign-green)';
+      toggleBtn.style.color = 'var(--sign-green)';
+      toggleBtn.textContent = showWaitlistListings
+        ? `Hide waitlist — outside current market (${waitlist.length})`
+        : `Show waitlist — outside current market (${waitlist.length})`;
+      toggleBtn.addEventListener('click', () => {
+        showWaitlistListings = !showWaitlistListings;
+        loadListings();
+      });
+      container.appendChild(toggleBtn);
+      if(showWaitlistListings){
+        waitlist.forEach(p => container.appendChild(renderListingCard(p)));
+      }
+    }
 
     if(paused.length > 0){
       const toggleBtn = document.createElement('button');
@@ -279,7 +300,7 @@
         </div>
         <div class="card-actions">
           ${p.status !== 'approved' ? `<button class="btn-approve" data-id="${p.id}" data-status="approved">${p.status === 'deleted' ? 'Restore' : 'Approve'}</button>` : ''}
-          ${p.status !== 'paused' && p.status !== 'deleted' ? `<button class="btn-pause" data-id="${p.id}" data-status="paused">Pause</button>` : ''}
+          ${p.status !== 'paused' && p.status !== 'deleted' && p.status !== 'waitlist' ? `<button class="btn-pause" data-id="${p.id}" data-status="paused">Pause</button>` : ''}
           <button class="btn-reject" data-id="${p.id}" data-status="rejected">Delete</button>
         </div>
       `;

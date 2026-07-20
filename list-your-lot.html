@@ -4,23 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>List Your Lot — RVnB</title>
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <style>
   :root{
-    --night:#141a2b; --amber:#f2a93b; --amber-dim:#c98a2e; --lane:#eeeae0; --lane-dim:#d9d4c6;
-    --sign-green:#356b52; --asphalt:#545b66; --asphalt-dark:#2c303a;
+    --night:#0B1220; --amber:#FFB547; --amber-dim:#e0983a; --lane:#FAF7F0; --lane-dim:#e8e2d4;
+    --sign-green:#2F7D5B; --asphalt:#64748B; --asphalt-dark:#2c303a;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{font-family:'Inter',sans-serif; background:var(--lane); color:var(--night); line-height:1.5;}
-  h1,h2{font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:0.02em;}
+  h1,h2{font-family:'Manrope',sans-serif; text-transform:uppercase; letter-spacing:0.02em;}
   a{color:inherit;}
   .wrap{max-width:640px; margin:0 auto; padding:0 24px;}
 
   header{background:var(--night); color:var(--lane); padding:16px 0;}
   header .wrap{display:flex; align-items:center; justify-content:space-between;}
-  header .brand{font-family:'Oswald',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:0.03em;}
+  header .brand{font-family:'Manrope',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:0.03em;}
   header a.back{color:var(--amber); text-decoration:none; font-size:14px;}
 
   .intro{padding:48px 0 16px;}
@@ -39,7 +39,7 @@
   }
   input, select, textarea{
     width:100%; padding:13px 14px; background:#fff; border:2px solid var(--night);
-    font-family:'Inter',sans-serif; font-size:15px; border-radius:2px; color:var(--night);
+    font-family:'Inter',sans-serif; font-size:15px; border-radius:10px; color:var(--night);
   }
   textarea{resize:vertical; min-height:80px;}
   .row2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
@@ -49,13 +49,13 @@
   button[type=submit]{
     margin-top:8px; padding:16px 24px; background:var(--amber); color:var(--night);
     font-weight:700; font-size:14px; text-transform:uppercase; letter-spacing:0.03em;
-    border:none; border-radius:2px; cursor:pointer;
+    border:none; border-radius:10px; cursor:pointer;
   }
-  button[type=submit]:hover{background:#ffbb52;}
+  button[type=submit]:hover{background:#ffc670;}
   button[type=submit]:disabled{opacity:0.6; cursor:default;}
 
   .msg{
-    font-family:'JetBrains Mono',monospace; font-size:13px; padding:14px; border-radius:2px; display:none;
+    font-family:'JetBrains Mono',monospace; font-size:13px; padding:14px; border-radius:10px; display:none;
   }
   .msg.show{display:block;}
   .msg.success{background:#e4efe8; color:var(--sign-green); border:2px solid var(--sign-green);}
@@ -63,20 +63,20 @@
   .msg.loading{background:#eee; color:var(--asphalt); border:2px solid var(--asphalt);}
 
   .auth-box{
-    background:var(--night); color:var(--lane); padding:28px; border-radius:4px; margin:24px 0;
+    background:var(--night); color:var(--lane); padding:28px; border-radius:12px; margin:24px 0;
     display:flex; flex-direction:column; gap:12px; max-width:420px;
   }
-  .auth-tabs{display:flex; gap:0; border:2px solid #3a4256; border-radius:2px; overflow:hidden; margin-bottom:6px;}
+  .auth-tabs{display:flex; gap:0; border:2px solid #3d4657; border-radius:10px; overflow:hidden; margin-bottom:6px;}
   .auth-tab{
-    flex:1; padding:10px; background:#1d2438; color:var(--lane); border:none; font-weight:700;
+    flex:1; padding:10px; background:#141b2e; color:var(--lane); border:none; font-weight:700;
     font-size:12px; text-transform:uppercase; cursor:pointer;
   }
   .auth-tab.active{background:var(--amber); color:var(--night);}
   .auth-note{font-size:12px; color:#a9aebb;}
-  .auth-box input{padding:12px 14px; background:#1d2438; border:2px solid #3a4256; color:var(--lane); border-radius:2px;}
+  .auth-box input{padding:12px 14px; background:#141b2e; border:2px solid #3d4657; color:var(--lane); border-radius:10px;}
   #auth-submit{
     padding:13px; background:var(--amber); color:var(--night); font-weight:700; text-transform:uppercase;
-    font-size:13px; border:none; border-radius:2px; cursor:pointer;
+    font-size:13px; border:none; border-radius:10px; cursor:pointer;
   }
 </style>
   <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "36911a5edb0f4bdf95ab6da85ceccd46"}'></script><!-- End Cloudflare Web Analytics -->
@@ -428,6 +428,11 @@
     submitBtn.textContent = 'Submitting...';
     showMsg('Submitting your listing...', 'loading');
 
+    // Active markets — states where listings go straight into the normal review queue.
+    // Anything else lands on a separate waitlist instead, without turning the host away.
+    const ACTIVE_MARKET_STATES = ['UT'];
+    const isActiveMarket = ACTIVE_MARKET_STATES.includes(state.trim().toUpperCase());
+
     const payload = {
       business_name: document.getElementById('business_name').value.trim(),
       address: address,
@@ -446,7 +451,7 @@
       contact_email: document.getElementById('contact_email').value.trim(),
       photo_urls: photoUrls.join(','),
       host_id: currentUser ? currentUser.id : null,
-      status: 'pending'
+      status: isActiveMarket ? 'pending' : 'waitlist'
     };
 
     const { error } = await supabaseClient.from('partners').insert(payload);
@@ -458,7 +463,26 @@
       return;
     }
 
-    showMsg('Thanks! Your listing is in for review — we\'ll be in touch soon.', 'success');
+    if(isActiveMarket){
+      showMsg('Thanks! Your listing is in for review — we\'ll be in touch soon.', 'success');
+    } else {
+      showMsg('Thanks for your interest! RVnB is currently focused on Utah — we\'ve saved your listing and will reach out as soon as we expand to your area.', 'success');
+    }
+
+    // Confirm to the host directly, so there's a record even if they close this tab
+    if(payload.contact_email){
+      supabaseClient.functions.invoke('send-email', {
+        body: {
+          to: payload.contact_email,
+          subject: isActiveMarket
+            ? `Listing received — ${payload.business_name}`
+            : `You're on the list — ${payload.business_name}`,
+          html: isActiveMarket
+            ? `<p>Hi ${payload.contact_name || 'there'},</p><p>Thanks for submitting <b>${payload.business_name}</b> to RVnB! It's in our review queue now — we'll be in touch soon once it's approved and live.</p>`
+            : `<p>Hi ${payload.contact_name || 'there'},</p><p>Thanks for your interest in RVnB! We saved your listing for <b>${payload.business_name}</b> — right now we're focused on Utah, but we'll reach out the moment we expand to your area (${payload.city}, ${payload.state}).</p><p>No need to do anything else for now — we'll email you when there's an update.</p>`
+        }
+      }).catch(() => {});
+    }
 
     // Notify admin inbox so it doesn't rely on manually checking the dashboard
     fetch('https://api.web3forms.com/submit', {
@@ -466,11 +490,11 @@
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({
         access_key: '7e10b2cb-2e39-4f72-b665-924100b8e61e',
-        subject: '🅿️ New listing pending review — ' + payload.business_name,
+        subject: (isActiveMarket ? '🅿️ New listing pending review — ' : '🗺️ Out-of-market waitlist signup — ') + payload.business_name,
         from_name: 'RVnB Website',
         replyto: payload.contact_email,
         message:
-          `New host listing submitted:\n\n` +
+          `New host listing submitted${isActiveMarket ? '' : ' (OUTSIDE current market — sent to waitlist)'}:\n\n` +
           `Business: ${payload.business_name}\n` +
           `Contact: ${payload.contact_name} (${payload.contact_email})\n` +
           `Address: ${payload.address}, ${payload.city}, ${payload.state}\n` +
