@@ -100,6 +100,22 @@
     position:relative;
     overflow:hidden;
   }
+  .hero::before{
+    content:'';
+    position:absolute;
+    top:-20px; left:-20px; right:-20px; bottom:-20px;
+    background-image:url('hero-bg.jpg');
+    background-size:cover;
+    background-position:center 60%;
+    filter:blur(7px);
+    z-index:0;
+  }
+  .hero::after{
+    content:'';
+    position:absolute; inset:0;
+    background:rgba(250,247,240,0.7);
+    z-index:1;
+  }
   .hero .wrap{
     position:relative; z-index:2;
     padding:88px 28px 72px;
