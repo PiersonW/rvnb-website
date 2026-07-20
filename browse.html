@@ -20,7 +20,49 @@
     font-family:'Oswald',sans-serif; text-transform:uppercase; font-weight:700; letter-spacing:0.03em;
   }
   header a{color:var(--amber); text-decoration:none; font-size:14px;}
-  #map{ height:calc(100vh - 60px); width:100%; }
+  #page-body{ display:flex; height:calc(100vh - 60px); }
+  #map{ flex:1; height:100%; min-width:0; }
+  #carousel-panel{
+    width:340px; flex-shrink:0; background:#fff; border-left:2px solid var(--night);
+    overflow-y:auto; display:flex; flex-direction:column;
+  }
+  @media(max-width:820px){ #carousel-panel{ display:none; } }
+  #carousel-header{
+    padding:16px 18px; font-family:'Oswald',sans-serif; text-transform:uppercase; font-weight:700;
+    font-size:13px; letter-spacing:0.03em; border-bottom:2px solid var(--night); background:var(--lane);
+    position:sticky; top:0;
+  }
+  #carousel-count{font-family:'JetBrains Mono',monospace; font-weight:400; color:var(--asphalt); font-size:11px;}
+  #carousel-list{padding:12px;}
+  .carousel-card{
+    display:flex; gap:10px; padding:10px; border:2px solid transparent; border-radius:4px;
+    cursor:pointer; margin-bottom:8px; transition:border-color 0.15s ease, background 0.15s ease;
+  }
+  .carousel-card:hover, .carousel-card.active{ border-color:var(--amber); background:#fdf6e8; }
+  .carousel-card img{
+    width:74px; height:74px; object-fit:cover; border-radius:3px; flex-shrink:0; background:#e6e2d4;
+  }
+  .carousel-card .no-photo{
+    width:74px; height:74px; border-radius:3px; flex-shrink:0; background:#e6e2d4;
+    display:flex; align-items:center; justify-content:center; font-size:10px; color:var(--asphalt);
+    font-family:'JetBrains Mono',monospace; text-align:center;
+  }
+  .carousel-card .info{min-width:0;}
+  .carousel-card h4{
+    font-family:'Oswald',sans-serif; font-size:14px; text-transform:uppercase; margin-bottom:3px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .carousel-card .addr{
+    font-size:12px; color:var(--asphalt); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .carousel-card .price{
+    font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--sign-green); font-weight:700; margin-top:4px;
+  }
+  .carousel-empty{
+    padding:30px 18px; text-align:center; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--asphalt);
+  }
+  .map-pin-wrapper{ transition:transform 0.15s ease; transform-origin:center center; }
+  .map-pin-wrapper.pin-enlarged{ transform:scale(1.7); z-index:1000 !important; }
   .rv-popup{ font-family:'Inter',sans-serif; }
   .rv-popup h3{ font-family:'Oswald',sans-serif; font-size:15px; margin-bottom:4px; }
   .rv-popup .price{ color:var(--sign-green); font-weight:700; }
@@ -122,7 +164,13 @@
 </div>
 <button id="search-area-btn">Search This Area</button>
 
-<div id="map"></div>
+<div id="page-body">
+  <div id="map"></div>
+  <div id="carousel-panel">
+    <div id="carousel-header">Listings in view <span id="carousel-count"></span></div>
+    <div id="carousel-list"></div>
+  </div>
+</div>
 <div id="status">Loading spots...</div>
 
 <script>
@@ -142,7 +190,7 @@
   }).addTo(map);
 
   const amberIcon = L.divIcon({
-    className: '',
+    className: 'map-pin-wrapper',
     html: '<div style="background:#f2a93b;width:16px;height:16px;border-radius:50%;border:3px solid #141a2b;"></div>',
     iconSize: [16,16],
   });
@@ -155,6 +203,54 @@
     const period = h >= 12 ? 'PM' : 'AM';
     const hour12 = h % 12 === 0 ? 12 : h % 12;
     return `${hour12}:${String(m).padStart(2,'0')} ${period}`;
+  }
+
+  function renderCarousel(){
+    const list = document.getElementById('carousel-list');
+    const countEl = document.getElementById('carousel-count');
+    const visible = allMarkers.filter(({ marker }) => map.hasLayer(marker));
+
+    countEl.textContent = visible.length > 0 ? `(${visible.length})` : '';
+
+    if(visible.length === 0){
+      list.innerHTML = '<div class="carousel-empty">No listings currently shown on the map.</div>';
+      return;
+    }
+
+    list.innerHTML = '';
+    visible.forEach(({ marker, data: p }) => {
+      const photos = (p.photo_urls || '').split(',').map(s => s.trim()).filter(Boolean);
+      const card = document.createElement('div');
+      card.className = 'carousel-card';
+      card.innerHTML = `
+        ${photos.length > 0
+          ? `<img src="${photos[0]}" alt="${p.business_name}">`
+          : `<div class="no-photo">No photo</div>`}
+        <div class="info">
+          <h4>${p.business_name}</h4>
+          <div class="addr">${p.address}, ${p.city}, ${p.state}</div>
+          <div class="price">$${p.price_per_night}/night</div>
+        </div>
+      `;
+
+      // Hovering the card enlarges the matching pin so it's easy to spot on the map
+      card.addEventListener('mouseenter', () => {
+        const el = marker.getElement();
+        if(el) el.classList.add('pin-enlarged');
+        card.classList.add('active');
+      });
+      card.addEventListener('mouseleave', () => {
+        const el = marker.getElement();
+        if(el) el.classList.remove('pin-enlarged');
+        card.classList.remove('active');
+      });
+      card.addEventListener('click', () => {
+        map.setView(marker.getLatLng(), Math.max(map.getZoom(), 14));
+        marker.openPopup();
+      });
+
+      list.appendChild(card);
+    });
   }
 
   async function loadListings(){
@@ -201,6 +297,8 @@
       statusEl.style.display = 'block';
       statusEl.textContent = 'No approved listings yet — add one in Supabase to see it here.';
     }
+
+    renderCarousel();
   }
 
   // ============================================
@@ -224,6 +322,7 @@
 
   function showAllMarkers(){
     allMarkers.forEach(({ marker }) => { if(!map.hasLayer(marker)) marker.addTo(map); });
+    renderCarousel();
   }
 
   function applyAllVisibility(){
@@ -244,6 +343,7 @@
     if(matches.length === 0){
       statusEl.style.display = 'block';
       statusEl.textContent = hasFilters || query ? 'No listings match your search/filters' : 'No approved listings yet';
+      renderCarousel();
       return;
     }
     statusEl.style.display = 'none';
@@ -253,6 +353,7 @@
     } else {
       moveMapProgrammatically(() => map.fitBounds(L.featureGroup(matches.map(m => m.marker)).getBounds(), { padding: [40,40] }));
     }
+    renderCarousel();
   }
 
   async function runSearch(){
@@ -371,6 +472,7 @@
       ? visible.length + ' spot(s) in this area'
       : 'No listings in this area yet';
     setTimeout(() => { statusEl.style.display = 'none'; }, 2500);
+    renderCarousel();
   });
 
   // Helper so our own setView/fitBounds calls (search, initial load) don't trigger the button
@@ -381,6 +483,8 @@
 
 
   loadListings();
+
+  window.addEventListener('resize', () => { map.invalidateSize(); });
 </script>
 
 </body>

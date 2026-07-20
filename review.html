@@ -94,16 +94,15 @@
       return;
     }
 
-    const { data, error } = await supabaseClient
-      .from('bookings')
-      .select('*, partners(id, business_name, host_id)')
-      .eq('id', bookingId)
-      .single();
+    const { data: fnData, error: fnError } = await supabaseClient.functions.invoke('get-review-booking-info', {
+      body: { bookingId }
+    });
 
-    if(error || !data){
+    if(fnError || !fnData || fnError || fnData.error){
       show('error-notfound');
       return;
     }
+    const data = fnData.booking;
     if(data.status !== 'completed'){
       show('error-notcomplete');
       return;
