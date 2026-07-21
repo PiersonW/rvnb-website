@@ -511,7 +511,9 @@
 
         if(error){
           msgEl.style.color = 'var(--red)';
-          msgEl.textContent = 'Error: ' + error.message;
+          msgEl.textContent = error.message.includes('already a booking')
+            ? error.message
+            : 'Error: ' + error.message;
           msgEl.style.display = 'block';
           return;
         }
