@@ -6,6 +6,7 @@
 <title>Admin — RVnB</title>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   :root{
     --night:#0B1220; --amber:#FFB547; --lane:#FAF7F0; --sign-green:#2F7D5B;
@@ -169,6 +170,29 @@
   .lead-card .edit-grid .full{grid-column:1/-1;}
   .btn-quick{background:#e6e6e6; color:var(--night); border:none; padding:8px 14px; font-size:11px; font-weight:700; text-transform:uppercase; border-radius:10px; cursor:pointer;}
   .btn-quick.on{background:var(--amber);}
+
+  .import-section{
+    background:#fff; border:2px solid var(--night); border-radius:10px; padding:20px;
+    margin-bottom:20px; display:none;
+  }
+  .import-section.show{display:block;}
+  .import-section h3{font-family:'Manrope',sans-serif; font-size:15px; text-transform:uppercase; margin-bottom:14px;}
+  .import-dropzone{
+    border:2px dashed var(--asphalt); border-radius:10px; padding:24px; text-align:center;
+    font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--asphalt); margin-bottom:14px;
+  }
+  .import-preview{width:100%; border-collapse:collapse; font-size:12px; margin-bottom:14px;}
+  .import-preview th, .import-preview td{
+    border:1px solid #e0d8c8; padding:6px 8px; text-align:left; white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis; max-width:140px;
+  }
+  .import-preview th{background:#faf5e9; font-family:'JetBrains Mono',monospace; text-transform:uppercase; font-size:10px;}
+  .import-preview-wrap{overflow-x:auto; margin-bottom:14px;}
+  .import-summary{font-size:13px; margin-bottom:12px;}
+  .import-summary .skip-note{color:var(--red);}
+  .btn-import-confirm{background:var(--sign-green); color:#fff; border:none; padding:10px 18px; font-weight:700; font-size:12px; text-transform:uppercase; border-radius:10px; cursor:pointer;}
+  .btn-import-cancel{background:none; border:2px solid var(--asphalt); color:var(--asphalt); padding:10px 18px; font-weight:700; font-size:12px; text-transform:uppercase; border-radius:10px; cursor:pointer; margin-left:8px;}
+  .btn-import-toggle{background:#fff; border:2px solid var(--night); color:var(--night); padding:9px 16px; font-weight:700; font-size:12px; text-transform:uppercase; border-radius:10px; cursor:pointer;}
 </style>
   <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "36911a5edb0f4bdf95ab6da85ceccd46"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
@@ -208,7 +232,21 @@
     <div id="leads-container" class="tab-panel">
       <div class="lead-toolbar">
         <div class="lead-filters" id="lead-filters"></div>
-        <button class="btn-add-lead" id="toggle-add-lead">+ Add Lead</button>
+        <div style="display:flex; gap:8px;">
+          <button class="btn-import-toggle" id="toggle-import-leads">Import Spreadsheet</button>
+          <button class="btn-add-lead" id="toggle-add-lead">+ Add Lead</button>
+        </div>
+      </div>
+
+      <div class="import-section" id="import-section">
+        <h3>Import Leads from Spreadsheet</h3>
+        <div class="import-dropzone">
+          Accepts .csv, .xlsx, or .xls — first row should be column headers<br>
+          (Business Name, Contact Name, Phone, Email, Address, City, State, Type, Notes)
+          <br><br>
+          <input type="file" id="import-file-input" accept=".csv,.xlsx,.xls">
+        </div>
+        <div id="import-preview-area"></div>
       </div>
 
       <div class="add-lead-form" id="add-lead-form">
@@ -952,6 +990,133 @@
         if(error){ alert('Delete failed: ' + error.message); return; }
         loadHostLeads();
       });
+    });
+  }
+
+  // ============================================
+  // IMPORT LEADS FROM SPREADSHEET
+  // ============================================
+  const FIELD_SYNONYMS = {
+    business_name: ['business name','business','company','company name','name','lot name','listing name'],
+    contact_name: ['contact name','contact','owner','owner name','manager'],
+    phone: ['phone','phone number','tel','telephone','cell'],
+    email: ['email','email address','e-mail'],
+    address: ['address','street','street address'],
+    city: ['city','town'],
+    state: ['state','st'],
+    business_type: ['type','business type','category'],
+    notes: ['notes','note','comments','comment']
+  };
+
+  let importParsedRows = [];
+  const importSectionEl = document.getElementById('import-section');
+
+  document.getElementById('toggle-import-leads').addEventListener('click', () => {
+    addLeadForm.classList.remove('show');
+    importSectionEl.classList.toggle('show');
+  });
+
+  document.getElementById('import-file-input').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+
+    const buffer = await file.arrayBuffer();
+    const workbook = XLSX.read(buffer, { type: 'array' });
+    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
+
+    if(rows.length === 0){
+      document.getElementById('import-preview-area').innerHTML = '<div class="import-summary skip-note">No rows found in that file.</div>';
+      return;
+    }
+
+    const rawHeaders = Object.keys(rows[0]);
+    const headerMap = {};
+    rawHeaders.forEach(h => {
+      const norm = h.trim().toLowerCase();
+      for(const [field, synonyms] of Object.entries(FIELD_SYNONYMS)){
+        if(synonyms.includes(norm)){
+          headerMap[h] = field;
+          break;
+        }
+      }
+    });
+
+    importParsedRows = rows.map(row => {
+      const mapped = { status: 'not_contacted' };
+      Object.entries(row).forEach(([header, value]) => {
+        const field = headerMap[header];
+        if(field && value !== ''){
+          mapped[field] = String(value).trim();
+        }
+      });
+      return mapped;
+    }).filter(r => r.business_name);
+
+    const skippedCount = rows.length - importParsedRows.length;
+    renderImportPreview(skippedCount);
+  });
+
+  function renderImportPreview(skippedCount){
+    const area = document.getElementById('import-preview-area');
+    if(importParsedRows.length === 0){
+      area.innerHTML = '<div class="import-summary skip-note">Couldn\'t find a "Business Name" column — nothing to import. Check your headers match what\'s listed above.</div>';
+      return;
+    }
+
+    const previewRows = importParsedRows.slice(0, 8);
+    area.innerHTML = `
+      <div class="import-summary">
+        Found <b>${importParsedRows.length}</b> lead(s) to import.
+        ${skippedCount > 0 ? `<span class="skip-note"> Skipped ${skippedCount} row(s) missing a business name.</span>` : ''}
+      </div>
+      <div class="import-preview-wrap">
+        <table class="import-preview">
+          <thead><tr><th>Business</th><th>Type</th><th>City</th><th>Contact</th><th>Phone</th><th>Email</th></tr></thead>
+          <tbody>
+            ${previewRows.map(r => `
+              <tr>
+                <td>${r.business_name || ''}</td>
+                <td>${r.business_type || ''}</td>
+                <td>${r.city || ''}</td>
+                <td>${r.contact_name || ''}</td>
+                <td>${r.phone || ''}</td>
+                <td>${r.email || ''}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+      ${importParsedRows.length > 8 ? `<div class="import-summary">...and ${importParsedRows.length - 8} more.</div>` : ''}
+      <button class="btn-import-confirm" id="confirm-import-btn">Import ${importParsedRows.length} Lead(s)</button>
+      <button class="btn-import-cancel" id="cancel-import-btn">Cancel</button>
+    `;
+
+    document.getElementById('confirm-import-btn').addEventListener('click', async () => {
+      const btn = document.getElementById('confirm-import-btn');
+      btn.disabled = true;
+      btn.textContent = 'Importing...';
+
+      const { error } = await supabaseClient.from('host_leads').insert(importParsedRows);
+
+      if(error){
+        area.innerHTML += `<div class="import-summary skip-note">Import failed: ${error.message}</div>`;
+        btn.disabled = false;
+        btn.textContent = `Import ${importParsedRows.length} Lead(s)`;
+        return;
+      }
+
+      importParsedRows = [];
+      document.getElementById('import-file-input').value = '';
+      importSectionEl.classList.remove('show');
+      area.innerHTML = '';
+      loadHostLeads();
+    });
+
+    document.getElementById('cancel-import-btn').addEventListener('click', () => {
+      importParsedRows = [];
+      document.getElementById('import-file-input').value = '';
+      area.innerHTML = '';
     });
   }
 
