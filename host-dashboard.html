@@ -93,6 +93,35 @@
   .btn-pause{background:#e6e6e6; color:var(--night);}
   .btn-reject{background:var(--red); color:#fff;}
   .save-msg{font-size:12px; margin-top:8px; color:var(--sign-green); display:none;}
+
+  .blocked-section{margin-top:18px; padding-top:16px; border-top:2px solid #eee0cf;}
+  .blocked-section h4{font-size:12px; letter-spacing:0.04em; margin-bottom:10px;}
+  .blocked-list{display:flex; flex-direction:column; gap:8px; margin-bottom:12px;}
+  .blocked-row{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    background:#faf5e9; border:2px solid var(--night); border-radius:8px; padding:8px 12px;
+    font-family:'JetBrains Mono',monospace; font-size:12px;
+  }
+  .blocked-row .btn-unblock{
+    background:none; border:none; color:var(--red); font-weight:700; cursor:pointer;
+    font-family:'Inter',sans-serif; font-size:12px; text-transform:uppercase;
+  }
+  .block-form{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .block-form > div{min-width:0;}
+  @media(max-width:520px){.block-form{grid-template-columns:1fr;}}
+  .block-form .full{grid-column:1/-1;}
+  .block-form label{
+    font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; color:var(--asphalt);
+    display:block; margin-bottom:4px;
+  }
+  .block-form input{
+    width:100%; min-width:0; padding:9px 11px; border:2px solid var(--night); border-radius:10px;
+    font-family:'Inter',sans-serif; font-size:13px;
+  }
+  .btn-add-block{
+    grid-column:1/-1; background:var(--night); color:var(--amber); border:none; padding:10px;
+    font-weight:700; font-size:12px; text-transform:uppercase; border-radius:10px; cursor:pointer; margin-top:2px;
+  }
 </style>
   <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "36911a5edb0f4bdf95ab6da85ceccd46"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
@@ -346,10 +375,24 @@
       return;
     }
 
+    const partnerIds = data.map(p => p.id);
+    const { data: blockedData } = await supabaseClient
+      .from('blocked_dates')
+      .select('*')
+      .in('partner_id', partnerIds)
+      .order('start_date', { ascending: true });
+
+    const blockedByPartner = {};
+    (blockedData || []).forEach(b => {
+      if(!blockedByPartner[b.partner_id]) blockedByPartner[b.partner_id] = [];
+      blockedByPartner[b.partner_id].push(b);
+    });
+
     container.innerHTML = '';
     data.forEach(p => {
       const card = document.createElement('div');
       card.className = 'card';
+      const blocks = blockedByPartner[p.id] || [];
       card.innerHTML = `
         <div class="card-top">
           <h3>${p.business_name}</h3>
@@ -371,6 +414,36 @@
           ${p.status === 'paused' ? `<button class="btn-approve" data-id="${p.id}" data-status="approved">Reactivate</button>` : ''}
         </div>
         <div class="save-msg">Saved!</div>
+
+        <div class="blocked-section">
+          <h4>Blocked dates</h4>
+          <div class="blocked-list">
+            ${blocks.length === 0
+              ? '<div class="empty" style="padding:8px 0;">No dates blocked — this listing is open every night.</div>'
+              : blocks.map(b => `
+                <div class="blocked-row">
+                  <span>${b.start_date} → ${b.end_date}${b.note ? ' — ' + b.note : ''}</span>
+                  <button class="btn-unblock" data-id="${b.id}" data-partner-id="${p.id}">Remove</button>
+                </div>
+              `).join('')}
+          </div>
+          <div class="block-form">
+            <div>
+              <label>Start date</label>
+              <input type="date" class="f-block-start" data-partner-id="${p.id}">
+            </div>
+            <div>
+              <label>End date</label>
+              <input type="date" class="f-block-end" data-partner-id="${p.id}">
+            </div>
+            <div class="full">
+              <label>Note (optional)</label>
+              <input type="text" class="f-block-note" data-partner-id="${p.id}" placeholder="e.g. personal use, maintenance">
+            </div>
+            <button class="btn-add-block" data-partner-id="${p.id}">Block These Dates</button>
+          </div>
+          <div class="save-msg block-save-msg" data-partner-id="${p.id}"></div>
+        </div>
       `;
       container.appendChild(card);
     });
@@ -405,6 +478,53 @@
     document.querySelectorAll('.btn-pause, .btn-approve').forEach(btn => {
       btn.addEventListener('click', async () => {
         await supabaseClient.from('partners').update({ status: btn.dataset.status }).eq('id', btn.dataset.id);
+        loadListings();
+      });
+    });
+
+    // Block dates
+    document.querySelectorAll('.btn-add-block').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const partnerId = btn.dataset.partnerId;
+        const card = btn.closest('.card');
+        const start_date = card.querySelector(`.f-block-start[data-partner-id="${partnerId}"]`).value;
+        const end_date = card.querySelector(`.f-block-end[data-partner-id="${partnerId}"]`).value;
+        const note = card.querySelector(`.f-block-note[data-partner-id="${partnerId}"]`).value.trim();
+        const msgEl = card.querySelector(`.block-save-msg[data-partner-id="${partnerId}"]`);
+
+        if(!start_date || !end_date){
+          msgEl.style.color = 'var(--red)';
+          msgEl.textContent = 'Pick both a start and end date.';
+          msgEl.style.display = 'block';
+          return;
+        }
+        if(end_date <= start_date){
+          msgEl.style.color = 'var(--red)';
+          msgEl.textContent = 'End date must be after the start date.';
+          msgEl.style.display = 'block';
+          return;
+        }
+
+        const { error } = await supabaseClient.from('blocked_dates').insert({
+          partner_id: partnerId, start_date, end_date, note: note || null
+        });
+
+        if(error){
+          msgEl.style.color = 'var(--red)';
+          msgEl.textContent = 'Error: ' + error.message;
+          msgEl.style.display = 'block';
+          return;
+        }
+        loadListings();
+      });
+    });
+
+    // Unblock dates
+    document.querySelectorAll('.btn-unblock').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if(!confirm('Remove this blocked date range? Travelers will be able to book these dates again.')) return;
+        const { error } = await supabaseClient.from('blocked_dates').delete().eq('id', btn.dataset.id);
+        if(error){ alert('Could not remove: ' + error.message); return; }
         loadListings();
       });
     });

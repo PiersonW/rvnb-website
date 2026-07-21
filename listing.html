@@ -331,17 +331,33 @@
       .eq('partner_id', listing.id)
       .neq('status', 'cancelled');
 
-    if(error || !data || data.length === 0) return;
+    const { data: blocked } = await supabaseClient
+      .from('blocked_dates')
+      .select('start_date, end_date, note')
+      .eq('partner_id', listing.id);
+
+    const hasBookings = !error && data && data.length > 0;
+    const hasBlocked = blocked && blocked.length > 0;
+
+    if(!hasBookings && !hasBlocked) return;
 
     const note = document.getElementById('booked-dates-note');
     note.style.display = 'block';
-    const dateList = data.map(b => `${b.check_in} to ${b.check_out}`).join(', ');
 
-    if(listing.spots_available > 1){
-      note.textContent = `Other travelers have reserved: ${dateList}. This listing has ${listing.spots_available} spots, so it may still be available — try your dates and you'll be told right away if it's full.`;
-    } else {
-      note.textContent = 'Already booked: ' + dateList;
+    let text = '';
+    if(hasBlocked){
+      const blockedList = blocked.map(b => `${b.start_date} to ${b.end_date}`).join(', ');
+      text += `Not available (blocked by host): ${blockedList}. `;
     }
+    if(hasBookings){
+      const dateList = data.map(b => `${b.check_in} to ${b.check_out}`).join(', ');
+      if(listing.spots_available > 1){
+        text += `Other travelers have reserved: ${dateList}. This listing has ${listing.spots_available} spots, so it may still be available — try your dates and you'll be told right away if it's full.`;
+      } else {
+        text += 'Already booked: ' + dateList;
+      }
+    }
+    note.textContent = text;
   }
 
   // ============================================
@@ -519,6 +535,9 @@
       msg.className = 'msg show error';
       if(error.message && error.message.includes('fully booked')){
         msg.textContent = 'Sorry, this listing is fully booked for those dates — all spots are taken. Please choose different dates. Your card was authorized but not charged; the hold will release automatically.';
+        loadBookedDates();
+      } else if(error.message && error.message.includes('blocked')){
+        msg.textContent = 'Sorry, the host has blocked those dates for this listing. Please choose different dates. Your card was authorized but not charged; the hold will release automatically.';
         loadBookedDates();
       } else {
         msg.textContent = 'Your card was authorized but saving your request failed: ' + error.message + '. Please contact us — do not try again without checking first.';
