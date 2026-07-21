@@ -160,9 +160,29 @@
   .cal-cell.empty-cell{background:none;}
   .cal-cell.booked{background:#f0c9c0;}
   .cal-cell.blocked{background:#d9dde3;}
+  .cal-cell.available{cursor:pointer; transition:box-shadow 0.1s ease;}
+  .cal-cell.available:hover{box-shadow:inset 0 0 0 2px var(--sign-green);}
+  .cal-cell.selected{background:#f2e4c4; box-shadow:inset 0 0 0 2px var(--night);}
   @media(max-width:520px){
     .cal-cell{font-size:10px; padding:3px 5px; border-radius:5px;}
     .cal-grid{gap:3px; padding:8px;}
+  }
+
+  .cal-hint{
+    font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--asphalt); margin-bottom:10px;
+  }
+  .cal-selection-bar{
+    display:none; align-items:center; gap:10px; flex-wrap:wrap;
+    background:#fff; border:2px solid var(--night); border-radius:10px; padding:12px 16px; margin-top:14px;
+  }
+  .cal-selection-bar.show{display:flex;}
+  .cal-selection-bar #cal-selection-count{font-weight:700; font-size:13px;}
+  .cal-selection-bar input{
+    flex:1; min-width:140px; padding:9px 11px; border:2px solid var(--night); border-radius:10px;
+    font-family:'Inter',sans-serif; font-size:13px;
+  }
+  .cal-selection-bar button{
+    padding:9px 16px; border-radius:10px; font-size:12px; font-weight:700; text-transform:uppercase; border:none; cursor:pointer;
   }
 </style>
   <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "36911a5edb0f4bdf95ab6da85ceccd46"}'></script><!-- End Cloudflare Web Analytics -->
@@ -206,7 +226,14 @@
       <span class="legend-item"><span class="legend-dot blocked"></span>Blocked</span>
       <span class="legend-item"><span class="legend-dot available"></span>Available</span>
     </div>
+    <div class="cal-hint">Click available days to select them, then block them below.</div>
     <div id="cal-grid" class="cal-grid"></div>
+    <div class="cal-selection-bar" id="cal-selection-bar">
+      <span id="cal-selection-count"></span>
+      <input type="text" id="cal-selection-note" placeholder="Note (optional)">
+      <button class="btn-approve" id="cal-block-selected-btn">Block Selected Dates</button>
+      <button class="btn-pause" id="cal-clear-selection-btn">Clear</button>
+    </div>
   </div>
   <div id="revenue-container" class="tab-panel"></div>
 </div>
@@ -833,6 +860,7 @@
   let calBlocked = [];
   let calMonth = new Date();
   calMonth.setDate(1);
+  let calSelectedDates = new Set();
 
   async function loadCalendarTab(){
     const sel = document.getElementById('cal-listing-select');
@@ -898,13 +926,106 @@
     for(let day = 1; day <= daysInMonth; day++){
       const dateStr = `${year}-${String(month + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
       const status = calDateStatus(dateStr);
-      html += `<div class="cal-cell ${status.type}" title="${status.label}">${day}</div>`;
+      const selectedClass = (status.type === 'available' && calSelectedDates.has(dateStr)) ? ' selected' : '';
+      html += `<div class="cal-cell ${status.type}${selectedClass}" data-date="${dateStr}" title="${status.label}">${day}</div>`;
     }
     grid.innerHTML = html;
   }
 
+  // Click-to-select: only "available" cells can be toggled. Booked/blocked
+  // cells are already spoken for and aren't selectable.
+  document.getElementById('cal-grid').addEventListener('click', (e) => {
+    const cell = e.target.closest('.cal-cell');
+    if(!cell || !cell.classList.contains('available')) return;
+    const dateStr = cell.dataset.date;
+    if(calSelectedDates.has(dateStr)){
+      calSelectedDates.delete(dateStr);
+      cell.classList.remove('selected');
+    } else {
+      calSelectedDates.add(dateStr);
+      cell.classList.add('selected');
+    }
+    updateSelectionBar();
+  });
+
+  function updateSelectionBar(){
+    const bar = document.getElementById('cal-selection-bar');
+    const countEl = document.getElementById('cal-selection-count');
+    if(calSelectedDates.size === 0){
+      bar.classList.remove('show');
+      return;
+    }
+    bar.classList.add('show');
+    countEl.textContent = `${calSelectedDates.size} day${calSelectedDates.size === 1 ? '' : 's'} selected`;
+  }
+
+  function addOneDay(dateStr){
+    const d = new Date(dateStr + 'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() + 1);
+    return d.toISOString().slice(0, 10);
+  }
+
+  // Group selected (possibly non-contiguous, possibly multi-month) dates
+  // into contiguous ranges so each becomes one blocked_dates row.
+  function groupIntoRanges(dateStrings){
+    const sorted = [...dateStrings].sort();
+    const ranges = [];
+    let rangeStart = sorted[0];
+    let prev = sorted[0];
+
+    for(let i = 1; i < sorted.length; i++){
+      const current = sorted[i];
+      if(current === addOneDay(prev)){
+        prev = current;
+        continue;
+      }
+      ranges.push({ start_date: rangeStart, end_date: addOneDay(prev) });
+      rangeStart = current;
+      prev = current;
+    }
+    ranges.push({ start_date: rangeStart, end_date: addOneDay(prev) });
+    return ranges;
+  }
+
+  document.getElementById('cal-block-selected-btn').addEventListener('click', async () => {
+    if(calSelectedDates.size === 0) return;
+    const btn = document.getElementById('cal-block-selected-btn');
+    const note = document.getElementById('cal-selection-note').value.trim() || null;
+    const ranges = groupIntoRanges(calSelectedDates);
+
+    btn.disabled = true;
+    btn.textContent = 'Blocking...';
+
+    const { error } = await supabaseClient
+      .from('blocked_dates')
+      .insert(ranges.map(r => ({ partner_id: calPartnerId, start_date: r.start_date, end_date: r.end_date, note })));
+
+    btn.disabled = false;
+    btn.textContent = 'Block Selected Dates';
+
+    if(error){
+      alert(error.message.includes('already a booking') ? error.message : 'Could not block dates: ' + error.message);
+      return;
+    }
+
+    calSelectedDates.clear();
+    document.getElementById('cal-selection-note').value = '';
+    updateSelectionBar();
+    await loadCalendarData();
+    renderCalendarGrid();
+    loadListings(); // keep the Blocked Dates list on the Listings tab in sync
+  });
+
+  document.getElementById('cal-clear-selection-btn').addEventListener('click', () => {
+    calSelectedDates.clear();
+    updateSelectionBar();
+    renderCalendarGrid();
+  });
+
   document.getElementById('cal-listing-select').addEventListener('change', async (e) => {
     calPartnerId = e.target.value;
+    calSelectedDates.clear();
+    updateSelectionBar();
     await loadCalendarData();
     renderCalendarGrid();
   });
