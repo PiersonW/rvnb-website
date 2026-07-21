@@ -143,9 +143,21 @@
   .btn-save-lead{background:var(--sign-green); color:#fff; border:none; padding:10px 18px; font-weight:700; font-size:12px; text-transform:uppercase; border-radius:10px; cursor:pointer;}
   .btn-cancel-lead{background:none; border:2px solid var(--asphalt); color:var(--asphalt); padding:10px 18px; font-weight:700; font-size:12px; text-transform:uppercase; border-radius:10px; cursor:pointer;}
 
+  .lead-card{padding:16px 20px;}
   .lead-card .card-top{align-items:center;}
   .lead-card .meta a{color:var(--night);}
-  .lead-card .edit-grid{margin-top:14px;}
+  .lead-summary{cursor:pointer; user-select:none;}
+  .lead-summary h3{font-size:16px;}
+  .lead-summary .meta{margin-top:2px;}
+  .lead-caret{
+    display:inline-block; color:var(--asphalt); font-size:14px; transition:transform 0.15s ease;
+  }
+  .lead-card.expanded .lead-caret{transform:rotate(180deg);}
+  .lead-details{
+    display:none; margin-top:16px; padding-top:16px; border-top:2px solid #eee0cf;
+  }
+  .lead-card.expanded .lead-details{display:block;}
+  .lead-card .edit-grid{margin-top:0;}
   .lead-card .edit-grid label{
     font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; color:var(--asphalt);
     display:block; margin-bottom:4px;
@@ -730,6 +742,7 @@
   };
   let currentLeadFilter = 'all';
   let allLeads = [];
+  const expandedLeadIds = new Set();
 
   const addLeadForm = document.getElementById('add-lead-form');
   document.getElementById('toggle-add-lead').addEventListener('click', () => {
@@ -834,50 +847,73 @@
 
   function renderLeadCard(lead){
     const card = document.createElement('div');
-    card.className = 'card lead-card';
+    card.className = 'card lead-card' + (expandedLeadIds.has(lead.id) ? ' expanded' : '');
+    card.dataset.leadId = lead.id;
     const typeLabel = { storage: 'Storage facility', church: 'Church', gym: 'Gym', other: 'Other' }[lead.business_type] || '—';
+    const locationBits = [typeLabel, lead.city].filter(Boolean).join(' · ');
     card.innerHTML = `
-      <div class="card-top">
+      <div class="card-top lead-summary" data-toggle="1">
         <div>
           <h3>${lead.business_name}</h3>
-          <div class="meta">
-            ${typeLabel}${lead.city ? ' · ' + lead.city : ''}${lead.address ? '<br>' + lead.address : ''}<br>
-            ${lead.contact_name ? lead.contact_name + ' · ' : ''}${lead.phone ? lead.phone + ' · ' : ''}${lead.email || ''}<br>
-            Last touch: ${lead.last_touch_date || 'never'}
+          <div class="meta">${locationBits || '—'}</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="status ${lead.status}">${LEAD_STATUS_LABELS[lead.status]}</span>
+          <span class="lead-caret">▾</span>
+        </div>
+      </div>
+
+      <div class="lead-details">
+        <div class="meta" style="margin-bottom:10px;">
+          ${lead.address ? lead.address + '<br>' : ''}
+          ${lead.contact_name ? lead.contact_name + ' · ' : ''}${lead.phone ? lead.phone + ' · ' : ''}${lead.email || ''}<br>
+          Last touch: ${lead.last_touch_date || 'never'}
+        </div>
+
+        <div class="edit-grid">
+          <div>
+            <label>Status</label>
+            <select class="f-lead-status" data-id="${lead.id}">
+              ${LEAD_STATUSES.map(s => `<option value="${s}" ${s === lead.status ? 'selected' : ''}>${LEAD_STATUS_LABELS[s]}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label>Last touch date</label>
+            <input type="date" class="f-lead-touch" data-id="${lead.id}" value="${lead.last_touch_date || ''}">
+          </div>
+          <div class="full">
+            <label>Notes</label>
+            <textarea class="f-lead-notes" data-id="${lead.id}" rows="2">${lead.notes || ''}</textarea>
           </div>
         </div>
-        <span class="status ${lead.status}">${LEAD_STATUS_LABELS[lead.status]}</span>
-      </div>
 
-      <div class="edit-grid">
-        <div>
-          <label>Status</label>
-          <select class="f-lead-status" data-id="${lead.id}">
-            ${LEAD_STATUSES.map(s => `<option value="${s}" ${s === lead.status ? 'selected' : ''}>${LEAD_STATUS_LABELS[s]}</option>`).join('')}
-          </select>
+        <div class="card-actions">
+          <button class="btn-quick" data-id="${lead.id}" data-touch-today="1">Mark Contacted Today</button>
+          <button class="btn-approve" data-id="${lead.id}" data-save="1">Save Changes</button>
+          <button class="btn-reject" data-id="${lead.id}" data-delete="1">Delete</button>
         </div>
-        <div>
-          <label>Last touch date</label>
-          <input type="date" class="f-lead-touch" data-id="${lead.id}" value="${lead.last_touch_date || ''}">
-        </div>
-        <div class="full">
-          <label>Notes</label>
-          <textarea class="f-lead-notes" data-id="${lead.id}" rows="2">${lead.notes || ''}</textarea>
-        </div>
-      </div>
-
-      <div class="card-actions">
-        <button class="btn-quick" data-id="${lead.id}" data-touch-today="1">Mark Contacted Today</button>
-        <button class="btn-approve" data-id="${lead.id}" data-save="1">Save Changes</button>
-        <button class="btn-reject" data-id="${lead.id}" data-delete="1">Delete</button>
       </div>
     `;
     return card;
   }
 
   function attachLeadCardListeners(){
+    document.querySelectorAll('.lead-summary').forEach(summary => {
+      summary.addEventListener('click', () => {
+        const card = summary.closest('.lead-card');
+        const id = card.dataset.leadId;
+        if(expandedLeadIds.has(id)){
+          expandedLeadIds.delete(id);
+        } else {
+          expandedLeadIds.add(id);
+        }
+        card.classList.toggle('expanded');
+      });
+    });
+
     document.querySelectorAll('[data-touch-today="1"]').forEach(btn => {
-      btn.addEventListener('click', async () => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
         const id = btn.dataset.id;
         const today = new Date().toISOString().slice(0, 10);
         const card = btn.closest('.lead-card');
