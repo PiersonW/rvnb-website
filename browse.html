@@ -31,8 +31,12 @@
     /* Search bar sits centered at the top; push Filters below it instead of
        fighting for the same row, since a phone-width screen has no room for
        both side by side */
-    #filters-toggle-btn{ top:auto !important; bottom:calc(40vh + 16px + 12px); left:16px; height:auto; }
-    #filters-panel{ top:auto !important; bottom:calc(40vh + 16px + 12px + 52px); left:16px; }
+    #filters-toggle-btn{ top:auto !important; bottom:200px; left:16px; height:auto; }
+    #filters-panel{
+      top:auto !important; bottom:200px; left:16px;
+      max-height:260px;
+      overflow-y:auto;
+    }
 
     /* Pinch-to-zoom still works fine without the on-screen buttons, which
        just ate space and collided with our own UI */
