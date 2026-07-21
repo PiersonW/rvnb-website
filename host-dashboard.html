@@ -74,7 +74,9 @@
   .meta{font-size:13px; color:var(--asphalt); margin-top:6px; line-height:1.7;}
 
   .edit-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px;}
+  .edit-grid > div{min-width:0;}
   @media(max-width:520px){.edit-grid{grid-template-columns:1fr;}}
+  input[type="time"], input[type="date"]{min-width:0; -webkit-min-logical-width:0;}
   .edit-grid label{
     font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; color:var(--asphalt);
     display:block; margin-bottom:4px;
