@@ -100,6 +100,63 @@
   .btn-approve{background:var(--sign-green); color:#fff;}
   .btn-pause{background:#e6e6e6; color:var(--night);}
   .btn-reject{background:var(--red); color:#fff;}
+
+  /* Host Leads tab */
+  .status.not_contacted{background:#e6e6e6; color:var(--asphalt);}
+  .status.contacted{background:#dbe4ea; color:#3a5f7a;}
+  .status.interested{background:#f2e4c4; color:#8a6415;}
+  .status.listed{background:#d8ebe0; color:var(--sign-green);}
+  .status.declined{background:#f0dcd6; color:var(--red);}
+
+  .lead-toolbar{display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap;}
+  .lead-filters{display:flex; gap:6px; flex-wrap:wrap;}
+  .lead-filter-btn{
+    background:#fff; border:2px solid var(--night); color:var(--night);
+    padding:7px 12px; font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase;
+    letter-spacing:0.03em; border-radius:10px; cursor:pointer;
+  }
+  .lead-filter-btn.active{background:var(--night); color:var(--amber);}
+  .btn-add-lead{
+    background:var(--amber); color:var(--night); border:none; padding:9px 16px;
+    font-weight:700; font-size:12px; text-transform:uppercase; border-radius:10px; cursor:pointer;
+  }
+
+  .add-lead-form{
+    background:#fff; border:2px solid var(--night); border-radius:10px; padding:20px;
+    margin-bottom:20px; display:none;
+  }
+  .add-lead-form.show{display:block;}
+  .add-lead-form h3{font-family:'Manrope',sans-serif; font-size:15px; text-transform:uppercase; margin-bottom:14px;}
+  .add-lead-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .add-lead-grid > div{min-width:0;}
+  @media(max-width:520px){.add-lead-grid{grid-template-columns:1fr;}}
+  .add-lead-grid label{
+    font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; color:var(--asphalt);
+    display:block; margin-bottom:4px;
+  }
+  .add-lead-grid input, .add-lead-grid select, .add-lead-grid textarea{
+    width:100%; min-width:0; padding:9px 11px; border:2px solid var(--night); border-radius:10px;
+    font-family:'Inter',sans-serif; font-size:13px;
+  }
+  .add-lead-grid .full{grid-column:1/-1;}
+  .add-lead-actions{display:flex; gap:8px; margin-top:14px;}
+  .btn-save-lead{background:var(--sign-green); color:#fff; border:none; padding:10px 18px; font-weight:700; font-size:12px; text-transform:uppercase; border-radius:10px; cursor:pointer;}
+  .btn-cancel-lead{background:none; border:2px solid var(--asphalt); color:var(--asphalt); padding:10px 18px; font-weight:700; font-size:12px; text-transform:uppercase; border-radius:10px; cursor:pointer;}
+
+  .lead-card .card-top{align-items:center;}
+  .lead-card .meta a{color:var(--night);}
+  .lead-card .edit-grid{margin-top:14px;}
+  .lead-card .edit-grid label{
+    font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; color:var(--asphalt);
+    display:block; margin-bottom:4px;
+  }
+  .lead-card .edit-grid select, .lead-card .edit-grid input, .lead-card .edit-grid textarea{
+    width:100%; min-width:0; padding:9px 11px; border:2px solid var(--night); border-radius:10px;
+    font-family:'Inter',sans-serif; font-size:13px;
+  }
+  .lead-card .edit-grid .full{grid-column:1/-1;}
+  .btn-quick{background:#e6e6e6; color:var(--night); border:none; padding:8px 14px; font-size:11px; font-weight:700; text-transform:uppercase; border-radius:10px; cursor:pointer;}
+  .btn-quick.on{background:var(--amber);}
 </style>
   <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "36911a5edb0f4bdf95ab6da85ceccd46"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
@@ -132,9 +189,66 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="listings">Listings</button>
       <button class="tab-btn" data-tab="bookings">Bookings</button>
+      <button class="tab-btn" data-tab="leads">Host Leads</button>
     </div>
     <div id="listings-container" class="tab-panel active"></div>
     <div id="bookings-container" class="tab-panel"></div>
+    <div id="leads-container" class="tab-panel">
+      <div class="lead-toolbar">
+        <div class="lead-filters" id="lead-filters"></div>
+        <button class="btn-add-lead" id="toggle-add-lead">+ Add Lead</button>
+      </div>
+
+      <div class="add-lead-form" id="add-lead-form">
+        <h3>New Host Lead</h3>
+        <div class="add-lead-grid">
+          <div class="full">
+            <label for="lead-business-name">Business name *</label>
+            <input type="text" id="lead-business-name" required>
+          </div>
+          <div>
+            <label for="lead-business-type">Type</label>
+            <select id="lead-business-type">
+              <option value="">Select...</option>
+              <option value="storage">Storage facility</option>
+              <option value="church">Church</option>
+              <option value="gym">Gym</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label for="lead-city">City</label>
+            <input type="text" id="lead-city">
+          </div>
+          <div>
+            <label for="lead-contact-name">Contact name</label>
+            <input type="text" id="lead-contact-name">
+          </div>
+          <div>
+            <label for="lead-phone">Phone</label>
+            <input type="tel" id="lead-phone">
+          </div>
+          <div>
+            <label for="lead-email">Email</label>
+            <input type="email" id="lead-email">
+          </div>
+          <div>
+            <label for="lead-address">Address</label>
+            <input type="text" id="lead-address">
+          </div>
+          <div class="full">
+            <label for="lead-notes">Notes</label>
+            <textarea id="lead-notes" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="add-lead-actions">
+          <button class="btn-save-lead" id="save-lead-btn">Save Lead</button>
+          <button class="btn-cancel-lead" id="cancel-lead-btn">Cancel</button>
+        </div>
+      </div>
+
+      <div id="leads-list-container"></div>
+    </div>
   </div>
 </div>
 
@@ -177,6 +291,7 @@
     dashboardView.style.display = 'block';
     loadListings();
     loadBookings();
+    loadHostLeads();
   }
 
   document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -600,6 +715,208 @@
       return msg;
     }
     return null;
+  }
+
+  // ============================================
+  // HOST LEADS (outreach tracker)
+  // ============================================
+  const LEAD_STATUSES = ['not_contacted','contacted','interested','listed','declined'];
+  const LEAD_STATUS_LABELS = {
+    not_contacted: 'Not Contacted',
+    contacted: 'Contacted',
+    interested: 'Interested',
+    listed: 'Listed',
+    declined: 'Declined'
+  };
+  let currentLeadFilter = 'all';
+  let allLeads = [];
+
+  const addLeadForm = document.getElementById('add-lead-form');
+  document.getElementById('toggle-add-lead').addEventListener('click', () => {
+    addLeadForm.classList.toggle('show');
+  });
+  document.getElementById('cancel-lead-btn').addEventListener('click', () => {
+    clearLeadForm();
+    addLeadForm.classList.remove('show');
+  });
+
+  function clearLeadForm(){
+    ['lead-business-name','lead-business-type','lead-city','lead-contact-name','lead-phone','lead-email','lead-address','lead-notes']
+      .forEach(id => document.getElementById(id).value = '');
+  }
+
+  document.getElementById('save-lead-btn').addEventListener('click', async () => {
+    const business_name = document.getElementById('lead-business-name').value.trim();
+    if(!business_name){
+      alert('Business name is required.');
+      return;
+    }
+    const payload = {
+      business_name,
+      business_type: document.getElementById('lead-business-type').value || null,
+      city: document.getElementById('lead-city').value.trim() || null,
+      contact_name: document.getElementById('lead-contact-name').value.trim() || null,
+      phone: document.getElementById('lead-phone').value.trim() || null,
+      email: document.getElementById('lead-email').value.trim() || null,
+      address: document.getElementById('lead-address').value.trim() || null,
+      notes: document.getElementById('lead-notes').value.trim() || null,
+      status: 'not_contacted'
+    };
+    const { error } = await supabaseClient.from('host_leads').insert(payload);
+    if(error){
+      alert('Could not save lead: ' + error.message);
+      return;
+    }
+    clearLeadForm();
+    addLeadForm.classList.remove('show');
+    loadHostLeads();
+  });
+
+  function renderLeadFilters(){
+    const filterBar = document.getElementById('lead-filters');
+    const counts = { all: allLeads.length };
+    LEAD_STATUSES.forEach(s => counts[s] = allLeads.filter(l => l.status === s).length);
+
+    const chips = [{ key: 'all', label: 'All' }].concat(
+      LEAD_STATUSES.map(s => ({ key: s, label: LEAD_STATUS_LABELS[s] }))
+    );
+
+    filterBar.innerHTML = chips.map(c => `
+      <button class="lead-filter-btn ${currentLeadFilter === c.key ? 'active' : ''}" data-filter="${c.key}">
+        ${c.label} (${counts[c.key] || 0})
+      </button>
+    `).join('');
+
+    filterBar.querySelectorAll('.lead-filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentLeadFilter = btn.dataset.filter;
+        renderLeadFilters();
+        renderLeadList();
+      });
+    });
+  }
+
+  function renderLeadList(){
+    const listContainer = document.getElementById('leads-list-container');
+    const visible = currentLeadFilter === 'all'
+      ? allLeads
+      : allLeads.filter(l => l.status === currentLeadFilter);
+
+    if(visible.length === 0){
+      listContainer.innerHTML = '<div class="empty">No leads here yet.</div>';
+      return;
+    }
+
+    listContainer.innerHTML = '';
+    visible.forEach(lead => listContainer.appendChild(renderLeadCard(lead)));
+    attachLeadCardListeners();
+  }
+
+  async function loadHostLeads(){
+    const listContainer = document.getElementById('leads-list-container');
+    listContainer.innerHTML = '<div class="empty">Loading leads...</div>';
+
+    const { data, error } = await supabaseClient
+      .from('host_leads')
+      .select('*')
+      .order('last_touch_date', { ascending: true, nullsFirst: true })
+      .order('created_at', { ascending: false });
+
+    if(error){
+      listContainer.innerHTML = '<div class="empty">Could not load leads: ' + error.message + '</div>';
+      return;
+    }
+
+    allLeads = data;
+    renderLeadFilters();
+    renderLeadList();
+  }
+
+  function renderLeadCard(lead){
+    const card = document.createElement('div');
+    card.className = 'card lead-card';
+    const typeLabel = { storage: 'Storage facility', church: 'Church', gym: 'Gym', other: 'Other' }[lead.business_type] || '—';
+    card.innerHTML = `
+      <div class="card-top">
+        <div>
+          <h3>${lead.business_name}</h3>
+          <div class="meta">
+            ${typeLabel}${lead.city ? ' · ' + lead.city : ''}${lead.address ? '<br>' + lead.address : ''}<br>
+            ${lead.contact_name ? lead.contact_name + ' · ' : ''}${lead.phone ? lead.phone + ' · ' : ''}${lead.email || ''}<br>
+            Last touch: ${lead.last_touch_date || 'never'}
+          </div>
+        </div>
+        <span class="status ${lead.status}">${LEAD_STATUS_LABELS[lead.status]}</span>
+      </div>
+
+      <div class="edit-grid">
+        <div>
+          <label>Status</label>
+          <select class="f-lead-status" data-id="${lead.id}">
+            ${LEAD_STATUSES.map(s => `<option value="${s}" ${s === lead.status ? 'selected' : ''}>${LEAD_STATUS_LABELS[s]}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label>Last touch date</label>
+          <input type="date" class="f-lead-touch" data-id="${lead.id}" value="${lead.last_touch_date || ''}">
+        </div>
+        <div class="full">
+          <label>Notes</label>
+          <textarea class="f-lead-notes" data-id="${lead.id}" rows="2">${lead.notes || ''}</textarea>
+        </div>
+      </div>
+
+      <div class="card-actions">
+        <button class="btn-quick" data-id="${lead.id}" data-touch-today="1">Mark Contacted Today</button>
+        <button class="btn-approve" data-id="${lead.id}" data-save="1">Save Changes</button>
+        <button class="btn-reject" data-id="${lead.id}" data-delete="1">Delete</button>
+      </div>
+    `;
+    return card;
+  }
+
+  function attachLeadCardListeners(){
+    document.querySelectorAll('[data-touch-today="1"]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        const today = new Date().toISOString().slice(0, 10);
+        const card = btn.closest('.lead-card');
+        const status = card.querySelector('.f-lead-status').value;
+        const nextStatus = status === 'not_contacted' ? 'contacted' : status;
+        const { error } = await supabaseClient
+          .from('host_leads')
+          .update({ last_touch_date: today, status: nextStatus, updated_at: new Date().toISOString() })
+          .eq('id', id);
+        if(error){ alert('Update failed: ' + error.message); return; }
+        loadHostLeads();
+      });
+    });
+
+    document.querySelectorAll('[data-save="1"]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        const card = btn.closest('.lead-card');
+        const status = card.querySelector('.f-lead-status').value;
+        const last_touch_date = card.querySelector('.f-lead-touch').value || null;
+        const notes = card.querySelector('.f-lead-notes').value.trim() || null;
+        const { error } = await supabaseClient
+          .from('host_leads')
+          .update({ status, last_touch_date, notes, updated_at: new Date().toISOString() })
+          .eq('id', id);
+        if(error){ alert('Update failed: ' + error.message); return; }
+        loadHostLeads();
+      });
+    });
+
+    document.querySelectorAll('[data-delete="1"]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if(!confirm('Delete this lead?')) return;
+        const id = btn.dataset.id;
+        const { error } = await supabaseClient.from('host_leads').delete().eq('id', id);
+        if(error){ alert('Delete failed: ' + error.message); return; }
+        loadHostLeads();
+      });
+    });
   }
 
   checkSession();
