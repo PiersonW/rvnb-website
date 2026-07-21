@@ -122,6 +122,48 @@
     grid-column:1/-1; background:var(--night); color:var(--amber); border:none; padding:10px;
     font-weight:700; font-size:12px; text-transform:uppercase; border-radius:10px; cursor:pointer; margin-top:2px;
   }
+
+  /* Calendar tab */
+  .cal-toolbar{
+    display:flex; justify-content:space-between; align-items:center; gap:12px;
+    margin-bottom:14px; flex-wrap:wrap;
+  }
+  .cal-toolbar select{
+    padding:9px 12px; border:2px solid var(--night); border-radius:10px;
+    font-family:'Inter',sans-serif; font-size:13px; background:#fff; max-width:100%;
+  }
+  .cal-nav{display:flex; align-items:center; gap:10px; font-family:'Manrope',sans-serif; font-weight:700; font-size:14px;}
+  .cal-nav button{
+    background:#fff; border:2px solid var(--night); color:var(--night); width:32px; height:32px;
+    border-radius:8px; font-size:16px; cursor:pointer; line-height:1;
+  }
+  .cal-legend{display:flex; gap:16px; margin-bottom:16px; flex-wrap:wrap; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--asphalt);}
+  .legend-item{display:flex; align-items:center; gap:6px;}
+  .legend-dot{width:12px; height:12px; border-radius:3px; display:inline-block; border:1px solid rgba(0,0,0,0.15);}
+  .legend-dot.booked{background:#f0c9c0;}
+  .legend-dot.blocked{background:#d9dde3;}
+  .legend-dot.available{background:#d8ebe0;}
+
+  .cal-grid{
+    display:grid; grid-template-columns:repeat(7, 1fr); gap:6px;
+    background:#fff; border:2px solid var(--night); border-radius:10px; padding:14px;
+  }
+  .cal-dow{
+    font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase;
+    color:var(--asphalt); text-align:center; padding-bottom:6px;
+  }
+  .cal-cell{
+    aspect-ratio:1/1; border-radius:8px; display:flex; align-items:flex-start; justify-content:flex-end;
+    padding:5px 7px; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--night);
+    background:#d8ebe0; /* available */
+  }
+  .cal-cell.empty-cell{background:none;}
+  .cal-cell.booked{background:#f0c9c0;}
+  .cal-cell.blocked{background:#d9dde3;}
+  @media(max-width:520px){
+    .cal-cell{font-size:10px; padding:3px 5px; border-radius:5px;}
+    .cal-grid{gap:3px; padding:8px;}
+  }
 </style>
   <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "36911a5edb0f4bdf95ab6da85ceccd46"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
@@ -144,11 +186,28 @@
   <div class="tabs">
     <button class="tab-btn active" data-tab="listings">My Listings</button>
     <button class="tab-btn" data-tab="bookings">Bookings</button>
+    <button class="tab-btn" data-tab="calendar">Calendar</button>
     <button class="tab-btn" data-tab="revenue">Revenue</button>
   </div>
 
   <div id="listings-container" class="tab-panel active"><div class="empty">Loading...</div></div>
   <div id="bookings-container" class="tab-panel"></div>
+  <div id="calendar-container" class="tab-panel">
+    <div class="cal-toolbar">
+      <select id="cal-listing-select"></select>
+      <div class="cal-nav">
+        <button id="cal-prev" type="button">‹</button>
+        <span id="cal-month-label"></span>
+        <button id="cal-next" type="button">›</button>
+      </div>
+    </div>
+    <div class="cal-legend">
+      <span class="legend-item"><span class="legend-dot booked"></span>Booked</span>
+      <span class="legend-item"><span class="legend-dot blocked"></span>Blocked</span>
+      <span class="legend-item"><span class="legend-dot available"></span>Available</span>
+    </div>
+    <div id="cal-grid" class="cal-grid"></div>
+  </div>
   <div id="revenue-container" class="tab-panel"></div>
 </div>
 
@@ -170,6 +229,7 @@
     loadBookings();
     checkPayoutStatus();
     loadRevenue();
+    loadCalendarTab();
   }
 
   async function checkPayoutStatus(){
@@ -763,6 +823,101 @@
     }
     return null;
   }
+
+  // ============================================
+  // CALENDAR TAB
+  // ============================================
+  let calPartners = [];
+  let calPartnerId = null;
+  let calBookings = [];
+  let calBlocked = [];
+  let calMonth = new Date();
+  calMonth.setDate(1);
+
+  async function loadCalendarTab(){
+    const sel = document.getElementById('cal-listing-select');
+    const { data, error } = await supabaseClient
+      .from('partners')
+      .select('id, business_name')
+      .eq('host_id', currentUser.id)
+      .order('created_at', { ascending: false });
+
+    if(error || !data || data.length === 0){
+      document.getElementById('cal-grid').innerHTML = '<div class="empty">You don\'t have any listings yet.</div>';
+      sel.innerHTML = '';
+      return;
+    }
+
+    calPartners = data;
+    sel.innerHTML = calPartners.map(p => `<option value="${p.id}">${p.business_name}</option>`).join('');
+    calPartnerId = calPartners[0].id;
+    sel.value = calPartnerId;
+
+    await loadCalendarData();
+    renderCalendarGrid();
+  }
+
+  async function loadCalendarData(){
+    const [{ data: bookingsData }, { data: blockedData }] = await Promise.all([
+      supabaseClient.from('bookings').select('check_in, check_out, guest_name').eq('partner_id', calPartnerId).neq('status', 'cancelled'),
+      supabaseClient.from('blocked_dates').select('start_date, end_date, note').eq('partner_id', calPartnerId)
+    ]);
+    calBookings = bookingsData || [];
+    calBlocked = blockedData || [];
+  }
+
+  function calDateStatus(dateStr){
+    for(const b of calBookings){
+      if(dateStr >= b.check_in && dateStr < b.check_out) return { type: 'booked', label: b.guest_name ? 'Booked — ' + b.guest_name : 'Booked' };
+    }
+    for(const bl of calBlocked){
+      if(dateStr >= bl.start_date && dateStr < bl.end_date) return { type: 'blocked', label: bl.note ? 'Blocked — ' + bl.note : 'Blocked' };
+    }
+    return { type: 'available', label: 'Available' };
+  }
+
+  function renderCalendarGrid(){
+    const grid = document.getElementById('cal-grid');
+    const label = document.getElementById('cal-month-label');
+    if(!calPartnerId){
+      grid.innerHTML = '';
+      return;
+    }
+
+    const year = calMonth.getFullYear();
+    const month = calMonth.getMonth();
+    label.textContent = calMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+    const firstWeekday = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    let html = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => `<div class="cal-dow">${d}</div>`).join('');
+    for(let i = 0; i < firstWeekday; i++){
+      html += '<div class="cal-cell empty-cell"></div>';
+    }
+    for(let day = 1; day <= daysInMonth; day++){
+      const dateStr = `${year}-${String(month + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const status = calDateStatus(dateStr);
+      html += `<div class="cal-cell ${status.type}" title="${status.label}">${day}</div>`;
+    }
+    grid.innerHTML = html;
+  }
+
+  document.getElementById('cal-listing-select').addEventListener('change', async (e) => {
+    calPartnerId = e.target.value;
+    await loadCalendarData();
+    renderCalendarGrid();
+  });
+
+  document.getElementById('cal-prev').addEventListener('click', () => {
+    calMonth.setMonth(calMonth.getMonth() - 1);
+    renderCalendarGrid();
+  });
+
+  document.getElementById('cal-next').addEventListener('click', () => {
+    calMonth.setMonth(calMonth.getMonth() + 1);
+    renderCalendarGrid();
+  });
 
   init();
 </script>
