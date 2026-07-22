@@ -147,6 +147,7 @@
   .lead-card{padding:16px 20px;}
   .lead-card .card-top{align-items:center;}
   .lead-card .meta a{color:var(--night);}
+  .phone-link{color:var(--sign-green) !important; font-weight:700; text-decoration:underline;}
   .lead-summary{cursor:pointer; user-select:none;}
   .lead-summary h3{font-size:16px;}
   .lead-summary .meta{margin-top:2px;}
@@ -904,7 +905,7 @@
       <div class="lead-details">
         <div class="meta" style="margin-bottom:10px;">
           ${lead.address ? lead.address + '<br>' : ''}
-          ${lead.contact_name ? lead.contact_name + ' · ' : ''}${lead.phone ? lead.phone + ' · ' : ''}${lead.email || ''}<br>
+          ${lead.contact_name ? lead.contact_name + ' · ' : ''}${lead.phone ? `<a href="tel:${lead.phone.replace(/[^\d+]/g, '')}" class="phone-link">${lead.phone}</a> · ` : ''}${lead.email || ''}<br>
           Last touch: ${lead.last_touch_date || 'never'}
         </div>
 
