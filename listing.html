@@ -195,7 +195,7 @@
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbmhwY2lpeHFyaHJxcnp4a3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2MDMsImV4cCI6MjA5OTczMjYwM30.5a8nNSiSA7U89f2kGAHGNPPfYpFra0Ve7PIFtOq3GDk';
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  const stripe = Stripe('pk_test_51TuFPeCwR9zOQ7qopFOHOw9MzqF5ZQX1EzBWmRiuGSpqida5eYUhDoNipHhKODYQauKT4G1GKvIpR7NTT29LMKwk00rPe0omQp');
+  const stripe = Stripe('pk_live_51TuFPSCiyzdwSMUZzn04rm52CYdTEMZuobrouDReqX6zvbWzknQzAR8JYDyyptR5NAi4YNFmN1gI0Od8td8RJxgS00JIvDIA0b');
   const stripeElements = stripe.elements();
   const cardElement = stripeElements.create('card', {
     style: {
