@@ -267,7 +267,14 @@
     try{
       const { data, error } = await supabaseClient.auth.signUp({
         email, password,
-        options: { captchaToken: signupCaptchaToken }
+        options: {
+          captchaToken: signupCaptchaToken,
+          data: {
+            full_name: name,
+            role: 'host',
+            terms_accepted: 'true'
+          }
+        }
       });
       if(error){
         msg.className = 'msg show error';
@@ -277,26 +284,10 @@
         return;
       }
 
-      // Create the matching profile row
-      if(data.user){
-        const { error: profileError } = await supabaseClient.from('profiles').insert({
-          id: data.user.id,
-          email: email,
-          full_name: name,
-          role: 'host',
-          terms_accepted_at: new Date().toISOString()
-        });
-        if(profileError){
-          console.error('Profile creation failed:', profileError.message);
-          supabaseClient.functions.invoke('send-email', {
-            body: {
-              to: 'pierson.willhite@gmail.com',
-              subject: '⚠ Profile creation failed for new host signup',
-              html: `<p>A new host account was created (${email}) but the profiles row failed to save:</p><p>${profileError.message}</p><p>Run a fix similar to fix-melissa-profile.sql for this email (using role 'host').</p>`
-            }
-          }).catch(() => {});
-        }
-      }
+      // The profiles row is now created server-side by a database trigger
+      // (on_auth_user_created) the instant the account is created — no
+      // client-side insert needed, which avoids the RLS timing race that
+      // happens when email confirmation delays the client's session.
 
       msg.className = 'msg show success';
       msg.textContent = 'Account created! Redirecting...';
