@@ -276,7 +276,13 @@
 
     let result;
     if(authMode === 'signup'){
-      result = await supabaseClient.auth.signUp({ email, password, options: { captchaToken: authCaptchaToken } });
+      result = await supabaseClient.auth.signUp({
+        email, password,
+        options: {
+          captchaToken: authCaptchaToken,
+          data: { role: 'host', terms_accepted: 'true' }
+        }
+      });
     } else {
       result = await supabaseClient.auth.signInWithPassword({ email, password, options: { captchaToken: authCaptchaToken } });
     }
@@ -291,19 +297,17 @@
 
     currentUser = result.data.user;
 
-    // Ensure a matching profiles row exists (required by the foreign key on partners.host_id)
-    const profileUpsert = { id: currentUser.id, email: currentUser.email, role: 'host' };
-    if(authMode === 'signup') profileUpsert.terms_accepted_at = new Date().toISOString();
-    const { error: profileError } = await supabaseClient.from('profiles').upsert(profileUpsert);
-    if(profileError){
-      console.error('Profile creation failed:', profileError.message);
-      supabaseClient.functions.invoke('send-email', {
-        body: {
-          to: 'pierson.willhite@gmail.com',
-          subject: '⚠ Profile creation failed for new host signup',
-          html: `<p>A new host account was created (${currentUser.email}) but the profiles row failed to save:</p><p>${profileError.message}</p><p>Run a fix similar to fix-melissa-profile.sql for this email (using role 'host').</p>`
-        }
-      }).catch(() => {});
+    // For a brand-new signup, the profiles row is created server-side by the
+    // on_auth_user_created database trigger the instant the account exists —
+    // no client-side insert needed, which avoids the RLS timing race that
+    // happens when email confirmation delays the client's session.
+    //
+    // For an existing user logging in here for the first time as a host
+    // (their profile already exists, just maybe not marked role='host' yet),
+    // make sure their role reflects that — this update is safe since they're
+    // now fully authenticated as themselves.
+    if(authMode === 'login'){
+      await supabaseClient.from('profiles').update({ role: 'host' }).eq('id', currentUser.id);
     }
 
     authMsg.className = '';
