@@ -89,6 +89,7 @@
   .card-actions{display:flex; gap:8px; margin-top:16px; flex-wrap:wrap;}
   .card-actions button{padding:9px 16px; border-radius:10px; font-size:12px; font-weight:700; text-transform:uppercase; border:none; cursor:pointer;}
   .btn-save{background:var(--night); color:var(--amber);}
+  .btn-save-info{background:var(--night); color:var(--amber); border:none; padding:10px 18px; border-radius:10px; font-weight:700; font-size:12px; text-transform:uppercase; cursor:pointer;}
   .btn-approve{background:var(--sign-green); color:#fff;}
   .btn-pause{background:#e6e6e6; color:var(--night);}
   .btn-reject{background:var(--red); color:#fff;}
@@ -121,6 +122,30 @@
   .btn-add-block{
     grid-column:1/-1; background:var(--night); color:var(--amber); border:none; padding:10px;
     font-weight:700; font-size:12px; text-transform:uppercase; border-radius:10px; cursor:pointer; margin-top:2px;
+  }
+
+  /* Photos */
+  .photos-section{margin-top:18px; padding-top:16px; border-top:2px solid #eee0cf;}
+  .photos-section h4{font-size:12px; letter-spacing:0.04em; margin-bottom:10px;}
+  .photo-grid{display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px;}
+  .photo-thumb{
+    position:relative; width:90px; height:90px; border-radius:8px; overflow:hidden;
+    border:2px solid var(--night); flex-shrink:0;
+  }
+  .photo-thumb img{width:100%; height:100%; object-fit:cover; display:block;}
+  .photo-thumb .btn-remove-photo{
+    position:absolute; top:3px; right:3px; width:22px; height:22px; border-radius:50%;
+    background:var(--red); color:#fff; border:none; font-weight:700; font-size:13px; line-height:1;
+    cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  .photo-upload-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .photo-upload-row input[type="file"]{
+    font-family:'Inter',sans-serif; font-size:13px;
+  }
+  .photo-upload-hint{font-size:11px; color:var(--asphalt); margin-top:6px;}
+  .btn-upload-photos{
+    background:var(--night); color:var(--amber); border:none; padding:9px 16px;
+    font-weight:700; font-size:12px; text-transform:uppercase; border-radius:10px; cursor:pointer;
   }
 
   /* Calendar tab */
@@ -221,7 +246,7 @@
         </div>
       </div>
       <div class="card-actions">
-        <button class="btn-save" id="my-info-save">Save Changes</button>
+        <button class="btn-save-info" id="my-info-save">Save Changes</button>
       </div>
       <div class="save-msg" id="my-info-msg">Saved!</div>
     </div>
@@ -555,6 +580,7 @@
         <div class="meta">${p.address}, ${p.city}, ${p.state}</div>
 
         <div class="edit-grid">
+          <div class="full"><label>Property name</label><input type="text" class="f-name" value="${p.business_name}"></div>
           <div><label>Price per night ($)</label><input type="number" class="f-price" value="${p.price_per_night}"></div>
           <div><label>Spots available</label><input type="number" class="f-spots" value="${p.spots_available}"></div>
           <div><label>Earliest arrival</label><input type="time" class="f-arrival" value="${p.arrival_time}"></div>
@@ -568,6 +594,24 @@
           ${p.status === 'paused' ? `<button class="btn-approve" data-id="${p.id}" data-status="approved">Reactivate</button>` : ''}
         </div>
         <div class="save-msg">Saved!</div>
+
+        <div class="photos-section">
+          <h4>Photos</h4>
+          <div class="photo-grid" data-partner-id="${p.id}">
+            ${(p.photo_urls || '').split(',').map(s => s.trim()).filter(Boolean).map(url => `
+              <div class="photo-thumb">
+                <img src="${url}" alt="Listing photo">
+                <button class="btn-remove-photo" data-partner-id="${p.id}" data-url="${url}" title="Remove photo">×</button>
+              </div>
+            `).join('')}
+          </div>
+          <div class="photo-upload-row">
+            <input type="file" class="f-photo-upload" data-partner-id="${p.id}" accept="image/*" multiple>
+            <button class="btn-upload-photos" data-partner-id="${p.id}">Upload</button>
+          </div>
+          <div class="photo-upload-hint">Up to 5 photos total. New uploads are compressed automatically.</div>
+          <div class="save-msg photo-save-msg" data-partner-id="${p.id}"></div>
+        </div>
 
         <div class="blocked-section">
           <h4>Blocked dates</h4>
@@ -607,7 +651,18 @@
       btn.addEventListener('click', async () => {
         const card = btn.closest('.card');
         const id = btn.dataset.id;
+        const saveMsg = card.querySelector('.save-msg');
+
+        const business_name = card.querySelector('.f-name').value.trim();
+        if(!business_name){
+          saveMsg.style.color = 'var(--red)';
+          saveMsg.textContent = 'Property name can\'t be blank.';
+          saveMsg.style.display = 'block';
+          return;
+        }
+
         const { error } = await supabaseClient.from('partners').update({
+          business_name,
           price_per_night: parseFloat(card.querySelector('.f-price').value),
           spots_available: parseInt(card.querySelector('.f-spots').value, 10),
           arrival_time: card.querySelector('.f-arrival').value,
@@ -615,7 +670,6 @@
           rules: card.querySelector('.f-rules').value.trim()
         }).eq('id', id);
 
-        const saveMsg = card.querySelector('.save-msg');
         if(error){
           saveMsg.style.color = '#a4472b';
           saveMsg.textContent = 'Error: ' + error.message;
@@ -681,6 +735,85 @@
         if(!confirm('Remove this blocked date range? Travelers will be able to book these dates again.')) return;
         const { error } = await supabaseClient.from('blocked_dates').delete().eq('id', btn.dataset.id);
         if(error){ alert('Could not remove: ' + error.message); return; }
+        loadListings();
+      });
+    });
+
+    // Upload photos
+    document.querySelectorAll('.btn-upload-photos').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const partnerId = btn.dataset.partnerId;
+        const card = btn.closest('.card');
+        const fileInput = card.querySelector(`.f-photo-upload[data-partner-id="${partnerId}"]`);
+        const msgEl = card.querySelector(`.photo-save-msg[data-partner-id="${partnerId}"]`);
+        const existingUrls = Array.from(card.querySelectorAll(`.photo-grid[data-partner-id="${partnerId}"] img`)).map(img => img.src);
+
+        const files = Array.from(fileInput.files);
+        if(files.length === 0) return;
+
+        if(existingUrls.length + files.length > 5){
+          msgEl.style.color = 'var(--red)';
+          msgEl.textContent = `That's ${existingUrls.length + files.length} photos total — 5 max. Remove some first or upload fewer.`;
+          msgEl.style.display = 'block';
+          return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Uploading...';
+
+        const newUrls = [];
+        for(const file of files){
+          let uploadFile = file;
+          try{
+            uploadFile = await compressImage(file);
+          } catch(err){
+            console.error('Compression failed, uploading original:', err.message);
+          }
+
+          const filePath = `${Date.now()}-${Math.random().toString(36).slice(2)}-${uploadFile.name}`;
+          const { error: uploadError } = await supabaseClient.storage.from('listing-photos').upload(filePath, uploadFile);
+          if(uploadError){
+            msgEl.style.color = 'var(--red)';
+            msgEl.textContent = 'Upload failed: ' + uploadError.message;
+            msgEl.style.display = 'block';
+            btn.disabled = false;
+            btn.textContent = 'Upload';
+            return;
+          }
+          const { data: urlData } = supabaseClient.storage.from('listing-photos').getPublicUrl(filePath);
+          newUrls.push(urlData.publicUrl);
+        }
+
+        const allUrls = existingUrls.concat(newUrls);
+        const { error } = await supabaseClient.from('partners').update({ photo_urls: allUrls.join(',') }).eq('id', partnerId);
+
+        btn.disabled = false;
+        btn.textContent = 'Upload';
+
+        if(error){
+          msgEl.style.color = 'var(--red)';
+          msgEl.textContent = 'Could not save photos: ' + error.message;
+          msgEl.style.display = 'block';
+          return;
+        }
+
+        loadListings();
+      });
+    });
+
+    // Remove photo
+    document.querySelectorAll('.btn-remove-photo').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if(!confirm('Remove this photo from the listing?')) return;
+        const partnerId = btn.dataset.partnerId;
+        const urlToRemove = btn.dataset.url;
+        const card = btn.closest('.card');
+        const remainingUrls = Array.from(card.querySelectorAll(`.photo-grid[data-partner-id="${partnerId}"] img`))
+          .map(img => img.src)
+          .filter(url => url !== urlToRemove);
+
+        const { error } = await supabaseClient.from('partners').update({ photo_urls: remainingUrls.join(',') }).eq('id', partnerId);
+        if(error){ alert('Could not remove photo: ' + error.message); return; }
         loadListings();
       });
     });
@@ -862,6 +995,42 @@
         }
         loadBookings();
       });
+    });
+  }
+
+  function compressImage(file, maxDimension = 1600, quality = 0.8){
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const reader = new FileReader();
+
+      reader.onload = (e) => { img.src = e.target.result; };
+      reader.onerror = reject;
+
+      img.onload = () => {
+        let { width, height } = img;
+        if(width > maxDimension || height > maxDimension){
+          if(width > height){
+            height = Math.round(height * (maxDimension / width));
+            width = maxDimension;
+          } else {
+            width = Math.round(width * (maxDimension / height));
+            height = maxDimension;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob((blob) => {
+          if(!blob){ reject(new Error('Image compression failed')); return; }
+          resolve(new File([blob], file.name.replace(/\.(png|heic|heif)$/i, '.jpg'), { type: 'image/jpeg' }));
+        }, 'image/jpeg', quality);
+      };
+      img.onerror = () => reject(new Error('Could not read image file'));
+
+      reader.readAsDataURL(file);
     });
   }
 
