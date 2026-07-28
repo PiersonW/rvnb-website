@@ -68,6 +68,19 @@
     padding:8px 16px; border-radius:10px; font-size:12px; font-weight:700; text-transform:uppercase;
     border:none; cursor:pointer; background:var(--red); color:#fff;
   }
+  .edit-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .edit-grid > div{min-width:0;}
+  @media(max-width:520px){.edit-grid{grid-template-columns:1fr;}}
+  .edit-grid label{
+    font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; color:var(--asphalt);
+    display:block; margin-bottom:4px;
+  }
+  .edit-grid input{
+    width:100%; min-width:0; padding:9px 11px; border:2px solid var(--night); border-radius:10px;
+    font-family:'Inter',sans-serif; font-size:13px;
+  }
+  .btn-save{background:var(--night); color:var(--amber); border:none; padding:10px 18px; border-radius:10px; font-weight:700; font-size:12px; text-transform:uppercase; cursor:pointer;}
+  .save-msg{font-size:12px; margin-top:8px; display:none;}
 </style>
   <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "36911a5edb0f4bdf95ab6da85ceccd46"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
@@ -84,6 +97,29 @@
       <button id="logout-btn">Sign Out</button>
     </div>
   </header>
+
+  <div class="card" id="my-info-card">
+    <div class="card-top" id="my-info-toggle" style="cursor:pointer; align-items:center;">
+      <h3>My Info</h3>
+      <span id="my-info-caret" style="font-size:14px; color:var(--asphalt);">▾</span>
+    </div>
+    <div id="my-info-fields" style="display:none; margin-top:14px;">
+      <div class="edit-grid">
+        <div>
+          <label>Name</label>
+          <input type="text" id="my-info-name">
+        </div>
+        <div>
+          <label>Phone</label>
+          <input type="tel" id="my-info-phone">
+        </div>
+      </div>
+      <div class="card-actions">
+        <button class="btn-save" id="my-info-save">Save Changes</button>
+      </div>
+      <div class="save-msg" id="my-info-msg">Saved!</div>
+    </div>
+  </div>
 
   <div class="section-title">Upcoming</div>
   <div id="upcoming-container"><div class="empty">Loading...</div></div>
@@ -108,7 +144,7 @@
 
     const { data: profile } = await supabaseClient
       .from('profiles')
-      .select('is_paused')
+      .select('is_paused, full_name, phone')
       .eq('id', data.session.user.id)
       .single();
 
@@ -118,9 +154,39 @@
       return;
     }
 
+    if(profile){
+      document.getElementById('my-info-name').value = profile.full_name || '';
+      document.getElementById('my-info-phone').value = profile.phone || '';
+    }
+
     currentUser = data.session.user;
     loadTrips();
   }
+
+  document.getElementById('my-info-toggle').addEventListener('click', () => {
+    const fields = document.getElementById('my-info-fields');
+    const caret = document.getElementById('my-info-caret');
+    const isOpen = fields.style.display === 'block';
+    fields.style.display = isOpen ? 'none' : 'block';
+    caret.style.transform = isOpen ? '' : 'rotate(180deg)';
+  });
+
+  document.getElementById('my-info-save').addEventListener('click', async () => {
+    const full_name = document.getElementById('my-info-name').value.trim();
+    const phone = document.getElementById('my-info-phone').value.trim() || null;
+    const msg = document.getElementById('my-info-msg');
+
+    const { error } = await supabaseClient.from('profiles').update({ full_name, phone }).eq('id', currentUser.id);
+    if(error){
+      msg.style.color = 'var(--red)';
+      msg.textContent = 'Error: ' + error.message;
+      msg.style.display = 'block';
+      return;
+    }
+    msg.style.color = 'var(--sign-green)';
+    msg.textContent = 'Saved!';
+    msg.style.display = 'block';
+  });
 
   document.getElementById('logout-btn').addEventListener('click', async () => {
     await supabaseClient.auth.signOut();

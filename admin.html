@@ -222,6 +222,24 @@
   }
   .btn-pause-user{background:var(--red); color:#fff;}
   .btn-unpause-user{background:var(--sign-green); color:#fff;}
+  .btn-edit-user{background:#fff; border:2px solid var(--night); color:var(--night);}
+  .user-edit-fields{
+    display:none; gap:10px; align-items:flex-end; margin-top:12px; padding-top:12px;
+    border-top:1px solid #e0d8c8; flex-wrap:wrap;
+  }
+  .user-row.editing .user-edit-fields{display:flex;}
+  .user-edit-fields div{display:flex; flex-direction:column; gap:4px;}
+  .user-edit-fields label{
+    font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; color:var(--asphalt);
+  }
+  .user-edit-fields input{
+    padding:8px 11px; border:2px solid var(--night); border-radius:10px;
+    font-family:'Inter',sans-serif; font-size:13px; min-width:160px;
+  }
+  .btn-save-user{
+    background:var(--sign-green); color:#fff; border:none; padding:9px 16px; border-radius:10px;
+    font-weight:700; font-size:12px; text-transform:uppercase; cursor:pointer;
+  }
 </style>
   <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "36911a5edb0f4bdf95ab6da85ceccd46"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
@@ -1249,17 +1267,30 @@
   function renderUserRow(u){
     const row = document.createElement('div');
     row.className = 'user-row' + (u.is_paused ? ' paused' : '');
+    row.dataset.userId = u.id;
     const joined = u.created_at ? new Date(u.created_at).toLocaleDateString() : '';
     row.innerHTML = `
       <div class="user-info">
-        <h4>${u.full_name || '(no name)'}</h4>
+        <h4 class="user-display-name">${u.full_name || '(no name)'}</h4>
         <div class="meta">${u.email}${u.phone ? ' · ' + u.phone : ''} · Joined ${joined}</div>
         <div class="user-badges">
           <span class="role-badge ${u.role}">${u.role}</span>
           ${u.is_paused ? '<span class="role-badge paused">Paused</span>' : ''}
         </div>
+        <div class="user-edit-fields">
+          <div>
+            <label>Name</label>
+            <input type="text" class="f-user-name" value="${u.full_name || ''}">
+          </div>
+          <div>
+            <label>Phone</label>
+            <input type="tel" class="f-user-phone" value="${u.phone || ''}">
+          </div>
+          <button class="btn-save-user" data-id="${u.id}">Save</button>
+        </div>
       </div>
       <div class="user-actions">
+        <button class="btn-edit-user" data-id="${u.id}">Edit Info</button>
         ${u.is_paused
           ? `<button class="btn-unpause-user" data-id="${u.id}">Unpause</button>`
           : `<button class="btn-pause-user" data-id="${u.id}">Pause Account</button>`}
@@ -1304,6 +1335,25 @@
           .eq('host_id', userId)
           .eq('paused_by_admin', true);
 
+        loadUsers();
+      });
+    });
+
+    document.querySelectorAll('.btn-edit-user').forEach(btn => {
+      btn.addEventListener('click', () => {
+        btn.closest('.user-row').classList.toggle('editing');
+      });
+    });
+
+    document.querySelectorAll('.btn-save-user').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const row = btn.closest('.user-row');
+        const userId = btn.dataset.id;
+        const full_name = row.querySelector('.f-user-name').value.trim();
+        const phone = row.querySelector('.f-user-phone').value.trim() || null;
+
+        const { error } = await supabaseClient.from('profiles').update({ full_name, phone }).eq('id', userId);
+        if(error){ alert('Could not save: ' + error.message); return; }
         loadUsers();
       });
     });
