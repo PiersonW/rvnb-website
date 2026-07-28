@@ -437,6 +437,30 @@
       return;
     }
 
+    // Guard against booking a listing that's since been paused (by the host
+    // or by an admin account pause) — someone could still have this page
+    // open or bookmarked from before it was paused.
+    if(!listing || listing.status !== 'approved'){
+      msg.className = 'msg show error';
+      msg.textContent = 'This listing is not currently available for booking.';
+      return;
+    }
+
+    // If they're logged in, make sure their account hasn't been paused
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    if(sessionData.session){
+      const { data: profile } = await supabaseClient
+        .from('profiles')
+        .select('is_paused')
+        .eq('id', sessionData.session.user.id)
+        .single();
+      if(profile && profile.is_paused){
+        msg.className = 'msg show error';
+        msg.textContent = 'Your account has been paused and can\'t make new bookings. Please contact us if you believe this is a mistake.';
+        return;
+      }
+    }
+
     const ci = document.getElementById('check_in').value;
     const co = document.getElementById('check_out').value;
 

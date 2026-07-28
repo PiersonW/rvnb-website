@@ -105,6 +105,19 @@
       window.location.href = 'traveler-login.html?return=traveler-dashboard.html';
       return;
     }
+
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('is_paused')
+      .eq('id', data.session.user.id)
+      .single();
+
+    if(profile && profile.is_paused){
+      await supabaseClient.auth.signOut();
+      window.location.href = 'traveler-login.html?paused=1';
+      return;
+    }
+
     currentUser = data.session.user;
     loadTrips();
   }

@@ -196,6 +196,7 @@
       <h1>Host Dashboard</h1>
     </div>
     <div style="display:flex; gap:10px;">
+      <a href="browse.html" style="border:2px solid var(--sign-green); color:var(--sign-green); padding:8px 16px; font-size:12px; text-transform:uppercase; font-weight:700; border-radius:10px; text-decoration:none; display:inline-flex; align-items:center;">Browse Listings</a>
       <a href="index.html" style="border:2px solid var(--asphalt); color:var(--asphalt); padding:8px 16px; font-size:12px; text-transform:uppercase; font-weight:700; border-radius:10px; text-decoration:none; display:inline-flex; align-items:center;">← Home</a>
       <button id="logout-btn">Sign Out</button>
     </div>
@@ -251,6 +252,19 @@
       window.location.href = 'host-login.html?return=host-dashboard.html';
       return;
     }
+
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('is_paused')
+      .eq('id', data.session.user.id)
+      .single();
+
+    if(profile && profile.is_paused){
+      await supabaseClient.auth.signOut();
+      window.location.href = 'host-login.html?paused=1';
+      return;
+    }
+
     currentUser = data.session.user;
     loadListings();
     loadBookings();
