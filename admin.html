@@ -222,6 +222,22 @@
   }
   .btn-pause-user{background:var(--red); color:#fff;}
   .btn-unpause-user{background:var(--sign-green); color:#fff;}
+
+  /* Waitlist tab */
+  .waitlist-row{
+    display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap;
+    background:#fff; border:2px solid var(--night); border-radius:10px; padding:14px 18px; margin-bottom:10px;
+  }
+  .waitlist-info h4{font-size:15px; margin-bottom:2px;}
+  .waitlist-info .meta{font-size:12px;}
+  .state-pill{
+    font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase;
+    padding:3px 8px; border-radius:6px; background:#d8ebe0; color:var(--sign-green); margin-top:4px; display:inline-block;
+  }
+  .btn-approve-waitlist{
+    background:var(--sign-green); color:#fff; border:none; padding:9px 16px; border-radius:10px;
+    font-weight:700; font-size:12px; text-transform:uppercase; cursor:pointer;
+  }
   .btn-edit-user{background:#fff; border:2px solid var(--night); color:var(--night);}
   .user-edit-fields{
     display:none; gap:10px; align-items:flex-end; margin-top:12px; padding-top:12px;
@@ -274,6 +290,7 @@
       <button class="tab-btn" data-tab="bookings">Bookings</button>
       <button class="tab-btn" data-tab="leads">Host Leads</button>
       <button class="tab-btn" data-tab="users">Users</button>
+      <button class="tab-btn" data-tab="waitlist">Waitlist</button>
     </div>
     <div id="listings-container" class="tab-panel active"></div>
     <div id="bookings-container" class="tab-panel"></div>
@@ -283,6 +300,13 @@
         <div class="lead-filters" id="user-role-filters"></div>
       </div>
       <div id="users-list-container"></div>
+    </div>
+    <div id="waitlist-container" class="tab-panel">
+      <div class="users-toolbar">
+        <input type="text" id="waitlist-search" placeholder="Search by name, email, or city...">
+        <div class="lead-filters" id="waitlist-state-filters"></div>
+      </div>
+      <div id="waitlist-list-container"></div>
     </div>
     <div id="leads-container" class="tab-panel">
       <div class="lead-toolbar">
@@ -398,6 +422,7 @@
     loadBookings();
     loadHostLeads();
     loadUsers();
+    loadWaitlist();
   }
 
   document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -419,7 +444,6 @@
 
   let showPausedListings = false;
   let showDeletedListings = false;
-  let showWaitlistListings = false;
 
   async function loadListings(){
     container.innerHTML = '<div class="empty">Loading listings...</div>';
@@ -440,32 +464,13 @@
     const active = data.filter(p => p.status !== 'paused' && p.status !== 'deleted' && p.status !== 'waitlist');
     const paused = data.filter(p => p.status === 'paused');
     const deleted = data.filter(p => p.status === 'deleted');
-    const waitlist = data.filter(p => p.status === 'waitlist');
 
     container.innerHTML = '';
 
-    if(active.length === 0 && !showPausedListings && !showDeletedListings && !showWaitlistListings){
+    if(active.length === 0 && !showPausedListings && !showDeletedListings){
       container.innerHTML = '<div class="empty">No active listings right now.</div>';
     }
     active.forEach(p => container.appendChild(renderListingCard(p)));
-
-    if(waitlist.length > 0){
-      const toggleBtn = document.createElement('button');
-      toggleBtn.className = 'archive-toggle';
-      toggleBtn.style.borderColor = 'var(--sign-green)';
-      toggleBtn.style.color = 'var(--sign-green)';
-      toggleBtn.textContent = showWaitlistListings
-        ? `Hide waitlist — outside current market (${waitlist.length})`
-        : `Show waitlist — outside current market (${waitlist.length})`;
-      toggleBtn.addEventListener('click', () => {
-        showWaitlistListings = !showWaitlistListings;
-        loadListings();
-      });
-      container.appendChild(toggleBtn);
-      if(showWaitlistListings){
-        waitlist.forEach(p => container.appendChild(renderListingCard(p)));
-      }
-    }
 
     if(paused.length > 0){
       const toggleBtn = document.createElement('button');
@@ -1355,6 +1360,117 @@
         const { error } = await supabaseClient.from('profiles').update({ full_name, phone }).eq('id', userId);
         if(error){ alert('Could not save: ' + error.message); return; }
         loadUsers();
+      });
+    });
+  }
+
+  // ============================================
+  // WAITLIST TAB
+  // ============================================
+  let allWaitlist = [];
+  let waitlistSearchTerm = '';
+  let waitlistStateFilter = 'all';
+
+  async function loadWaitlist(){
+    const container = document.getElementById('waitlist-list-container');
+    container.innerHTML = '<div class="empty">Loading...</div>';
+
+    const { data, error } = await supabaseClient
+      .from('partners')
+      .select('*')
+      .eq('status', 'waitlist')
+      .order('created_at', { ascending: false });
+
+    if(error){
+      container.innerHTML = '<div class="empty">Could not load waitlist: ' + error.message + '</div>';
+      return;
+    }
+
+    allWaitlist = data;
+    renderWaitlistFilters();
+    renderWaitlistList();
+  }
+
+  function renderWaitlistFilters(){
+    const filterBar = document.getElementById('waitlist-state-filters');
+    const states = [...new Set(allWaitlist.map(p => (p.state || '—').toUpperCase()))].sort();
+
+    const chips = [{ key: 'all', label: 'All (' + allWaitlist.length + ')' }].concat(
+      states.map(s => ({ key: s, label: s + ' (' + allWaitlist.filter(p => (p.state || '—').toUpperCase() === s).length + ')' }))
+    );
+
+    filterBar.innerHTML = chips.map(c => `
+      <button class="lead-filter-btn ${waitlistStateFilter === c.key ? 'active' : ''}" data-state-filter="${c.key}">${c.label}</button>
+    `).join('');
+
+    filterBar.querySelectorAll('.lead-filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        waitlistStateFilter = btn.dataset.stateFilter;
+        renderWaitlistFilters();
+        renderWaitlistList();
+      });
+    });
+  }
+
+  document.getElementById('waitlist-search').addEventListener('input', (e) => {
+    waitlistSearchTerm = e.target.value.trim().toLowerCase();
+    renderWaitlistList();
+  });
+
+  function renderWaitlistList(){
+    const container = document.getElementById('waitlist-list-container');
+
+    let visible = allWaitlist;
+    if(waitlistStateFilter !== 'all'){
+      visible = visible.filter(p => (p.state || '—').toUpperCase() === waitlistStateFilter);
+    }
+    if(waitlistSearchTerm){
+      visible = visible.filter(p =>
+        (p.contact_name || '').toLowerCase().includes(waitlistSearchTerm) ||
+        (p.business_name || '').toLowerCase().includes(waitlistSearchTerm) ||
+        (p.contact_email || '').toLowerCase().includes(waitlistSearchTerm) ||
+        (p.city || '').toLowerCase().includes(waitlistSearchTerm)
+      );
+    }
+
+    if(visible.length === 0){
+      container.innerHTML = '<div class="empty">No waitlist entries match.</div>';
+      return;
+    }
+
+    container.innerHTML = '';
+    visible.forEach(p => container.appendChild(renderWaitlistRow(p)));
+    attachWaitlistRowListeners();
+  }
+
+  function renderWaitlistRow(p){
+    const row = document.createElement('div');
+    row.className = 'waitlist-row';
+    const joined = p.created_at ? new Date(p.created_at).toLocaleDateString() : '';
+    row.innerHTML = `
+      <div class="waitlist-info">
+        <h4>${p.business_name || '(no name)'}</h4>
+        <div class="meta">
+          ${p.contact_name ? p.contact_name + ' · ' : ''}${p.contact_email || ''}${p.contact_phone ? ' · ' + p.contact_phone : ''}<br>
+          ${p.address ? p.address + ', ' : ''}${p.city || ''} · Joined ${joined}
+        </div>
+        <span class="state-pill">${(p.state || '—').toUpperCase()}</span>
+      </div>
+      <div class="waitlist-actions">
+        <button class="btn-approve-waitlist" data-id="${p.id}">Move to Review Queue</button>
+      </div>
+    `;
+    return row;
+  }
+
+  function attachWaitlistRowListeners(){
+    document.querySelectorAll('.btn-approve-waitlist').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if(!confirm('Move this listing into your normal pending-review queue? Only do this once you\'re actually open in their state.')) return;
+        const { error } = await supabaseClient.from('partners').update({ status: 'pending' }).eq('id', btn.dataset.id);
+        if(error){ alert('Could not update: ' + error.message); return; }
+        loadWaitlist();
+        loadListings();
       });
     });
   }
