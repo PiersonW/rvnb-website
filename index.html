@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RVnB — Empty Lots After Dark, Income Overnight</title>
-<meta name="description" content="RVnB connects RV travelers with businesses that have unused parking after hours — restaurants, churches, gyms, offices, residential. Verified guests, automated payouts, zero disruption to your day.">
+<meta name="description" content="RVnB connects RV travelers with businesses that have unused parking after hours — restaurants, churches, gyms, offices. Verified guests, automated payouts, zero disruption to your day.">
 <meta property="og:title" content="RVnB — Sleep Anywhere. Discover Everywhere.">
 <meta property="og:description" content="Turn unused parking into overnight income while your business sleeps. Verified guests, automated payouts, zero disruption to your day.">
 <meta property="og:image" content="https://tryrvnb.com/og-image.png">
@@ -388,20 +388,24 @@
     </div>
 
     <!-- Logged OUT state -->
-    <div id="nav-logged-out" style="display:flex; gap:10px; align-items:center; margin-left:auto; position:relative;">
-      <button id="login-menu-btn" class="btn btn-outline" style="padding:10px 16px; font-size:12px; border-color:var(--night); color:var(--night); cursor:pointer; display:flex; align-items:center; gap:6px;">
-        Login ▾
-      </button>
-      <div id="login-menu-dropdown" style="display:none; position:absolute; top:calc(100% + 8px); left:0; background:#fff; border:2px solid var(--night); border-radius:3px; min-width:170px; z-index:100; overflow:hidden; box-shadow:0 6px 16px rgba(0,0,0,0.2);">
-        <a href="traveler-login.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #e0ddd0;">Traveler Login</a>
-        <a href="host-login.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none;">Host Login</a>
+    <div id="nav-logged-out" style="display:flex; gap:10px; align-items:center; margin-left:auto;">
+      <div id="login-menu-wrap" style="position:relative;">
+        <button id="login-menu-btn" class="btn btn-outline" style="padding:10px 16px; font-size:12px; border-color:var(--night); color:var(--night); cursor:pointer; display:flex; align-items:center; gap:6px;">
+          Login ▾
+        </button>
+        <div id="login-menu-dropdown" style="display:none; position:absolute; top:calc(100% + 8px); left:0; background:#fff; border:2px solid var(--night); border-radius:3px; min-width:170px; z-index:100; overflow:hidden; box-shadow:0 6px 16px rgba(0,0,0,0.2);">
+          <a href="traveler-login.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #e0ddd0;">Traveler Login</a>
+          <a href="host-login.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none;">Host Login</a>
+        </div>
       </div>
-      <button id="get-started-menu-btn" class="btn btn-amber" style="padding:10px 18px; font-size:12px; border:none; cursor:pointer; display:flex; align-items:center; gap:6px;">
-        Get Started ▾
-      </button>
-      <div id="get-started-menu-dropdown" style="display:none; position:absolute; top:calc(100% + 8px); right:0; background:#fff; border:2px solid var(--night); border-radius:3px; min-width:190px; z-index:100; overflow:hidden; box-shadow:0 6px 16px rgba(0,0,0,0.2);">
-        <a href="browse.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #e0ddd0;">Find a Spot (Traveler)</a>
-        <a href="list-your-lot.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none;">List Your Lot (Host)</a>
+      <div id="get-started-menu-wrap" style="position:relative;">
+        <button id="get-started-menu-btn" class="btn btn-amber" style="padding:10px 18px; font-size:12px; border:none; cursor:pointer; display:flex; align-items:center; gap:6px;">
+          Get Started ▾
+        </button>
+        <div id="get-started-menu-dropdown" style="display:none; position:absolute; top:calc(100% + 8px); right:0; background:#fff; border:2px solid var(--night); border-radius:3px; min-width:190px; z-index:100; overflow:hidden; box-shadow:0 6px 16px rgba(0,0,0,0.2);">
+          <a href="browse.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #e0ddd0;">Find a Spot (Traveler)</a>
+          <a href="list-your-lot.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none;">List Your Lot (Host)</a>
+        </div>
       </div>
     </div>
 
@@ -979,28 +983,33 @@
   });
 
   // Logged-out Login dropdown (Traveler Login / Host Login)
-  (function initLoginDropdown(){
-    const menuBtn = document.getElementById('login-menu-btn');
-    const dropdown = document.getElementById('login-menu-dropdown');
-    if(!menuBtn) return;
-    menuBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-    });
-    document.addEventListener('click', () => { dropdown.style.display = 'none'; });
-  })();
+  // Nav dropdowns: open on hover (like a normal menu), close automatically when
+  // the mouse leaves — with a short delay so moving from the button down into
+  // the dropdown itself doesn't cause it to flicker shut. Click still works too,
+  // since touch devices don't have hover.
+  function setupNavDropdown(wrapId, btnId, dropdownId){
+    const wrap = document.getElementById(wrapId);
+    const btn = document.getElementById(btnId);
+    const dropdown = document.getElementById(dropdownId);
+    if(!wrap || !btn || !dropdown) return;
 
-  // Get Started dropdown (Find a Spot / List Your Lot) — same pattern as Login
-  (function initGetStartedDropdown(){
-    const menuBtn = document.getElementById('get-started-menu-btn');
-    const dropdown = document.getElementById('get-started-menu-dropdown');
-    if(!menuBtn) return;
-    menuBtn.addEventListener('click', (e) => {
+    let closeTimer = null;
+    const open = () => { clearTimeout(closeTimer); dropdown.style.display = 'block'; };
+    const scheduleClose = () => { clearTimeout(closeTimer); closeTimer = setTimeout(() => { dropdown.style.display = 'none'; }, 200); };
+
+    wrap.addEventListener('mouseenter', open);
+    wrap.addEventListener('mouseleave', scheduleClose);
+
+    btn.addEventListener('click', (e) => {
       e.stopPropagation();
       dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
     });
+
     document.addEventListener('click', () => { dropdown.style.display = 'none'; });
-  })();
+  }
+
+  setupNavDropdown('login-menu-wrap', 'login-menu-btn', 'login-menu-dropdown');
+  setupNavDropdown('get-started-menu-wrap', 'get-started-menu-btn', 'get-started-menu-dropdown');
 
   // Show the account dropdown (instead of a row of buttons) when logged in
   (function checkAuthStatus(){
@@ -1023,13 +1032,7 @@
         document.getElementById('admin-btn').style.display = 'block';
       }
 
-      const menuBtn = document.getElementById('account-menu-btn');
-      const dropdown = document.getElementById('account-menu-dropdown');
-      menuBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-      });
-      document.addEventListener('click', () => { dropdown.style.display = 'none'; });
+      setupNavDropdown('nav-logged-in', 'account-menu-btn', 'account-menu-dropdown');
 
       document.getElementById('signout-btn').addEventListener('click', async () => {
         await authClient.auth.signOut();
