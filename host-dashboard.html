@@ -546,7 +546,7 @@
     const container = document.getElementById('listings-container');
     container.innerHTML = '<div class="empty">Loading...</div>';
 
-    const { data, error } = await supabaseClient.from('partners').select('*').eq('host_id', currentUser.id).order('created_at', { ascending: false });
+    const { data, error } = await supabaseClient.from('partners').select('*').eq('host_id', currentUser.id).neq('status', 'deleted').order('created_at', { ascending: false });
 
     if(error){
       container.innerHTML = '<div class="empty">Could not load listings: ' + error.message + '</div>';
@@ -1131,6 +1131,7 @@
       .from('partners')
       .select('id, business_name')
       .eq('host_id', currentUser.id)
+      .neq('status', 'deleted')
       .order('created_at', { ascending: false });
 
     if(error || !data || data.length === 0){
