@@ -247,8 +247,15 @@
 
   const amberIcon = L.divIcon({
     className: 'map-pin-wrapper',
-    html: '<div style="background:#FFB547;width:16px;height:16px;border-radius:50%;border:3px solid #0B1220;"></div>',
-    iconSize: [16,16],
+    html: `
+      <svg width="30" height="40" viewBox="0 0 30 40" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+        <path d="M15 0C6.7 0 0 6.7 0 15c0 11.25 15 25 15 25s15-13.75 15-25C30 6.7 23.3 0 15 0z" fill="#FFB547" stroke="#0B1220" stroke-width="2"/>
+        <circle cx="15" cy="15" r="6" fill="#0B1220"/>
+      </svg>
+    `,
+    iconSize: [30, 40],
+    iconAnchor: [15, 40],
+    popupAnchor: [0, -36],
   });
 
   const allMarkers = []; // { marker, data } — used by search to filter/re-center
