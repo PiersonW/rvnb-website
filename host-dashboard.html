@@ -581,10 +581,30 @@
 
         <div class="edit-grid">
           <div class="full"><label>Property name</label><input type="text" class="f-name" value="${p.business_name}"></div>
+          <div>
+            <label>Type of business</label>
+            <select class="f-business-type">
+              <option value="">Select...</option>
+              <option value="residential" ${p.business_type === 'residential' ? 'selected' : ''}>Residential</option>
+              <option value="church" ${p.business_type === 'church' ? 'selected' : ''}>Church</option>
+              <option value="gym" ${p.business_type === 'gym' ? 'selected' : ''}>Gym</option>
+              <option value="restaurant" ${p.business_type === 'restaurant' ? 'selected' : ''}>Restaurant</option>
+              <option value="office" ${p.business_type === 'office' ? 'selected' : ''}>Office</option>
+              <option value="warehouse" ${p.business_type === 'warehouse' ? 'selected' : ''}>Warehouse / Industrial</option>
+              <option value="retail" ${p.business_type === 'retail' ? 'selected' : ''}>Retail / Strip Mall</option>
+              <option value="other" ${p.business_type === 'other' ? 'selected' : ''}>Other</option>
+            </select>
+          </div>
           <div><label>Price per night ($)</label><input type="number" class="f-price" value="${p.price_per_night}"></div>
           <div><label>Spots available</label><input type="number" class="f-spots" value="${p.spots_available}"></div>
           <div><label>Earliest arrival</label><input type="time" class="f-arrival" value="${p.arrival_time}"></div>
           <div><label>Latest departure</label><input type="time" class="f-departure" value="${p.departure_time}"></div>
+          <div class="full" style="display:flex; align-items:flex-start; gap:10px;">
+            <input type="checkbox" class="f-24hr" style="width:auto; margin-top:3px;" ${p.allows_24hr_parking ? 'checked' : ''}>
+            <label style="font-weight:normal; text-transform:none; letter-spacing:normal; font-size:13px; margin-bottom:0;">
+              Designated RV spot — 24-hour parking allowed, no daily departure required
+            </label>
+          </div>
           <div class="full"><label>Rules / notes</label><textarea class="f-rules" rows="2">${p.rules || ''}</textarea></div>
         </div>
 
@@ -663,10 +683,12 @@
 
         const { error } = await supabaseClient.from('partners').update({
           business_name,
+          business_type: card.querySelector('.f-business-type').value || null,
           price_per_night: parseFloat(card.querySelector('.f-price').value),
           spots_available: parseInt(card.querySelector('.f-spots').value, 10),
           arrival_time: card.querySelector('.f-arrival').value,
           departure_time: card.querySelector('.f-departure').value,
+          allows_24hr_parking: card.querySelector('.f-24hr').checked,
           rules: card.querySelector('.f-rules').value.trim()
         }).eq('id', id);
 
@@ -1045,7 +1067,7 @@
   async function notifyTraveler(bookingId, action){
     const { data: booking } = await supabaseClient
       .from('bookings')
-      .select('guest_name, guest_email, check_in, check_out, total_charged, partners(business_name, address, city, state, arrival_time, departure_time, rules)')
+      .select('guest_name, guest_email, check_in, check_out, total_charged, partners(business_name, address, city, state, arrival_time, departure_time, allows_24hr_parking, rules)')
       .eq('id', bookingId)
       .single();
     if(!booking || !booking.guest_email) return null;
@@ -1071,7 +1093,9 @@
           ${booking.total_charged ? `<tr><td style="padding:4px 12px 4px 0; color:#555;">Total paid</td><td>$${Number(booking.total_charged).toFixed(2)}</td></tr>` : ''}
         </table>
         ${p && p.rules ? `<p><b>Host rules:</b><br>${p.rules}</p>` : ''}
-        <p><b>⚠ Daily departure required.</b> Even for multi-night stays, your vehicle must leave the lot by <b>${p ? formatTime12hr(p.departure_time) : 'the departure time'}</b> each morning and may not return until <b>${p ? formatTime12hr(p.arrival_time) : 'the arrival time'}</b> that evening — every night of your stay, not just once.</p>
+        ${p && p.allows_24hr_parking
+          ? `<p><b>24-hour parking.</b> This is a designated RV spot — you're welcome to stay parked for the full length of your booking without leaving and returning daily.</p>`
+          : `<p><b>⚠ Daily departure required.</b> Even for multi-night stays, your vehicle must leave the lot by <b>${p ? formatTime12hr(p.departure_time) : 'the departure time'}</b> each morning and may not return until <b>${p ? formatTime12hr(p.arrival_time) : 'the arrival time'}</b> that evening — every night of your stay, not just once.</p>`}
         <p>Safe travels!</p>
       `
       : `<p>Hi ${booking.guest_name},</p><p>Unfortunately your booking request at <b>${spot}</b> for ${booking.check_in} → ${booking.check_out} was not able to be confirmed. Your card was not charged — any authorization hold will be released automatically by your bank within a few days.</p><p>Feel free to look for another spot on RVnB.</p>`;

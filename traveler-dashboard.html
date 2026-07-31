@@ -60,6 +60,7 @@
     margin-top:14px; background:#402a10; color:#f5c877; padding:10px 12px;
     border-radius:10px; font-size:12px; line-height:1.5;
   }
+  .turnover-reminder.allows-24hr{background:#16321f; color:#8fd8ac;}
   .btn-view{
     padding:8px 16px; border-radius:10px; font-size:12px; font-weight:700; text-transform:uppercase;
     border:2px solid var(--night); color:var(--night); text-decoration:none; display:inline-flex; align-items:center;
@@ -201,7 +202,7 @@
 
     const { data, error } = await supabaseClient
       .from('bookings')
-      .select('*, partners(id, business_name, city, state, address, arrival_time, departure_time, rules)')
+      .select('*, partners(id, business_name, city, state, address, arrival_time, departure_time, allows_24hr_parking, rules)')
       .eq('traveler_id', currentUser.id)
       .order('check_in', { ascending: true });
 
@@ -254,7 +255,11 @@
         <div class="detail-row"><span class="detail-label">Leave by</span><span>${formatTime12hr(p.departure_time)}</span></div>
         ${p.rules ? `<div class="detail-row full"><span class="detail-label">House rules</span><span>${p.rules}</span></div>` : ''}
       </div>
-      <div class="turnover-reminder">⚠ Vehicle must leave the lot by ${formatTime12hr(p.departure_time)} each morning and may not return until ${formatTime12hr(p.arrival_time)} — every night of this stay, not just once.</div>
+      <div class="turnover-reminder${p.allows_24hr_parking ? ' allows-24hr' : ''}">${
+        p.allows_24hr_parking
+          ? '✓ 24-hour parking — this is a designated RV spot, no daily departure required.'
+          : `⚠ Vehicle must leave the lot by ${formatTime12hr(p.departure_time)} each morning and may not return until ${formatTime12hr(p.arrival_time)} — every night of this stay, not just once.`
+      }</div>
       ` : ''}
 
       <div class="card-actions">

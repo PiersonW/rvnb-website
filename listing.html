@@ -268,8 +268,16 @@
     document.getElementById('l-arrival').textContent = formatTime12hr(data.arrival_time);
     document.getElementById('l-departure').textContent = formatTime12hr(data.departure_time);
 
-    document.getElementById('daily-turnover-notice').innerHTML =
-      `<b>⚠ Daily departure required.</b> Even for multi-night stays, your vehicle must leave the lot by <b>${formatTime12hr(data.departure_time)}</b> each morning and may not return until <b>${formatTime12hr(data.arrival_time)}</b> that evening. This is not a spot to park continuously for the length of your stay — it's overnight parking only, every night of your booking.`;
+    const turnoverNotice = document.getElementById('daily-turnover-notice');
+    if(data.allows_24hr_parking){
+      turnoverNotice.style.background = '#16321f';
+      turnoverNotice.style.color = '#8fd8ac';
+      turnoverNotice.innerHTML = `<b>✓ 24-hour parking.</b> This is a designated RV spot — you're welcome to stay parked here for the full length of your booking without leaving and returning daily.`;
+    } else {
+      turnoverNotice.style.background = '#402a10';
+      turnoverNotice.style.color = '#f5c877';
+      turnoverNotice.innerHTML = `<b>⚠ Daily departure required.</b> Even for multi-night stays, your vehicle must leave the lot by <b>${formatTime12hr(data.departure_time)}</b> each morning and may not return until <b>${formatTime12hr(data.arrival_time)}</b> that evening. This is not a spot to park continuously for the length of your stay — it's overnight parking only, every night of your booking.`;
+    }
 
     if(data.rules){
       document.getElementById('l-rules-box').style.display = 'block';

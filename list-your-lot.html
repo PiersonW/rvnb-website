@@ -161,6 +161,7 @@
         <label for="business_type">Type of business</label>
         <select id="business_type" required>
           <option value="">Select...</option>
+          <option value="residential">Residential</option>
           <option value="church">Church</option>
           <option value="gym">Gym</option>
           <option value="restaurant">Restaurant</option>
@@ -196,6 +197,13 @@
       <div>
         <label for="departure_time">Latest departure</label>
         <input type="time" id="departure_time" value="08:00" required>
+      </div>
+
+      <div style="display:flex; align-items:flex-start; gap:10px; margin-top:4px;">
+        <input type="checkbox" id="allows_24hr_parking" style="width:auto; margin-top:3px;">
+        <label for="allows_24hr_parking" style="font-weight:normal; text-transform:none; letter-spacing:normal; font-size:14px;">
+          This is a designated RV spot with 24-hour parking allowed — guests don't need to leave and return daily.
+        </label>
       </div>
 
       <div>
@@ -290,6 +298,20 @@
     if(result.error){
       authMsg.className = 'msg show error';
       authMsg.textContent = result.error.message;
+      if(window.turnstile) window.turnstile.reset();
+      authCaptchaToken = null;
+      return;
+    }
+
+    // signUp() can succeed (the account exists) without returning an active
+    // session, if this Supabase project requires email confirmation. Without
+    // a session, any insert below (the listing itself) would be rejected by
+    // the database's security rules — so catch this here with a clear
+    // message instead of letting them hit a confusing error after filling
+    // out the whole form.
+    if(authMode === 'signup' && !result.data.session){
+      authMsg.className = 'msg show success';
+      authMsg.textContent = 'Account created! Please check your email and click the confirmation link, then come back here and log in to continue.';
       if(window.turnstile) window.turnstile.reset();
       authCaptchaToken = null;
       return;
@@ -452,6 +474,7 @@
       price_per_night: parseFloat(document.getElementById('price_per_night').value),
       arrival_time: document.getElementById('arrival_time').value,
       departure_time: document.getElementById('departure_time').value,
+      allows_24hr_parking: document.getElementById('allows_24hr_parking').checked,
       rules: document.getElementById('rules').value.trim(),
       contact_name: document.getElementById('contact_name').value.trim(),
       contact_email: document.getElementById('contact_email').value.trim(),
