@@ -248,14 +248,16 @@
   const amberIcon = L.divIcon({
     className: 'map-pin-wrapper',
     html: `
-      <svg width="30" height="40" viewBox="0 0 30 40" xmlns="http://www.w3.org/2000/svg" style="display:block;">
-        <path d="M15 0C6.7 0 0 6.7 0 15c0 11.25 15 25 15 25s15-13.75 15-25C30 6.7 23.3 0 15 0z" fill="#FFB547" stroke="#0B1220" stroke-width="2"/>
-        <circle cx="15" cy="15" r="6" fill="#0B1220"/>
-      </svg>
+      <div style="position:relative; width:22px; height:30px;">
+        <svg width="22" height="30" viewBox="0 0 22 30" xmlns="http://www.w3.org/2000/svg" style="display:block; position:absolute; top:0; left:0;">
+          <path d="M11 0C4.91 0 0 4.91 0 11c0 8.25 11 18.33 11 18.33s11-10.08 11-18.33C22 4.91 17.09 0 11 0z" fill="#a4472b" stroke="#0B1220" stroke-width="1.2"/>
+        </svg>
+        <img src="logo-64-light.png" width="12" height="12" style="position:absolute; top:5px; left:5px;" alt="">
+      </div>
     `,
-    iconSize: [30, 40],
-    iconAnchor: [15, 40],
-    popupAnchor: [0, -36],
+    iconSize: [22, 30],
+    iconAnchor: [11, 30],
+    popupAnchor: [0, -27],
   });
 
   const allMarkers = []; // { marker, data } — used by search to filter/re-center
@@ -314,6 +316,18 @@
       card.addEventListener('click', () => {
         map.setView(marker.getLatLng(), Math.max(map.getZoom(), 14));
         marker.openPopup();
+      });
+
+      // ...and the reverse: hovering the pin itself enlarges it and highlights the matching card
+      marker.on('mouseover', () => {
+        const el = marker.getElement();
+        if(el) el.classList.add('pin-enlarged');
+        card.classList.add('active');
+      });
+      marker.on('mouseout', () => {
+        const el = marker.getElement();
+        if(el) el.classList.remove('pin-enlarged');
+        card.classList.remove('active');
       });
 
       list.appendChild(card);
