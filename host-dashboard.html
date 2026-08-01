@@ -251,6 +251,7 @@
           <div id="notif-list"><div style="padding:20px; text-align:center; color:var(--asphalt); font-size:13px;">Loading...</div></div>
         </div>
       </div>
+      <a href="profile.html?return=host-dashboard.html" style="border:1.5px solid var(--asphalt); color:var(--asphalt); padding:8px 16px; font-size:12px; text-transform:uppercase; font-weight:700; border-radius:999px; text-decoration:none; display:inline-flex; align-items:center;">Edit Profile</a>
       <a href="browse.html" style="border:1.5px solid var(--sign-green); color:var(--sign-green); padding:8px 16px; font-size:12px; text-transform:uppercase; font-weight:700; border-radius:999px; text-decoration:none; display:inline-flex; align-items:center;">Browse Listings</a>
       <a href="index.html" style="border:1.5px solid var(--asphalt); color:var(--asphalt); padding:8px 16px; font-size:12px; text-transform:uppercase; font-weight:700; border-radius:999px; text-decoration:none; display:inline-flex; align-items:center;">← Home</a>
       <button id="logout-btn">Sign Out</button>
@@ -258,29 +259,6 @@
   </header>
 
   <div id="payout-banner" style="display:none; padding:16px 18px; border-radius:10px; margin-bottom:24px; font-size:14px;"></div>
-
-  <div class="card" id="my-info-card">
-    <div class="card-top" id="my-info-toggle" style="cursor:pointer; align-items:center;">
-      <h3>My Info</h3>
-      <span id="my-info-caret" style="font-size:14px; color:var(--asphalt);">▾</span>
-    </div>
-    <div id="my-info-fields" style="display:none; margin-top:14px;">
-      <div class="edit-grid">
-        <div>
-          <label>Name</label>
-          <input type="text" id="my-info-name">
-        </div>
-        <div>
-          <label>Phone</label>
-          <input type="tel" id="my-info-phone">
-        </div>
-      </div>
-      <div class="card-actions">
-        <button class="btn-save-info" id="my-info-save">Save Changes</button>
-      </div>
-      <div class="save-msg" id="my-info-msg">Saved!</div>
-    </div>
-  </div>
 
   <div class="tabs">
     <button class="tab-btn active" data-tab="bookings">Bookings</button>
@@ -333,7 +311,7 @@
 
     const { data: profile } = await supabaseClient
       .from('profiles')
-      .select('is_paused, full_name, phone')
+      .select('is_paused')
       .eq('id', data.session.user.id)
       .single();
 
@@ -341,11 +319,6 @@
       await supabaseClient.auth.signOut();
       window.location.href = 'host-login.html?paused=1';
       return;
-    }
-
-    if(profile){
-      document.getElementById('my-info-name').value = profile.full_name || '';
-      document.getElementById('my-info-phone').value = profile.phone || '';
     }
 
     currentUser = data.session.user;
@@ -356,31 +329,6 @@
     loadCalendarTab();
     loadNotifications();
   }
-
-  document.getElementById('my-info-toggle').addEventListener('click', () => {
-    const fields = document.getElementById('my-info-fields');
-    const caret = document.getElementById('my-info-caret');
-    const isOpen = fields.style.display === 'block';
-    fields.style.display = isOpen ? 'none' : 'block';
-    caret.style.transform = isOpen ? '' : 'rotate(180deg)';
-  });
-
-  document.getElementById('my-info-save').addEventListener('click', async () => {
-    const full_name = document.getElementById('my-info-name').value.trim();
-    const phone = document.getElementById('my-info-phone').value.trim() || null;
-    const msg = document.getElementById('my-info-msg');
-
-    const { error } = await supabaseClient.from('profiles').update({ full_name, phone }).eq('id', currentUser.id);
-    if(error){
-      msg.style.color = 'var(--red)';
-      msg.textContent = 'Error: ' + error.message;
-      msg.style.display = 'block';
-      return;
-    }
-    msg.style.color = 'var(--sign-green)';
-    msg.textContent = 'Saved!';
-    msg.style.display = 'block';
-  });
 
   async function checkPayoutStatus(){
     const banner = document.getElementById('payout-banner');

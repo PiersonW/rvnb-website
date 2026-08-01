@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Profile — RVnB</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{ --night:#0B1220; --amber:#FFB547; --lane:#FAF7F0; --sign-green:#2F7D5B; --asphalt:#64748B; --red:#a4472b; }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Inter',sans-serif; background:var(--lane); color:var(--night); line-height:1.6;}
+  .wrap{max-width:520px; margin:0 auto; padding:0 24px;}
+  header{background:var(--night); color:var(--lane); padding:16px 0;}
+  header .wrap{display:flex; justify-content:space-between; align-items:center;}
+  header a{color:var(--amber); text-decoration:none; font-size:14px;}
+  h1{font-family:'Manrope',sans-serif; text-transform:uppercase; font-size:clamp(24px,4vw,30px); margin:36px 0 20px;}
+  #loading{padding:60px 0; text-align:center; color:var(--asphalt); font-family:'JetBrains Mono',monospace;}
+  #content{display:none;}
+
+  .card{background:#fff; border:2px solid var(--night); border-radius:10px; padding:20px; margin-bottom:24px;}
+  .field{margin-bottom:16px;}
+  .field:last-child{margin-bottom:0;}
+  label{
+    display:block; font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase;
+    color:var(--asphalt); margin-bottom:6px; letter-spacing:0.04em;
+  }
+  input{
+    width:100%; padding:11px 12px; border:2px solid var(--night); border-radius:10px;
+    font-family:'Inter',sans-serif; font-size:14px; background:#fff; color:var(--night);
+  }
+  .hint{font-size:12px; color:var(--asphalt); margin-top:6px;}
+
+  button{
+    width:100%; padding:15px; background:var(--night); color:var(--amber); font-weight:700;
+    text-transform:uppercase; font-size:14px; border:none; border-radius:10px; cursor:pointer;
+  }
+  button:disabled{opacity:0.6; cursor:wait;}
+  .msg{font-size:13px; margin-top:14px; padding:12px; border-radius:10px; display:none;}
+  .msg.show{display:block;}
+  .msg.error{background:#fbeae0; color:#a4472b;}
+  .msg.success{background:#e4efe8; color:#1f4a35;}
+</style>
+  <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "36911a5edb0f4bdf95ab6da85ceccd46"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <a href="index.html" style="color:inherit; text-decoration:none; display:flex; align-items:center; gap:8px; font-family:'Manrope',sans-serif; font-weight:700; text-transform:uppercase;">
+      <img src="logo-64-light.png" width="20" height="20" alt="" style="flex-shrink:0;">RV<span style="color:var(--sign-green);">n</span>B
+    </a>
+    <a href="index.html" id="back-link">← Back</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <div id="loading">Loading your profile...</div>
+
+  <div id="content">
+    <h1>My Profile</h1>
+
+    <div class="card">
+      <div class="field">
+        <label>Full Name</label>
+        <input type="text" id="profile-name" placeholder="Your name">
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="profile-email" placeholder="you@example.com">
+        <div class="hint">Changing this sends a confirmation link to the new address — your login stays on the old email until you click it.</div>
+      </div>
+      <div class="field">
+        <label>Phone</label>
+        <input type="tel" id="profile-phone" placeholder="(555) 555-5555">
+      </div>
+      <div class="field">
+        <label>Address</label>
+        <input type="text" id="profile-address" placeholder="Street, City, State">
+      </div>
+    </div>
+
+    <button id="save-btn">Save Changes</button>
+    <div class="msg" id="form-msg"></div>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://icnhpciixqrhrqrzxkxg.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbmhwY2lpeHFyaHJxcnp4a3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2MDMsImV4cCI6MjA5OTczMjYwM30.5a8nNSiSA7U89f2kGAHGNPPfYpFra0Ve7PIFtOq3GDk';
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let currentUser = null;
+
+  // Preserve wherever the person came from (e.g. host-dashboard.html) so
+  // "Back" returns them there instead of always landing on the homepage.
+  const params = new URLSearchParams(window.location.search);
+  const returnTo = params.get('return');
+  if(returnTo){
+    document.getElementById('back-link').href = returnTo;
+  }
+
+  async function init(){
+    const { data } = await supabaseClient.auth.getSession();
+    if(!data.session){
+      window.location.href = 'index.html';
+      return;
+    }
+    currentUser = data.session.user;
+
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('full_name, phone, address')
+      .eq('id', currentUser.id)
+      .single();
+
+    document.getElementById('profile-name').value = profile?.full_name || '';
+    document.getElementById('profile-email').value = currentUser.email || '';
+    document.getElementById('profile-phone').value = profile?.phone || '';
+    document.getElementById('profile-address').value = profile?.address || '';
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+  }
+
+  document.getElementById('save-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('save-btn');
+    const msg = document.getElementById('form-msg');
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+    msg.className = 'msg';
+
+    const full_name = document.getElementById('profile-name').value.trim();
+    const phone = document.getElementById('profile-phone').value.trim() || null;
+    const address = document.getElementById('profile-address').value.trim() || null;
+    const newEmail = document.getElementById('profile-email').value.trim();
+
+    const { error: profileError } = await supabaseClient
+      .from('profiles')
+      .update({ full_name, phone, address })
+      .eq('id', currentUser.id);
+
+    if(profileError){
+      msg.className = 'msg show error';
+      msg.textContent = 'Could not save: ' + profileError.message;
+      btn.disabled = false;
+      btn.textContent = 'Save Changes';
+      return;
+    }
+
+    let emailNote = '';
+    if(newEmail && newEmail !== currentUser.email){
+      const { error: emailError } = await supabaseClient.auth.updateUser({ email: newEmail });
+      if(emailError){
+        msg.className = 'msg show error';
+        msg.textContent = 'Name, phone, and address saved — but the email change failed: ' + emailError.message;
+        btn.disabled = false;
+        btn.textContent = 'Save Changes';
+        return;
+      }
+      emailNote = ` A confirmation link was sent to ${newEmail} — check that inbox to finish the email change.`;
+    }
+
+    msg.className = 'msg show success';
+    msg.textContent = 'Saved!' + emailNote;
+    btn.disabled = false;
+    btn.textContent = 'Save Changes';
+  });
+
+  init();
+</script>
+
+</body>
+</html>
