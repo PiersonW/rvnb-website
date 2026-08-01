@@ -1123,8 +1123,37 @@
         });
       }
 
+      function positionNotifDropdown(){
+        const dropdown = document.getElementById('notif-dropdown');
+        const btnRect = document.getElementById('notif-bell-btn').getBoundingClientRect();
+        const margin = 12;
+
+        if(window.innerWidth <= 560){
+          dropdown.style.position = 'fixed';
+          dropdown.style.left = margin + 'px';
+          dropdown.style.right = margin + 'px';
+          dropdown.style.top = (btnRect.bottom + 8) + 'px';
+          dropdown.style.width = 'auto';
+          dropdown.style.minWidth = '0';
+          dropdown.style.maxWidth = 'none';
+        } else {
+          dropdown.style.position = '';
+          dropdown.style.left = '';
+          dropdown.style.right = '';
+          dropdown.style.top = '';
+          dropdown.style.width = '';
+          dropdown.style.minWidth = '';
+          dropdown.style.maxWidth = '';
+        }
+      }
+
+      // This bell can open via hover (like the other nav dropdowns) or a tap,
+      // so reposition on both paths rather than just the click handler.
+      document.getElementById('notif-bell-wrap').addEventListener('mouseenter', positionNotifDropdown);
+
       document.getElementById('notif-bell-btn').addEventListener('click', (e) => {
         e.stopPropagation();
+        positionNotifDropdown();
         loadNotifications();
       });
 
