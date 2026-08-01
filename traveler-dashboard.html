@@ -114,9 +114,16 @@
           <div id="notif-list"><div style="padding:20px; text-align:center; color:var(--asphalt); font-size:13px;">Loading...</div></div>
         </div>
       </div>
-      <a href="profile.html?return=traveler-dashboard.html">Edit Profile</a>
-      <a href="index.html">← Home</a>
-      <button id="logout-btn">Sign Out</button>
+      <div id="traveler-menu-wrap" style="position:relative;">
+        <button id="traveler-menu-btn" style="background:none; border:1.5px solid var(--asphalt); color:var(--asphalt); padding:8px 16px; font-size:12px; text-transform:uppercase; font-weight:700; border-radius:999px; cursor:pointer; display:inline-flex; align-items:center; gap:5px;">
+          Menu ▾
+        </button>
+        <div id="traveler-menu-dropdown" style="display:none; position:absolute; top:calc(100% + 8px); right:0; background:#fff; border:1.5px solid var(--night); border-radius:12px; min-width:170px; z-index:100; overflow:hidden; box-shadow:0 6px 16px rgba(0,0,0,0.2);">
+          <a href="profile.html?return=traveler-dashboard.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; text-transform:none; color:var(--night); text-decoration:none; border:none; border-bottom:1px solid #e0ddd0; border-radius:0;">Edit Profile</a>
+          <a href="index.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; text-transform:none; color:var(--night); text-decoration:none; border:none; border-bottom:1px solid #e0ddd0; border-radius:0;">← Home</a>
+          <button id="logout-btn" style="display:block; width:100%; text-align:left; padding:11px 14px; font-size:13px; font-weight:600; text-transform:none; color:var(--red,#a4472b); background:none; border:none; border-radius:0; cursor:pointer;">Sign Out</button>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -360,6 +367,19 @@
       positionNotifDropdown();
       dropdown.style.display = 'block';
       loadNotifications();
+    }
+  });
+
+  document.getElementById('traveler-menu-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const dropdown = document.getElementById('traveler-menu-dropdown');
+    dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+  });
+
+  document.addEventListener('click', (e) => {
+    const wrap = document.getElementById('traveler-menu-wrap');
+    if(!wrap.contains(e.target)){
+      document.getElementById('traveler-menu-dropdown').style.display = 'none';
     }
   });
 
