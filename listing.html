@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Listing — RVnB</title>
 <link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://js.stripe.com/v3/"></script>
@@ -509,8 +510,17 @@
     });
 
     if(piError || !piData || piData.error){
+      let errorMessage = piData?.error || piError?.message || 'unknown error';
+      // supabase-js only gives a generic "non-2xx status code" message by default —
+      // the actual reason is in the response body, reachable via error.context
+      if(piError?.context){
+        try {
+          const errorBody = await piError.context.json();
+          if(errorBody?.error) errorMessage = errorBody.error;
+        } catch(e){ /* fall back to the generic message above */ }
+      }
       msg.className = 'msg show error';
-      msg.textContent = 'Could not start payment: ' + (piData?.error || piError?.message || 'unknown error');
+      msg.textContent = 'Could not start payment: ' + errorMessage;
       submitBtn.disabled = false;
       submitBtn.textContent = 'Request to Book';
       return;

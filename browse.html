@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Find a Spot — RVnB</title>
 <link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -32,9 +33,9 @@
     /* Search bar sits centered at the top; push Filters below it instead of
        fighting for the same row, since a phone-width screen has no room for
        both side by side */
-    #filters-toggle-btn{ top:auto !important; bottom:200px; left:16px; height:auto; }
+    #filters-toggle-btn{ top:auto !important; bottom:calc(40vh + 32px); left:16px; height:auto; }
     #filters-panel{
-      top:auto !important; bottom:200px; left:16px;
+      top:auto !important; bottom:calc(40vh + 32px); left:16px;
       max-height:260px;
       overflow-y:auto;
     }
@@ -252,7 +253,7 @@
         <svg width="22" height="30" viewBox="0 0 22 30" xmlns="http://www.w3.org/2000/svg" style="display:block; position:absolute; top:0; left:0;">
           <path d="M11 0C4.91 0 0 4.91 0 11c0 8.25 11 18.33 11 18.33s11-10.08 11-18.33C22 4.91 17.09 0 11 0z" fill="#EA4335" stroke="#FFFFFF" stroke-width="1.2"/>
         </svg>
-        <img src="logo-64-white.png" width="12" height="12" style="position:absolute; top:5px; left:5px; z-index:2;" alt="">
+        <img src="logo-64-white-bold.png" width="12" height="12" style="position:absolute; top:5px; left:5px; z-index:2;" alt="">
       </div>
     `,
     iconSize: [22, 30],

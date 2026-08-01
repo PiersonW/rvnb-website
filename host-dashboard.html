@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Host Dashboard — RVnB</title>
 <link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -78,12 +79,22 @@
   .edit-grid > div{min-width:0;}
   @media(max-width:520px){.edit-grid{grid-template-columns:1fr;}}
   input[type="time"], input[type="date"]{min-width:0; -webkit-min-logical-width:0;}
+  .edit-grid input[type="time"]{
+    -webkit-appearance:none; appearance:none;
+  }
   .edit-grid label{
     font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; color:var(--asphalt);
     display:block; margin-bottom:4px;
   }
   .edit-grid input, .edit-grid textarea{
     width:100%; padding:9px 11px; border:2px solid var(--night); border-radius:10px; font-family:'Inter',sans-serif; font-size:13px;
+    background:#fff; color:var(--night);
+  }
+  .edit-grid select{
+    width:100%; padding:9px 34px 9px 11px; border:2px solid var(--night); border-radius:10px; font-family:'Inter',sans-serif; font-size:13px;
+    background:#fff; color:var(--night); appearance:none; -webkit-appearance:none;
+    background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%230B1220' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right 12px center;
   }
   .edit-grid .full{grid-column:1/-1;}
 
@@ -256,14 +267,14 @@
   </div>
 
   <div class="tabs">
-    <button class="tab-btn active" data-tab="listings">My Listings</button>
-    <button class="tab-btn" data-tab="bookings">Bookings</button>
+    <button class="tab-btn active" data-tab="bookings">Bookings</button>
+    <button class="tab-btn" data-tab="listings">My Listings</button>
     <button class="tab-btn" data-tab="calendar">Calendar</button>
     <button class="tab-btn" data-tab="revenue">Revenue</button>
   </div>
 
-  <div id="listings-container" class="tab-panel active"><div class="empty">Loading...</div></div>
-  <div id="bookings-container" class="tab-panel"></div>
+  <div id="listings-container" class="tab-panel"><div class="empty">Loading...</div></div>
+  <div id="bookings-container" class="tab-panel active"></div>
   <div id="calendar-container" class="tab-panel">
     <div class="cal-toolbar">
       <select id="cal-listing-select"></select>
@@ -598,7 +609,7 @@
               <option value="other" ${p.business_type === 'other' ? 'selected' : ''}>Other</option>
             </select>
           </div>
-          <div><label>Price per night ($)</label><input type="number" class="f-price" value="${p.price_per_night}"></div>
+          <div><label>Price per night ($)</label><input type="number" class="f-price" min="1" value="${p.price_per_night}"></div>
           <div><label>Spots available</label><input type="number" class="f-spots" value="${p.spots_available}"></div>
           <div><label>Earliest arrival</label><input type="time" class="f-arrival" value="${p.arrival_time}"></div>
           <div><label>Latest departure</label><input type="time" class="f-departure" value="${p.departure_time}"></div>
@@ -684,10 +695,18 @@
           return;
         }
 
+        const price_per_night = parseFloat(card.querySelector('.f-price').value);
+        if(!price_per_night || price_per_night <= 0){
+          saveMsg.style.color = 'var(--red)';
+          saveMsg.textContent = 'Price per night must be at least $1 — travelers can\'t book a $0 listing.';
+          saveMsg.style.display = 'block';
+          return;
+        }
+
         const { error } = await supabaseClient.from('partners').update({
           business_name,
           business_type: card.querySelector('.f-business-type').value || null,
-          price_per_night: parseFloat(card.querySelector('.f-price').value),
+          price_per_night,
           spots_available: parseInt(card.querySelector('.f-spots').value, 10),
           arrival_time: card.querySelector('.f-arrival').value,
           departure_time: card.querySelector('.f-departure').value,
