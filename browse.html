@@ -104,7 +104,7 @@
   .carousel-empty{
     padding:30px 18px; text-align:center; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--asphalt);
   }
-  .map-pin-wrapper{ transition:transform 0.18s cubic-bezier(.34,1.56,.64,1); transform-origin:center bottom; }
+  .map-pin-wrapper{ transition:transform 0.18s cubic-bezier(.34,1.56,.64,1); transform-origin:center bottom; filter:drop-shadow(0 2px 3px rgba(11,18,32,0.35)); }
   .map-pin-wrapper.pin-enlarged{
     transform:scale(2.2) translateY(-4px);
     filter:drop-shadow(0 6px 8px rgba(11,18,32,0.45));
@@ -250,9 +250,9 @@
     html: `
       <div style="position:relative; width:22px; height:30px;">
         <svg width="22" height="30" viewBox="0 0 22 30" xmlns="http://www.w3.org/2000/svg" style="display:block; position:absolute; top:0; left:0;">
-          <path d="M11 0C4.91 0 0 4.91 0 11c0 8.25 11 18.33 11 18.33s11-10.08 11-18.33C22 4.91 17.09 0 11 0z" fill="#EA4335" stroke="#0B1220" stroke-width="1.2"/>
+          <path d="M11 0C4.91 0 0 4.91 0 11c0 8.25 11 18.33 11 18.33s11-10.08 11-18.33C22 4.91 17.09 0 11 0z" fill="#EA4335" stroke="#FFFFFF" stroke-width="1.2"/>
         </svg>
-        <img src="logo-64-light.png" width="12" height="12" style="position:absolute; top:5px; left:5px;" alt="">
+        <img src="logo-64-white.png" width="12" height="12" style="position:absolute; top:5px; left:5px;" alt="">
       </div>
     `,
     iconSize: [22, 30],
