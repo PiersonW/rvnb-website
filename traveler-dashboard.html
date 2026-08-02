@@ -103,12 +103,19 @@
           Menu ▾
           <span id="menu-notif-dot" style="display:none; position:absolute; top:2px; right:2px; width:9px; height:9px; border-radius:50%; background:var(--red); border:2px solid var(--lane);"></span>
         </button>
-        <div id="traveler-menu-dropdown" style="display:none; position:absolute; top:calc(100% + 8px); right:0; background:#fff; border:1.5px solid var(--night); border-radius:12px; min-width:170px; z-index:100; overflow:hidden; box-shadow:0 6px 16px rgba(0,0,0,0.2);">
+        <div id="traveler-menu-dropdown" style="display:none; position:absolute; top:calc(100% + 8px); right:0; background:#fff; border:1.5px solid var(--night); border-radius:12px; min-width:190px; z-index:100; overflow:hidden; box-shadow:0 6px 16px rgba(0,0,0,0.2);">
+          <a href="profile.html?return=traveler-dashboard.html" id="account-email-full" style="display:block; padding:10px 14px; font-size:13px; text-transform:none; text-decoration:none; color:inherit; border:none; border-bottom:1px solid #e0ddd0; border-radius:0;">
+            <span id="account-email-text" style="display:block; font-size:11px; color:var(--asphalt); word-break:break-all;"></span>
+            <span style="display:block; font-size:10px; font-weight:700; color:var(--sign-green); text-transform:uppercase; letter-spacing:0.03em; margin-top:4px;">Edit Profile →</span>
+          </a>
           <a href="notifications.html?return=traveler-dashboard.html" style="display:flex; align-items:center; justify-content:space-between; padding:11px 14px; font-size:13px; font-weight:600; text-transform:none; color:var(--night); text-decoration:none; border:none; border-bottom:1px solid #e0ddd0; border-radius:0;">
             Notifications
             <span id="menu-notif-count" style="display:none; background:var(--red); color:#fff; font-size:10px; font-weight:700; min-width:16px; height:16px; border-radius:8px; align-items:center; justify-content:center; padding:0 4px;"></span>
           </a>
-          <a href="profile.html?return=traveler-dashboard.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; text-transform:none; color:var(--night); text-decoration:none; border:none; border-bottom:1px solid #e0ddd0; border-radius:0;">Edit Profile</a>
+          <a href="admin.html" id="admin-btn" style="display:none; padding:11px 14px; font-size:13px; font-weight:600; text-transform:none; color:var(--sign-green); text-decoration:none; border:none; border-bottom:1px solid #e0ddd0; border-radius:0;">Admin Dashboard</a>
+          <a href="analytics.html" id="analytics-btn" style="display:none; padding:11px 14px; font-size:13px; font-weight:600; text-transform:none; color:var(--sign-green); text-decoration:none; border:none; border-bottom:1px solid #e0ddd0; border-radius:0;">Analytics</a>
+          <a href="traveler-dashboard.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; text-transform:none; color:var(--night); text-decoration:none; border:none; border-bottom:1px solid #e0ddd0; border-radius:0;">Traveler Dashboard</a>
+          <a href="host-dashboard.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; text-transform:none; color:var(--night); text-decoration:none; border:none; border-bottom:1px solid #e0ddd0; border-radius:0;">Host Dashboard</a>
           <button id="logout-btn" style="display:block; width:100%; text-align:left; padding:11px 14px; font-size:13px; font-weight:600; text-transform:none; color:var(--red,#a4472b); background:none; border:none; border-radius:0; cursor:pointer;">Sign Out</button>
         </div>
       </div>
@@ -125,6 +132,7 @@
 <script>
   const SUPABASE_URL = 'https://icnhpciixqrhrqrzxkxg.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbmhwY2lpeHFyaHJxcnp4a3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2MDMsImV4cCI6MjA5OTczMjYwM30.5a8nNSiSA7U89f2kGAHGNPPfYpFra0Ve7PIFtOq3GDk';
+  const ADMIN_EMAIL = 'pierson.willhite@gmail.com';
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   let currentUser = null;
@@ -149,6 +157,11 @@
     }
 
     currentUser = data.session.user;
+    document.getElementById('account-email-text').textContent = currentUser.email;
+    if(currentUser.email === ADMIN_EMAIL){
+      document.getElementById('admin-btn').style.display = 'block';
+      document.getElementById('analytics-btn').style.display = 'block';
+    }
     loadTrips();
     checkUnreadNotifications();
   }
