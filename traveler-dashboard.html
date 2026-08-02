@@ -293,18 +293,29 @@
     }
   }
 
-  document.getElementById('traveler-menu-btn').addEventListener('click', (e) => {
-    e.stopPropagation();
-    const dropdown = document.getElementById('traveler-menu-dropdown');
-    dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-  });
-
-  document.addEventListener('click', (e) => {
+  (function(){
     const wrap = document.getElementById('traveler-menu-wrap');
-    if(!wrap.contains(e.target)){
-      document.getElementById('traveler-menu-dropdown').style.display = 'none';
-    }
-  });
+    const btn = document.getElementById('traveler-menu-btn');
+    const dropdown = document.getElementById('traveler-menu-dropdown');
+
+    let closeTimer = null;
+    const open = () => { clearTimeout(closeTimer); dropdown.style.display = 'block'; };
+    const scheduleClose = () => { clearTimeout(closeTimer); closeTimer = setTimeout(() => { dropdown.style.display = 'none'; }, 200); };
+
+    wrap.addEventListener('mouseenter', open);
+    wrap.addEventListener('mouseleave', scheduleClose);
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+    });
+
+    document.addEventListener('click', (e) => {
+      if(!wrap.contains(e.target)){
+        dropdown.style.display = 'none';
+      }
+    });
+  })();
 
   init();
 </script>
