@@ -462,17 +462,44 @@
   let currentUser = null;
 
   async function showDashboard(){
+    const { data } = await supabaseClient.auth.getSession();
+    currentUser = data.session.user;
+
+    // Server-side admin check — this is what actually gates the dashboard.
+    // The client-side ADMIN_EMAIL comparisons elsewhere on this page only
+    // toggle nav button visibility; they can be bypassed in devtools. This
+    // call can't be, since the verification happens in an Edge Function
+    // using the service role key, which never reaches the browser.
+    let isAdmin = false;
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/verify-admin`, {
+        headers: {
+          'Authorization': `Bearer ${data.session.access_token}`,
+          'apikey': SUPABASE_ANON_KEY,
+        }
+      });
+      const result = await res.json();
+      isAdmin = result.isAdmin === true;
+    } catch (e) {
+      isAdmin = false;
+    }
+
+    if(!isAdmin){
+      await supabaseClient.auth.signOut();
+      loginError.style.display = 'block';
+      loginError.textContent = 'This account does not have admin access.';
+      loginView.style.display = 'flex';
+      dashboardView.style.display = 'none';
+      return;
+    }
+
     loginView.style.display = 'none';
     dashboardView.style.display = 'block';
 
-    const { data } = await supabaseClient.auth.getSession();
-    currentUser = data.session.user;
     document.getElementById('account-email-text').textContent = currentUser.email;
     document.getElementById('menu-email-short').textContent = currentUser.email.split('@')[0];
-    if(currentUser.email === ADMIN_EMAIL){
-      document.getElementById('admin-btn').style.display = 'block';
-      document.getElementById('analytics-btn').style.display = 'block';
-    }
+    document.getElementById('admin-btn').style.display = 'block';
+    document.getElementById('analytics-btn').style.display = 'block';
     checkUnreadNotifications();
 
     loadListings();
