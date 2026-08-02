@@ -287,7 +287,7 @@
     <header>
       <div>
         <a href="index.html" style="display:flex; align-items:center; gap:6px; font-family:'Manrope',sans-serif; font-weight:700; font-size:13px; color:var(--night); text-decoration:none; margin-bottom:2px;">
-          <img src="logo-64.png" width="16" height="16" alt="" style="flex-shrink:0;"><span>RV<span style="color:var(--sign-green);">n</span>B</span>
+          <img src="logo-64.png" width="16" height="16" alt="" style="flex-shrink:0;"><span style="text-transform:none; letter-spacing:normal;">RV<span style="color:var(--sign-green);">n</span>B</span>
         </a>
         <h1>Admin</h1>
       </div>
@@ -819,8 +819,8 @@
           <span class="status ${b.status}">${b.status}</span>
         </div>
         <div class="card-actions">
-          ${b.status !== 'confirmed' && b.status !== 'cancelled' ? `<button class="btn-approve" data-id="${b.id}" data-action="capture">Confirm &amp; Charge</button>` : ''}
-          ${b.status !== 'cancelled' ? `<button class="btn-reject" data-id="${b.id}" data-action="cancel">Decline</button>` : ''}
+          ${b.status !== 'confirmed' && b.status !== 'cancelled' && b.status !== 'completed' ? `<button class="btn-approve" data-id="${b.id}" data-action="capture">Confirm &amp; Charge</button>` : ''}
+          ${b.status !== 'cancelled' && b.status !== 'completed' ? `<button class="btn-reject" data-id="${b.id}" data-action="cancel">Decline</button>` : ''}
           ${b.status === 'confirmed' ? `<button class="btn-pause" data-id="${b.id}" data-action="complete">Mark Completed</button>` : ''}
         </div>
         <div class="action-msg" id="booking-msg-${b.id}" style="font-size:12px; margin-top:8px; display:none;"></div>
