@@ -312,16 +312,16 @@
   const amberIcon = L.divIcon({
     className: 'map-pin-wrapper',
     html: `
-      <div style="position:relative; width:22px; height:30px;">
-        <svg width="22" height="30" viewBox="0 0 22 30" xmlns="http://www.w3.org/2000/svg" style="display:block; position:absolute; top:0; left:0;">
+      <div style="position:relative; width:31px; height:42px;">
+        <svg width="31" height="42" viewBox="0 0 22 30" xmlns="http://www.w3.org/2000/svg" style="display:block; position:absolute; top:0; left:0;">
           <path d="M11 0C4.91 0 0 4.91 0 11c0 8.25 11 18.33 11 18.33s11-10.08 11-18.33C22 4.91 17.09 0 11 0z" fill="#EA4335" stroke="#FFFFFF" stroke-width="1.2"/>
         </svg>
-        <img src="logo-64-white-bold.png" width="16" height="16" style="position:absolute; top:3px; left:3px; z-index:2;" alt="">
+        <img src="logo-pin-icon.png" width="22" height="22" style="position:absolute; top:4px; left:4px; z-index:2;" alt="">
       </div>
     `,
-    iconSize: [22, 30],
-    iconAnchor: [11, 30],
-    popupAnchor: [0, -27],
+    iconSize: [31, 42],
+    iconAnchor: [15, 42],
+    popupAnchor: [0, -38],
   });
 
   const allMarkers = []; // { marker, data } — used by search to filter/re-center
