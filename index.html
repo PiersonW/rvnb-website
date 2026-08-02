@@ -415,7 +415,7 @@
       <div id="account-menu-wrap" style="position:relative;">
         <button id="account-menu-btn" class="btn btn-outline" style="padding:10px 16px; font-size:12px; border-color:var(--night); color:var(--night); cursor:pointer; display:flex; align-items:center; gap:6px; position:relative;">
           <span id="account-email-short">Account</span> ▾
-          <span id="menu-notif-dot" style="display:none; position:absolute; bottom:2px; left:2px; width:13px; height:13px; border-radius:50%; background:var(--red); border:2px solid var(--lane);"></span>
+          <span id="menu-notif-dot" style="display:none; position:absolute; bottom:0px; left:0px; width:16px; height:16px; border-radius:50%; background:var(--red);"></span>
         </button>
         <div id="account-menu-dropdown" style="display:none; position:absolute; top:calc(100% + 8px); right:0; background:#fff; border:1.5px solid var(--night); border-radius:12px; min-width:190px; z-index:100; overflow:hidden; box-shadow:0 6px 16px rgba(0,0,0,0.2);">
           <a href="profile.html?return=index.html" id="account-email-full" style="display:block; padding:10px 14px; border-bottom:1px solid #e0ddd0; text-decoration:none; color:inherit;">
@@ -1036,22 +1036,29 @@
       const user = data.session.user;
       const email = user.email;
 
-      document.getElementById('nav-logged-out').style.display = 'none';
-      document.getElementById('nav-logged-in').style.display = 'flex';
-      document.getElementById('account-email-short').textContent = email.split('@')[0];
-      document.getElementById('account-email-text').textContent = email;
+      try {
+        document.getElementById('nav-logged-out').style.display = 'none';
+        document.getElementById('nav-logged-in').style.display = 'flex';
+        document.getElementById('account-email-short').textContent = email.split('@')[0];
+        document.getElementById('account-email-text').textContent = email;
 
-      if(email === ADMIN_EMAIL){
-        document.getElementById('admin-btn').style.display = 'block';
-        document.getElementById('analytics-btn').style.display = 'block';
+        if(email === ADMIN_EMAIL){
+          document.getElementById('admin-btn').style.display = 'block';
+          document.getElementById('analytics-btn').style.display = 'block';
+        }
+
+        setupNavDropdown('account-menu-wrap', 'account-menu-btn', 'account-menu-dropdown');
+      } catch(e){
+        console.error('Nav setup failed:', e);
       }
-
-      setupNavDropdown('account-menu-wrap', 'account-menu-btn', 'account-menu-dropdown');
-
-      document.getElementById('signout-btn').addEventListener('click', async () => {
-        await authClient.auth.signOut();
-        window.location.reload();
-      });
+      try {
+        document.getElementById('signout-btn').addEventListener('click', async () => {
+          await authClient.auth.signOut();
+          window.location.reload();
+        });
+      } catch(e){
+        console.error('Signout button setup failed:', e);
+      }
 
       // ============================================
       // NOTIFICATIONS — just an unread-count check to show/hide the dot on
@@ -1064,7 +1071,10 @@
           .eq('user_id', user.id)
           .eq('is_read', false);
 
-        if(error) return;
+        if(error){
+          console.error('checkUnreadNotifications failed:', error);
+          return;
+        }
 
         const dot = document.getElementById('menu-notif-dot');
         const countEl = document.getElementById('menu-notif-count');
