@@ -46,7 +46,7 @@
     display:flex; align-items:center; justify-content:space-between;
     margin-bottom:28px; padding-bottom:16px; border-bottom:2px solid var(--night);
   }
-  header h1{font-size:24px;}
+  header h1{font-size:20px;}
   header button{
     background:none; border:1.5px solid var(--asphalt); color:var(--asphalt);
     padding:8px 16px; font-size:12px; text-transform:uppercase; font-weight:700;
@@ -175,6 +175,24 @@
   .btn-quick{background:#e6e6e6; color:var(--night); border:none; padding:8px 14px; font-size:11px; font-weight:700; text-transform:uppercase; border-radius:10px; cursor:pointer;}
   .btn-quick.on{background:var(--amber);}
 
+  .address-edit-form{
+    display:none; margin-top:14px; padding-top:14px; border-top:2px solid #eee0cf;
+  }
+  .address-edit-form.show{display:block;}
+  .address-edit-form .edit-grid{display:grid; grid-template-columns:2fr 1fr 1fr; gap:10px;}
+  .address-edit-form .edit-grid > div{min-width:0;}
+  @media(max-width:520px){.address-edit-form .edit-grid{grid-template-columns:1fr;}}
+  .address-edit-form label{
+    font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; color:var(--asphalt);
+    display:block; margin-bottom:4px;
+  }
+  .address-edit-form input{
+    width:100%; min-width:0; padding:9px 11px; border:2px solid var(--night); border-radius:10px;
+    font-family:'Inter',sans-serif; font-size:13px; box-sizing:border-box;
+  }
+  .address-edit-form .edit-actions{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
+  .btn-edit-address, .btn-save-coords{background:none; border:2px solid var(--asphalt); color:var(--asphalt); padding:8px 14px; font-size:11px; font-weight:700; text-transform:uppercase; border-radius:10px; cursor:pointer;}
+
   .import-section{
     background:#fff; border:2px solid var(--night); border-radius:10px; padding:20px;
     margin-bottom:20px; display:none;
@@ -286,8 +304,8 @@
   <div class="wrap">
     <header>
       <div>
-        <a href="index.html" style="display:flex; align-items:center; gap:6px; font-family:'Manrope',sans-serif; font-weight:700; font-size:13px; color:var(--night); text-decoration:none; margin-bottom:2px;">
-          <img src="logo-64.png" width="16" height="16" alt="" style="flex-shrink:0;"><span style="text-transform:none; letter-spacing:normal;">RV<span style="color:var(--sign-green);">n</span>B</span>
+        <a href="index.html" style="display:flex; align-items:center; gap:8px; font-family:'Manrope',sans-serif; font-weight:700; font-size:16px; color:var(--night); text-decoration:none; margin-bottom:2px;">
+          <img src="logo-64.png" width="22" height="22" alt="" style="flex-shrink:0;"><span style="text-transform:none; letter-spacing:normal;">RV<span style="color:var(--sign-green);">n</span>B</span>
         </a>
         <h1>Admin</h1>
       </div>
@@ -635,6 +653,11 @@
     }
 
     attachListingActionListeners();
+    attachListingEditListeners();
+  }
+
+  function escapeAttr(str){
+    return String(str == null ? '' : str).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
   }
 
   function renderListingCard(p){
@@ -657,7 +680,28 @@
         <div class="card-actions">
           ${p.status !== 'approved' ? `<button class="btn-approve" data-id="${p.id}" data-status="approved">${p.status === 'deleted' ? 'Restore' : 'Approve'}</button>` : ''}
           ${p.status !== 'paused' && p.status !== 'deleted' && p.status !== 'waitlist' ? `<button class="btn-pause" data-id="${p.id}" data-status="paused">Pause</button>` : ''}
+          <button class="btn-edit-address" data-id="${p.id}">Edit Address</button>
           <button class="btn-reject" data-id="${p.id}" data-status="rejected">Delete</button>
+        </div>
+        <div class="address-edit-form" id="addr-edit-${p.id}">
+          <div class="edit-grid">
+            <div><label>Address</label><input type="text" class="edit-address" value="${escapeAttr(p.address)}"></div>
+            <div><label>City</label><input type="text" class="edit-city" value="${escapeAttr(p.city)}"></div>
+            <div><label>State</label><input type="text" class="edit-state" value="${escapeAttr(p.state)}" maxlength="2"></div>
+          </div>
+          <div class="edit-grid" style="margin-top:10px;">
+            <div><label>Latitude</label><input type="text" class="edit-lat" value="${p.latitude ?? ''}"></div>
+            <div><label>Longitude</label><input type="text" class="edit-lon" value="${p.longitude ?? ''}"></div>
+          </div>
+          <div class="hint" style="margin-top:6px; color:var(--asphalt); font-size:11px;">
+            If the auto-geocoded pin is wrong, drop a pin at the real location in Google/Apple Maps, copy the coordinates in here, and use "Save These Coordinates" instead — it skips geocoding entirely.
+          </div>
+          <div class="edit-actions">
+            <button class="btn-save-address" data-id="${p.id}">Save &amp; Re-geocode from Address</button>
+            <button class="btn-save-coords" data-id="${p.id}">Save These Coordinates</button>
+            <button class="btn-cancel-address" data-id="${p.id}">Cancel</button>
+          </div>
+          <div class="edit-msg" id="addr-msg-${p.id}" style="font-size:12px; margin-top:8px; display:none;"></div>
         </div>
       `;
       return card;
@@ -698,6 +742,122 @@
           }
           if(status === 'approved') notifyHostOfApproval(id);
         }
+        loadListings();
+      });
+    });
+  }
+
+  // Free geocoding via OpenStreetMap's Nominatim — same approach used on
+  // list-your-lot.html when a listing is first submitted. Utah's grid-style
+  // addressing (e.g. "470 West" as a street name) combined with unit/suite
+  // numbers can confuse Nominatim, which is why this exists as a manual
+  // fix path — strip the unit number before geocoding, since it doesn't
+  // help pin accuracy and can actively throw the match off.
+  async function geocode(address, city, state){
+    const cleanAddress = address.replace(/#\s*\S+/g, '').trim();
+    const query = encodeURIComponent(`${cleanAddress}, ${city}, ${state}`);
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1`);
+    const data = await res.json();
+    if(!data || data.length === 0) return null;
+    return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+  }
+
+  function attachListingEditListeners(){
+    document.querySelectorAll('.btn-edit-address').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById(`addr-edit-${btn.dataset.id}`).classList.add('show');
+      });
+    });
+    document.querySelectorAll('.btn-cancel-address').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById(`addr-edit-${btn.dataset.id}`).classList.remove('show');
+      });
+    });
+    document.querySelectorAll('.btn-save-address').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        const form = document.getElementById(`addr-edit-${id}`);
+        const address = form.querySelector('.edit-address').value.trim();
+        const city = form.querySelector('.edit-city').value.trim();
+        const state = form.querySelector('.edit-state').value.trim().toUpperCase();
+        const msg = document.getElementById(`addr-msg-${id}`);
+
+        if(!address || !city || !state){
+          msg.style.display = 'block';
+          msg.textContent = 'Address, city, and state are all required.';
+          return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Geocoding...';
+        msg.style.display = 'none';
+
+        const coords = await geocode(address, city, state);
+        if(!coords){
+          btn.disabled = false;
+          btn.textContent = 'Save & Re-geocode from Address';
+          msg.style.display = 'block';
+          msg.textContent = 'Could not find coordinates for that address — double-check it and try again.';
+          return;
+        }
+
+        const { error } = await supabaseClient
+          .from('partners')
+          .update({ address, city, state, latitude: coords.lat, longitude: coords.lon })
+          .eq('id', id);
+
+        btn.disabled = false;
+        btn.textContent = 'Save & Re-geocode from Address';
+
+        if(error){
+          msg.style.display = 'block';
+          msg.textContent = 'Save failed: ' + error.message;
+          return;
+        }
+
+        loadListings();
+      });
+    });
+    document.querySelectorAll('.btn-save-coords').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        const form = document.getElementById(`addr-edit-${id}`);
+        const address = form.querySelector('.edit-address').value.trim();
+        const city = form.querySelector('.edit-city').value.trim();
+        const state = form.querySelector('.edit-state').value.trim().toUpperCase();
+        const lat = parseFloat(form.querySelector('.edit-lat').value.trim());
+        const lon = parseFloat(form.querySelector('.edit-lon').value.trim());
+        const msg = document.getElementById(`addr-msg-${id}`);
+
+        if(!address || !city || !state){
+          msg.style.display = 'block';
+          msg.textContent = 'Address, city, and state are all required.';
+          return;
+        }
+        if(isNaN(lat) || isNaN(lon)){
+          msg.style.display = 'block';
+          msg.textContent = 'Enter valid numbers for latitude and longitude.';
+          return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+        msg.style.display = 'none';
+
+        const { error } = await supabaseClient
+          .from('partners')
+          .update({ address, city, state, latitude: lat, longitude: lon })
+          .eq('id', id);
+
+        btn.disabled = false;
+        btn.textContent = 'Save These Coordinates';
+
+        if(error){
+          msg.style.display = 'block';
+          msg.textContent = 'Save failed: ' + error.message;
+          return;
+        }
+
         loadListings();
       });
     });
