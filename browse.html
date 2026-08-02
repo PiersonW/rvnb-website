@@ -37,7 +37,7 @@
     #locate-btn{ top:auto !important; bottom:calc(40vh + 32px); left:auto; right:16px; }
     #filters-panel{
       top:auto !important; bottom:calc(40vh + 32px); left:16px;
-      max-height:260px;
+      max-height:400px;
       overflow-y:auto;
     }
 
@@ -456,7 +456,7 @@
     if(filtersPanel){
       const headerBottom = document.querySelector('header').getBoundingClientRect().bottom;
       const available = window.innerHeight - bottomOffset - headerBottom - 16;
-      filtersPanel.style.setProperty('max-height', Math.max(160, Math.min(260, available)) + 'px', 'important');
+      filtersPanel.style.setProperty('max-height', Math.max(160, Math.min(400, available)) + 'px', 'important');
     }
   }
 
