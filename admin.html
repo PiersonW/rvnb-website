@@ -708,7 +708,7 @@
   }
 
   function attachListingActionListeners(){
-    document.querySelectorAll('.card-actions button').forEach(btn => {
+    document.querySelectorAll('.card-actions button:not(.btn-edit-address)').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.dataset.id;
         const status = btn.dataset.status;
