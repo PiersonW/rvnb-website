@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin — RVnB</title>
+<title>Admin Dashboard — RVnB</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
@@ -64,10 +64,13 @@
   }
   .archive-toggle:hover{border-color:var(--night); color:var(--night);}
 
-  .tabs{display:flex; gap:0; border:2px solid var(--night); width:fit-content; margin-bottom:24px; border-radius:10px; overflow:hidden;}
+  .tabs{
+    display:flex; gap:0; border:2px solid var(--night); width:100%; margin-bottom:24px; border-radius:10px;
+    overflow-x:auto; -webkit-overflow-scrolling:touch;
+  }
   .tab-btn{
     padding:10px 20px; font-weight:700; font-size:12px; text-transform:uppercase; letter-spacing:0.03em;
-    background:#fff; color:var(--night); border:none; cursor:pointer;
+    background:#fff; color:var(--night); border:none; cursor:pointer; flex-shrink:0; white-space:nowrap;
   }
   .tab-btn.active{background:var(--night); color:var(--amber);}
   .tab-panel{display:none;}
@@ -308,13 +311,13 @@
         <a href="index.html" style="display:flex; align-items:center; gap:8px; font-family:'Manrope',sans-serif; font-weight:700; font-size:16px; color:var(--night); text-decoration:none; margin-bottom:2px;">
           <img src="logo-64.png" width="22" height="22" alt="" style="flex-shrink:0;"><span style="text-transform:none; letter-spacing:normal;">RV<span style="color:var(--sign-green);">n</span>B</span>
         </a>
-        <h1>Admin</h1>
+        <h1>Admin Dashboard</h1>
       </div>
       <div style="display:flex; gap:10px; align-items:center; position:relative;">
         <div id="admin-menu-wrap" style="position:relative;">
           <button id="admin-menu-btn" style="background:none; border:1.5px solid var(--asphalt); color:var(--asphalt); padding:8px 16px; font-size:12px; text-transform:uppercase; font-weight:700; border-radius:999px; cursor:pointer; display:inline-flex; align-items:center; gap:5px; position:relative;">
             <span id="menu-email-short" style="text-transform:none;">Menu</span> ▾
-            <span id="menu-notif-dot" style="display:none; position:absolute; top:2px; right:2px; width:9px; height:9px; border-radius:50%; background:var(--red); border:2px solid var(--lane);"></span>
+            <span id="menu-notif-dot" style="display:none; position:absolute; bottom:2px; left:2px; width:13px; height:13px; border-radius:50%; background:var(--red); border:2px solid var(--lane);"></span>
           </button>
           <div id="admin-menu-dropdown" style="display:none; position:absolute; top:calc(100% + 8px); right:0; background:#fff; border:1.5px solid var(--night); border-radius:12px; min-width:190px; z-index:100; overflow:hidden; box-shadow:0 6px 16px rgba(0,0,0,0.2);">
             <a href="profile.html?return=admin.html" id="account-email-full" style="display:block; padding:10px 14px; border-bottom:1px solid #e0ddd0; text-decoration:none; color:inherit;">

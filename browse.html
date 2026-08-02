@@ -448,6 +448,16 @@
     [filtersBtn, locateBtn, filtersPanel].forEach(el => {
       if(el) el.style.setProperty('bottom', bottomOffset + 'px', 'important');
     });
+
+    // Cap the panel's height to whatever room is actually left between its
+    // new bottom-anchored position and the header, so it can't run out of
+    // space and get its own bottom edge crowded — regardless of how tall
+    // the carousel ends up being.
+    if(filtersPanel){
+      const headerBottom = document.querySelector('header').getBoundingClientRect().bottom;
+      const available = window.innerHeight - bottomOffset - headerBottom - 16;
+      filtersPanel.style.setProperty('max-height', Math.max(160, Math.min(260, available)) + 'px', 'important');
+    }
   }
 
   async function loadListings(){
@@ -689,6 +699,18 @@
   loadListings();
 
   window.addEventListener('resize', () => { map.invalidateSize(); positionMobileControls(); });
+
+  // The carousel's height can change after positionMobileControls() first
+  // runs — most commonly when a listing photo finishes loading and grows
+  // the card taller. A single point-in-time measurement goes stale in that
+  // case, leaving the Filters panel positioned as if the carousel were
+  // still its old (shorter) height, which crowds/overlaps its bottom edge.
+  // Watching for size changes keeps the position correct continuously
+  // instead of just once.
+  const carouselPanelEl = document.getElementById('carousel-panel');
+  if(carouselPanelEl && window.ResizeObserver){
+    new ResizeObserver(() => positionMobileControls()).observe(carouselPanelEl);
+  }
 </script>
 
 </body>

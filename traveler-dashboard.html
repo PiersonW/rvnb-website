@@ -37,6 +37,12 @@
   }
   .section-title:first-of-type{margin-top:0;}
   .empty{color:var(--asphalt); font-family:'JetBrains Mono',monospace; font-size:13px; padding:24px 0;}
+  .archive-toggle{
+    width:100%; background:none; border:2px dashed var(--asphalt); color:var(--asphalt);
+    padding:12px; margin:8px 0 16px; font-family:'JetBrains Mono',monospace; font-size:12px;
+    text-transform:uppercase; letter-spacing:0.04em; border-radius:10px; cursor:pointer;
+  }
+  .archive-toggle:hover{border-color:var(--night); color:var(--night);}
 
   .card{background:#fff; border:2px solid var(--night); border-radius:10px; padding:20px; margin-bottom:14px;}
   .card-top{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;}
@@ -103,7 +109,7 @@
       <div id="traveler-menu-wrap" style="position:relative;">
         <button id="traveler-menu-btn" style="background:none; border:1.5px solid var(--asphalt); color:var(--asphalt); padding:8px 16px; font-size:12px; text-transform:uppercase; font-weight:700; border-radius:999px; cursor:pointer; display:inline-flex; align-items:center; gap:5px; position:relative;">
           <span id="menu-email-short" style="text-transform:none;">Menu</span> ▾
-          <span id="menu-notif-dot" style="display:none; position:absolute; top:2px; right:2px; width:9px; height:9px; border-radius:50%; background:var(--red); border:2px solid var(--lane);"></span>
+          <span id="menu-notif-dot" style="display:none; position:absolute; bottom:2px; left:2px; width:13px; height:13px; border-radius:50%; background:var(--red); border:2px solid var(--lane);"></span>
         </button>
         <div id="traveler-menu-dropdown" style="display:none; position:absolute; top:calc(100% + 8px); right:0; background:#fff; border:1.5px solid var(--night); border-radius:12px; min-width:190px; z-index:100; overflow:hidden; box-shadow:0 6px 16px rgba(0,0,0,0.2);">
           <a href="profile.html?return=traveler-dashboard.html" id="account-email-full" style="display:block; padding:10px 14px; font-size:13px; text-transform:none; text-decoration:none; color:inherit; border:none; border-bottom:1px solid #e0ddd0; border-radius:0;">
@@ -174,6 +180,8 @@
     window.location.href = 'traveler-login.html';
   });
 
+  let showPastTrips = false;
+
   async function loadTrips(){
     const upcomingEl = document.getElementById('upcoming-container');
     const pastEl = document.getElementById('past-container');
@@ -198,8 +206,26 @@
     upcomingEl.innerHTML = upcoming.length === 0 ? '<div class="empty">No upcoming trips yet — go find a spot!</div>' : '';
     upcoming.forEach(b => upcomingEl.appendChild(renderCard(b, true)));
 
-    pastEl.innerHTML = past.length === 0 ? '<div class="empty">No past trips yet.</div>' : '';
-    past.forEach(b => pastEl.appendChild(renderCard(b, false)));
+    pastEl.innerHTML = '';
+    if(past.length === 0){
+      pastEl.innerHTML = '<div class="empty">No past trips yet.</div>';
+      return;
+    }
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = 'archive-toggle';
+    toggleBtn.textContent = showPastTrips
+      ? `Hide past & cancelled (${past.length})`
+      : `Show past & cancelled (${past.length})`;
+    toggleBtn.addEventListener('click', () => {
+      showPastTrips = !showPastTrips;
+      loadTrips();
+    });
+    pastEl.appendChild(toggleBtn);
+
+    if(showPastTrips){
+      past.forEach(b => pastEl.appendChild(renderCard(b, false)));
+    }
   }
 
   function formatTime12hr(hhmm){
