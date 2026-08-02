@@ -415,7 +415,7 @@
       <div id="account-menu-wrap" style="position:relative;">
         <button id="account-menu-btn" class="btn btn-outline" style="padding:10px 16px; font-size:12px; border-color:var(--night); color:var(--night); cursor:pointer; display:flex; align-items:center; gap:6px; position:relative;">
           <span id="account-email-short">Account</span> ▾
-          <span id="menu-notif-dot" style="display:none; position:absolute; bottom:0px; left:0px; width:16px; height:16px; border-radius:50%; background:var(--red);"></span>
+          <span id="menu-notif-dot" style="display:none; position:absolute; bottom:-3px; left:-3px; width:16px; height:16px; border-radius:50%; background:var(--red);"></span>
         </button>
         <div id="account-menu-dropdown" style="display:none; position:absolute; top:calc(100% + 8px); right:0; background:#fff; border:1.5px solid var(--night); border-radius:12px; min-width:190px; z-index:100; overflow:hidden; box-shadow:0 6px 16px rgba(0,0,0,0.2);">
           <a href="profile.html?return=index.html" id="account-email-full" style="display:block; padding:10px 14px; border-bottom:1px solid #e0ddd0; text-decoration:none; color:inherit;">
@@ -1031,9 +1031,19 @@
     const ADMIN_EMAIL = 'pierson.willhite@gmail.com';
     const authClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    authClient.auth.getSession().then(({ data }) => {
-      if(!data.session || !data.session.user) return;
-      const user = data.session.user;
+    authClient.auth.getSession().then(async ({ data }) => {
+      if(!data.session) return;
+
+      // getSession() reads cached/local session data, which is fine for
+      // display purposes (email, dropdown), but getUser() actively verifies
+      // the session against Supabase's auth server and guarantees this
+      // client's outgoing requests carry a properly attached token. Without
+      // this, the notifications query below can silently run as if logged
+      // out — RLS then quietly returns zero rows rather than an error, so
+      // the dot just never appears with nothing visibly wrong in between.
+      const { data: userData, error: userErr } = await authClient.auth.getUser();
+      if(userErr || !userData || !userData.user) return;
+      const user = userData.user;
       const email = user.email;
 
       try {
