@@ -105,6 +105,13 @@
 
   <!-- ACCOUNT GATE -->
   <div id="auth-gate" class="auth-box">
+    <button type="button" id="google-signin-btn" style="width:100%; padding:12px; background:#fff; color:#0B1220; border:2px solid #3d4657; border-radius:10px; font-weight:600; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px;">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.91-2.26c-.81.54-1.85.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.96v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.96 10.71a5.4 5.4 0 0 1 0-3.42V4.96H.96a9 9 0 0 0 0 8.08l3-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.96l3 2.33C4.67 5.16 6.66 3.58 9 3.58z"/></svg>
+      Continue with Google
+    </button>
+    <div style="display:flex; align-items:center; gap:10px; color:#5a6472; font-size:11px; font-family:'JetBrains Mono',monospace; text-transform:uppercase;">
+      <div style="flex:1; height:1px; background:#3d4657;"></div>or<div style="flex:1; height:1px; background:#3d4657;"></div>
+    </div>
     <div class="auth-tabs">
       <button class="auth-tab active" data-mode="signup" type="button">Create Account</button>
       <button class="auth-tab" data-mode="login" type="button">Log In</button>
@@ -113,7 +120,7 @@
     <input type="email" id="auth-email" placeholder="Email" required>
     <input type="password" id="auth-password" placeholder="Password (min 6 characters)" required>
     <div class="cf-turnstile" data-sitekey="0x4AAAAAAD3dYgYRVK0pvWHm" data-callback="onAuthCaptcha" style="margin:6px 0;"></div>
-    <label id="auth-terms-wrap" style="display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--night); cursor:pointer;">
+    <label id="auth-terms-wrap" style="display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--lane); opacity:0.85; cursor:pointer;">
       <input type="checkbox" id="auth-terms-checkbox" style="margin-top:2px; flex-shrink:0; width:15px; height:15px;">
       <span>I agree to RVnB's <a href="terms.html" target="_blank" style="color:var(--sign-green); text-decoration:underline;">Terms of Service</a>.</span>
     </label>
@@ -263,6 +270,13 @@
     });
   });
 
+  document.getElementById('google-signin-btn').addEventListener('click', async () => {
+    await supabaseClient.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + '/list-your-lot.html' }
+    });
+  });
+
   let authCaptchaToken = null;
   function onAuthCaptcha(token){ authCaptchaToken = token; }
 
@@ -346,6 +360,10 @@
     const { data } = await supabaseClient.auth.getSession();
     if(data.session){
       currentUser = data.session.user;
+      // Covers Google sign-in too: the profile-creation trigger defaults role
+      // to 'traveler' since OAuth signups don't carry our custom metadata, so
+      // make sure anyone landing here (host flow) is marked role='host'.
+      await supabaseClient.from('profiles').update({ role: 'host' }).eq('id', currentUser.id);
       document.getElementById('auth-gate').style.display = 'none';
       form.style.display = 'flex';
       document.getElementById('contact_email').value = currentUser.email;
