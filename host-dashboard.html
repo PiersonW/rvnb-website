@@ -6,8 +6,10 @@
 <title>Host Dashboard — RVnB</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="push-subscribe.js"></script>
 <style>
   :root{
     --night:#0B1220; --amber:#FFB547; --lane:#FAF7F0; --sign-green:#2F7D5B;
@@ -326,6 +328,7 @@
     }
 
     currentUser = data.session.user;
+    if(window.RVnBPush) RVnBPush.init(supabaseClient, currentUser.id);
     document.getElementById('account-email-text').textContent = currentUser.email;
     document.getElementById('menu-email-short').textContent = currentUser.email.split('@')[0];
     if(currentUser.email === ADMIN_EMAIL){

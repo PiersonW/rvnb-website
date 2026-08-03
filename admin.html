@@ -6,8 +6,10 @@
 <title>Admin Dashboard — RVnB</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="push-subscribe.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   :root{
@@ -487,6 +489,7 @@
   async function showDashboard(){
     const { data } = await supabaseClient.auth.getSession();
     currentUser = data.session.user;
+    if(window.RVnBPush) RVnBPush.init(supabaseClient, currentUser.id);
 
     // Server-side admin check — this is what actually gates the dashboard.
     // The client-side ADMIN_EMAIL comparisons elsewhere on this page only
