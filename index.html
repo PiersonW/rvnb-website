@@ -563,12 +563,12 @@
 
           <!-- trees -->
           <g>
-            <rect x="16" y="290" width="6" height="30" fill="#5b4632"/>
-            <circle cx="19" cy="278" r="20" fill="#3F6B52"/>
+            <rect x="70" y="290" width="6" height="30" fill="#5b4632"/>
+            <circle cx="73" cy="278" r="20" fill="#3F6B52"/>
           </g>
           <g>
-            <rect x="415" y="300" width="5" height="26" fill="#5b4632"/>
-            <circle cx="417" cy="290" r="17" fill="#3F6B52"/>
+            <rect x="468" y="300" width="5" height="26" fill="#5b4632"/>
+            <circle cx="470" cy="290" r="17" fill="#3F6B52"/>
           </g>
           <g>
             <rect x="925" y="286" width="6" height="30" fill="#5b4632"/>
@@ -587,16 +587,16 @@
           </g>
 
           <g transform="translate(475,392)">
-            <rect x="0" y="6" width="66" height="24" rx="8" fill="#C9CDD3"/>
-            <rect x="12" y="-6" width="42" height="16" rx="6" fill="#D8DBDE"/>
-            <circle cx="14" cy="30" r="7" fill="#20242e"/>
-            <circle cx="52" cy="30" r="7" fill="#20242e"/>
+            <rect x="-8.25" y="-1.75" width="82.5" height="30" rx="10" fill="#C9CDD3"/>
+            <rect x="6.75" y="-16.75" width="52.5" height="20" rx="7.5" fill="#D8DBDE"/>
+            <circle cx="9.25" cy="28.25" r="8.75" fill="#20242e"/>
+            <circle cx="56.75" cy="28.25" r="8.75" fill="#20242e"/>
           </g>
           <g transform="translate(635,392)">
-            <rect x="0" y="6" width="66" height="24" rx="8" fill="#7A94A8"/>
-            <rect x="12" y="-6" width="42" height="16" rx="6" fill="#8BA3B5"/>
-            <circle cx="14" cy="30" r="7" fill="#20242e"/>
-            <circle cx="52" cy="30" r="7" fill="#20242e"/>
+            <rect x="-8.25" y="-1.75" width="82.5" height="30" rx="10" fill="#7A94A8"/>
+            <rect x="6.75" y="-16.75" width="52.5" height="20" rx="7.5" fill="#8BA3B5"/>
+            <circle cx="9.25" cy="28.25" r="8.75" fill="#20242e"/>
+            <circle cx="56.75" cy="28.25" r="8.75" fill="#20242e"/>
           </g>
         </g>
 
@@ -621,7 +621,7 @@
           <text x="700" y="340" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="1" fill="#F2A93B">RESERVED TONIGHT</text>
 
           <!-- RV, position nudged by JS as the slider moves -->
-          <g id="rv-group" transform="translate(645,368)">
+          <g id="rv-group" transform="translate(645,359)">
             <svg x="-16" y="-26" width="150" height="114" viewBox="4.5 5.59 12.97 9.82" overflow="visible">
               <path d="M4.50,11.67 L4.50,13.54 L4.62,13.81 L4.86,13.96 L5.92,13.96 L6.07,14.43 L6.34,14.85 L6.64,15.12 L7.02,15.32 L7.35,15.41 L7.91,15.41 L8.42,15.23 L8.68,15.06 L8.95,14.79 L9.19,14.37 L9.31,13.96 L12.39,13.96 L12.45,14.02 L12.48,14.25 L12.63,14.58 L12.87,14.91 L13.11,15.12 L13.49,15.32 L13.82,15.41 L14.50,15.38 L14.98,15.17 L15.39,14.82 L15.63,14.43 L15.78,13.96 L16.22,13.93 L16.73,13.72 L17.05,13.45 L17.35,13.01 L17.47,12.62 L17.47,8.50 L17.41,8.26 L17.26,7.90 L17.05,7.61 L16.61,7.22 L16.16,7.01 L15.87,6.95 L13.73,6.95 L13.49,6.45 L13.05,5.97 L12.57,5.71 L12.22,5.59 L7.97,5.59 L7.59,5.71 L7.11,5.97 L6.70,6.36 L6.46,6.72 L6.25,7.31 L6.22,7.87 L6.28,8.23 L6.40,8.56 L6.79,9.12 L4.65,11.29 L4.56,11.43 Z M11.50,8.76 L11.45,8.91 L11.45,10.78 L11.56,11.05 L11.83,11.29 L12.01,11.35 L15.07,11.35 L15.36,11.20 L15.57,10.93 L15.63,10.72 L15.63,9.00 L15.54,8.76 L15.33,8.56 L15.13,8.50 L11.89,8.50 L11.59,8.64 Z" fill="#FAF7F0" fill-rule="evenodd"/>
             </svg>
@@ -847,9 +847,9 @@
       fgDay.style.opacity = tDay;
       fgNight.style.opacity = tNight;
 
-      // RV slides in the last stretch as it "parks" as day fades to night
-      const rvOffset = tNight * 40; // 0 = parked, 40 = eased back toward the entrance
-      rvGroup.setAttribute('transform', `translate(${645 + rvOffset},368)`);
+      // RV pulls into the stall as day fades to night (parked/offset=0 once fully dark)
+      const rvOffset = tDay * 40; // 40 = still approaching, 0 = parked
+      rvGroup.setAttribute('transform', `translate(${645 + rvOffset},359)`);
 
       captionDay.style.opacity = tDay > 0.5 ? 1 : 0;
       captionNight.style.opacity = tDay > 0.5 ? 0 : 1;
