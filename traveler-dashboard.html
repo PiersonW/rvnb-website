@@ -96,6 +96,10 @@
   .msg-compose textarea{flex:1; resize:none; padding:9px 11px; border:2px solid var(--night); border-radius:10px; font-family:'Inter',sans-serif; font-size:13px; min-width:0;}
   .msg-compose button{flex-shrink:0;}
   .msg-empty{font-size:12px; color:var(--asphalt); padding:8px 0;}
+  .btn-send-msg{
+    padding:9px 16px; border-radius:10px; font-size:12px; font-weight:700; text-transform:uppercase;
+    border:none; cursor:pointer; background:var(--sign-green); color:#fff;
+  }
   .edit-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
   .edit-grid > div{min-width:0;}
   @media(max-width:520px){.edit-grid{grid-template-columns:1fr;}}
@@ -311,7 +315,7 @@
         <div class="msg-list" id="msg-list-${b.id}"></div>
         <div class="msg-compose">
           <textarea id="msg-input-${b.id}" rows="2" placeholder="Message the host..."></textarea>
-          <button class="btn-view" style="border:none; background:var(--sign-green); color:#fff;" data-send-for="${b.id}">Send</button>
+          <button class="btn-send-msg" data-send-for="${b.id}">Send</button>
         </div>
       </div>
     `;

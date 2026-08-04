@@ -110,6 +110,11 @@
   .preset-chip input{width:auto; margin:0; flex-shrink:0;}
   .preset-chip.checked{background:var(--night); color:#fff;}
 
+  .btn-send-msg{
+    padding:9px 16px; border-radius:10px; font-size:12px; font-weight:700; text-transform:uppercase;
+    border:none; cursor:pointer; background:var(--sign-green); color:#fff;
+  }
+
   .msg-badge{background:var(--red); color:#fff; border-radius:10px; font-size:10px; padding:1px 6px; margin-left:4px; font-family:'JetBrains Mono',monospace;}
   .msg-thread{display:none; margin-top:14px; border-top:1px solid #e0ddd0; padding-top:14px;}
   .msg-thread.open{display:block;}
@@ -1063,7 +1068,7 @@
           ${b.traveler_id
             ? `<div class="msg-compose">
                  <textarea id="msg-input-${b.id}" rows="2" placeholder="Message the traveler..."></textarea>
-                 <button class="btn-approve" data-send-for="${b.id}">Send</button>
+                 <button class="btn-send-msg" data-send-for="${b.id}">Send</button>
                </div>`
             : `<div class="msg-empty">This booking doesn't have a linked account yet, so messaging isn't available — use the phone/email above instead.</div>`
           }
