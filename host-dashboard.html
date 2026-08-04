@@ -108,7 +108,6 @@
     padding:6px 12px; font-size:12px; cursor:pointer; user-select:none; transition:background 0.15s, color 0.15s;
   }
   .preset-chip input{width:auto; margin:0; flex-shrink:0;}
-  .preset-chip.checked{background:var(--night); color:#fff;}
 
   .btn-send-msg{
     padding:9px 16px; border-radius:10px; font-size:12px; font-weight:700; text-transform:uppercase;
@@ -130,7 +129,7 @@
 
   .card-actions{display:flex; gap:8px; margin-top:16px; flex-wrap:wrap;}
   .card-actions button{padding:9px 16px; border-radius:10px; font-size:12px; font-weight:700; text-transform:uppercase; border:none; cursor:pointer;}
-  .btn-save{background:var(--night); color:var(--amber);}
+  .btn-save{background:var(--amber); color:var(--night);}
   .btn-save-info{background:var(--night); color:var(--amber); border:none; padding:10px 18px; border-radius:10px; font-weight:700; font-size:12px; text-transform:uppercase; cursor:pointer;}
   .btn-approve{background:var(--sign-green); color:#fff;}
   .btn-pause{background:#e6e6e6; color:var(--night);}
@@ -276,6 +275,8 @@
             <span id="account-email-text" style="display:block; font-size:11px; color:var(--asphalt); word-break:break-all;"></span>
             <span style="display:block; font-size:10px; font-weight:700; color:var(--sign-green); text-transform:uppercase; letter-spacing:0.03em; margin-top:4px;">Edit Profile →</span>
           </a>
+          <a href="index.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #e0ddd0;">Home</a>
+          <a href="browse.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #e0ddd0;">Browse Listings</a>
           <a href="notifications.html?return=host-dashboard.html" style="display:flex; align-items:center; justify-content:space-between; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #e0ddd0;">
             Notifications
             <span id="menu-notif-count" style="display:none; background:var(--red); color:#fff; font-size:10px; font-weight:700; min-width:16px; height:16px; border-radius:8px; align-items:center; justify-content:center; padding:0 4px;"></span>
@@ -715,13 +716,6 @@
           </div>
         </div>
 
-        <div class="card-actions">
-          <button class="btn-save" data-id="${p.id}">Save Changes</button>
-          ${p.status === 'approved' ? `<button class="btn-pause" data-id="${p.id}" data-status="paused">Pause Listing</button>` : ''}
-          ${p.status === 'paused' ? `<button class="btn-approve" data-id="${p.id}" data-status="approved">Reactivate</button>` : ''}
-        </div>
-        <div class="save-msg">Saved!</div>
-
         <div class="photos-section">
           <h4>Photos</h4>
           <div class="photo-grid" data-partner-id="${p.id}">
@@ -769,6 +763,13 @@
           </div>
           <div class="save-msg block-save-msg" data-partner-id="${p.id}"></div>
         </div>
+
+        <div class="card-actions" style="border-top:1px solid #e0ddd0; padding-top:16px; margin-top:16px;">
+          <button class="btn-save" data-id="${p.id}">Save Changes</button>
+          ${p.status === 'approved' ? `<button class="btn-pause" data-id="${p.id}" data-status="paused">Pause Listing</button>` : ''}
+          ${p.status === 'paused' ? `<button class="btn-approve" data-id="${p.id}" data-status="approved">Reactivate</button>` : ''}
+        </div>
+        <div class="save-msg main-save-msg">Saved!</div>
       `;
       container.appendChild(card);
       wireChipToggles(card);
@@ -779,7 +780,7 @@
       btn.addEventListener('click', async () => {
         const card = btn.closest('.card');
         const id = btn.dataset.id;
-        const saveMsg = card.querySelector('.save-msg');
+        const saveMsg = card.querySelector('.main-save-msg');
 
         const business_name = card.querySelector('.f-name').value.trim();
         if(!business_name){
