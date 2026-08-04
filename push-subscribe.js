@@ -37,12 +37,17 @@ function rvnbShowEnableBanner(onEnable) {
 
   const banner = document.createElement('div');
   banner.id = 'rvnb-push-banner';
-  banner.style.cssText = 'position:fixed; bottom:16px; left:16px; right:16px; max-width:380px; margin:0 auto; background:#0B1220; color:#FAF7F0; padding:14px 16px; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:space-between; gap:12px; z-index:9999; font-family:Inter,sans-serif; font-size:13px;';
+  // pointer-events:none on the container (with pointer-events:auto on just
+  // the two buttons) so this banner can never silently swallow taps on
+  // whatever page content happens to sit underneath it — it's fixed-position
+  // and full-width, so on some pages/scroll positions it can overlap real
+  // action buttons (e.g. a booking card's "Messages" button).
+  banner.style.cssText = 'position:fixed; bottom:16px; left:16px; right:16px; max-width:380px; margin:0 auto; background:#0B1220; color:#FAF7F0; padding:14px 16px; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:space-between; gap:12px; z-index:9999; font-family:Inter,sans-serif; font-size:13px; pointer-events:none;';
   banner.innerHTML =
     '<span>Turn on notifications to hear about new activity right away?</span>' +
     '<div style="display:flex; gap:8px; flex-shrink:0;">' +
-      '<button id="rvnb-push-enable" style="background:#FFB547; color:#0B1220; border:none; padding:8px 12px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">Enable</button>' +
-      '<button id="rvnb-push-dismiss" style="background:transparent; color:#FAF7F0; opacity:0.6; border:none; padding:8px; font-size:12px; cursor:pointer;">Not now</button>' +
+      '<button id="rvnb-push-enable" style="background:#FFB547; color:#0B1220; border:none; padding:8px 12px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer; pointer-events:auto;">Enable</button>' +
+      '<button id="rvnb-push-dismiss" style="background:transparent; color:#FAF7F0; opacity:0.6; border:none; padding:8px; font-size:12px; cursor:pointer; pointer-events:auto;">Not now</button>' +
     '</div>';
   document.body.appendChild(banner);
 
