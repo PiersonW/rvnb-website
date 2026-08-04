@@ -33,6 +33,11 @@
   .notif-item .dot{width:8px; height:8px; border-radius:50%; background:var(--amber); flex-shrink:0; margin-top:5px;}
   .notif-item .msg{font-size:13px; color:var(--asphalt); margin-top:4px; line-height:1.4;}
   .notif-item .when{font-size:11px; color:var(--asphalt); margin-top:6px; font-family:'JetBrains Mono',monospace;}
+  .notif-item .count-badge{
+    background:var(--asphalt); color:#fff; font-size:11px; font-weight:700;
+    border-radius:20px; padding:2px 8px; flex-shrink:0; font-family:'JetBrains Mono',monospace;
+  }
+  .notif-item.unread .count-badge{background:var(--sign-green);}
 </style>
   <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "36911a5edb0f4bdf95ab6da85ceccd46"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
@@ -94,12 +99,15 @@
   }
 
   async function loadNotifications(){
+    // Fetch a deeper window than we'll display — a chatty thread can otherwise
+    // push older booking/listing notifications out of a shallow limit before
+    // we ever get a chance to group the messages together.
     const { data, error } = await supabaseClient
       .from('notifications')
       .select('*')
       .eq('user_id', currentUser.id)
       .order('created_at', { ascending: false })
-      .limit(100);
+      .limit(300);
 
     document.getElementById('loading').style.display = 'none';
 
@@ -122,22 +130,53 @@
     document.getElementById('empty').style.display = 'none';
     listEl.style.display = 'block';
 
-    listEl.innerHTML = data.map(n => `
-      <div class="notif-item ${n.is_read ? '' : 'unread'}" data-id="${n.id}" data-link="${n.link || ''}">
+    // Collapse repeat "new_message" notifications that share the same thread
+    // link into a single row (latest preview + a count), so an active
+    // conversation doesn't bury everything else in the list. Non-message
+    // notifications stay one row each. Order is preserved — a group sits
+    // wherever its most recent message would have sorted.
+    const groups = [];
+    const groupByLink = {};
+    data.forEach(n => {
+      if(n.type === 'new_message' && n.link){
+        let g = groupByLink[n.link];
+        if(!g){
+          g = { isGroup: true, link: n.link, title: n.title, message: n.message, created_at: n.created_at, count: 0, unreadCount: 0, ids: [] };
+          groupByLink[n.link] = g;
+          groups.push(g);
+        }
+        g.count++;
+        if(!n.is_read) g.unreadCount++;
+        g.ids.push(n.id);
+      } else {
+        groups.push({ isGroup: false, id: n.id, link: n.link, title: n.title, message: n.message, created_at: n.created_at, is_read: n.is_read });
+      }
+    });
+
+    const visible = groups.slice(0, 50);
+
+    listEl.innerHTML = visible.map(n => {
+      const isUnread = n.isGroup ? n.unreadCount > 0 : !n.is_read;
+      const idsAttr = n.isGroup ? n.ids.join(',') : n.id;
+      return `
+      <div class="notif-item ${isUnread ? 'unread' : ''}" data-ids="${idsAttr}" data-link="${n.link || ''}">
         <div class="row">
           <span class="title">${n.title}</span>
-          ${n.is_read ? '' : '<span class="dot"></span>'}
+          ${n.isGroup && n.count > 1
+            ? `<span class="count-badge">${n.count}</span>`
+            : (isUnread ? '<span class="dot"></span>' : '')}
         </div>
         ${n.message ? `<div class="msg">${n.message}</div>` : ''}
         <div class="when">${timeAgo(n.created_at)}</div>
       </div>
-    `).join('');
+    `;
+    }).join('');
 
     document.querySelectorAll('.notif-item').forEach(item => {
       item.addEventListener('click', async () => {
-        const id = item.dataset.id;
+        const ids = item.dataset.ids.split(',');
         const link = item.dataset.link;
-        await supabaseClient.from('notifications').update({ is_read: true }).eq('id', id);
+        await supabaseClient.from('notifications').update({ is_read: true }).in('id', ids);
         if(link){
           window.location.href = link;
         } else {
