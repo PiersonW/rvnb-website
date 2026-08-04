@@ -82,6 +82,10 @@
     <input type="password" id="signup-password" placeholder="Password (min 6 characters)" minlength="6" required>
     <div class="cf-turnstile" data-sitekey="0x4AAAAAAD3dYgYRVK0pvWHm" data-callback="onSignupCaptcha"></div>
     <label style="display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--lane); opacity:0.85; cursor:pointer;">
+      <input type="checkbox" id="signup-age-checkbox" style="margin-top:2px; flex-shrink:0; width:15px; height:15px;">
+      <span>I confirm that I am 18 years of age or older.</span>
+    </label>
+    <label style="display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--lane); opacity:0.85; cursor:pointer;">
       <input type="checkbox" id="signup-terms-checkbox" style="margin-top:2px; flex-shrink:0; width:15px; height:15px;">
       <span>I agree to RVnB's <a href="terms.html" target="_blank" style="color:var(--amber); text-decoration:underline;">Terms of Service</a>.</span>
     </label>
@@ -262,6 +266,12 @@
     if(!email || !password || !name){
       msg.className = 'msg show error';
       msg.textContent = 'Please fill in your name, email, and password.';
+      return;
+    }
+
+    if(!document.getElementById('signup-age-checkbox').checked){
+      msg.className = 'msg show error';
+      msg.textContent = 'You must confirm you are 18 years of age or older to create an account.';
       return;
     }
 

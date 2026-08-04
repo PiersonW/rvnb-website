@@ -134,6 +134,11 @@
       <span id="l-rules"></span>
     </div>
 
+    <div class="rules-box" id="l-amenities-box" style="display:none;">
+      <b>Amenities</b>
+      <span id="l-amenities"></span>
+    </div>
+
     <div class="reviews-section" id="reviews-section" style="display:none; margin-bottom:32px;">
       <h2 style="font-size:18px; margin-bottom:12px;">Reviews <span id="review-avg" style="color:var(--sign-green);"></span></h2>
       <div id="reviews-list"></div>
@@ -285,7 +290,12 @@
 
     if(data.rules){
       document.getElementById('l-rules-box').style.display = 'block';
-      document.getElementById('l-rules').textContent = data.rules;
+      document.getElementById('l-rules').textContent = data.rules.split(';').map(s => s.trim()).filter(Boolean).join(' · ');
+    }
+
+    if(data.amenities){
+      document.getElementById('l-amenities-box').style.display = 'block';
+      document.getElementById('l-amenities').textContent = data.amenities.split(';').map(s => s.trim()).filter(Boolean).join(' · ');
     }
 
     const photos = (data.photo_urls || '').split(',').map(s => s.trim()).filter(Boolean);
