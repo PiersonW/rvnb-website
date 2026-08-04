@@ -110,6 +110,19 @@
   .preset-chip input{width:auto; margin:0; flex-shrink:0;}
   .preset-chip.checked{background:var(--night); color:#fff;}
 
+  .msg-badge{background:var(--red); color:#fff; border-radius:10px; font-size:10px; padding:1px 6px; margin-left:4px; font-family:'JetBrains Mono',monospace;}
+  .msg-thread{display:none; margin-top:14px; border-top:1px solid #e0ddd0; padding-top:14px;}
+  .msg-thread.open{display:block;}
+  .msg-list{max-height:260px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; margin-bottom:10px;}
+  .msg-bubble{max-width:80%; padding:8px 12px; border-radius:12px; font-size:13px; line-height:1.4;}
+  .msg-bubble.theirs{background:#f0eee4; align-self:flex-start; border-bottom-left-radius:2px;}
+  .msg-bubble.mine{background:var(--night); color:#fff; align-self:flex-end; border-bottom-right-radius:2px;}
+  .msg-bubble .msg-time{display:block; font-family:'JetBrains Mono',monospace; font-size:9px; opacity:0.6; margin-top:3px;}
+  .msg-compose{display:flex; gap:8px; align-items:flex-end;}
+  .msg-compose textarea{flex:1; resize:none; padding:9px 11px; border:2px solid var(--night); border-radius:10px; font-family:'Inter',sans-serif; font-size:13px; min-width:0;}
+  .msg-compose button{flex-shrink:0;}
+  .msg-empty{font-size:12px; color:var(--asphalt); padding:8px 0;}
+
   .card-actions{display:flex; gap:8px; margin-top:16px; flex-wrap:wrap;}
   .card-actions button{padding:9px 16px; border-radius:10px; font-size:12px; font-weight:700; text-transform:uppercase; border:none; cursor:pointer;}
   .btn-save{background:var(--night); color:var(--amber);}
@@ -985,6 +998,7 @@
     }
 
     attachBookingActionListeners();
+    attachMessageListeners(data);
     loadTravelerRatings(data);
   }
 
@@ -1028,10 +1042,122 @@
           ${b.status !== 'confirmed' && b.status !== 'cancelled' && b.status !== 'completed' ? `<button class="btn-approve" data-id="${b.id}" data-action="capture">Confirm &amp; Charge</button>` : ''}
           ${b.status !== 'cancelled' && b.status !== 'completed' ? `<button class="btn-reject" data-id="${b.id}" data-action="cancel">Decline</button>` : ''}
           ${b.status === 'confirmed' ? `<button class="btn-pause" data-id="${b.id}" data-action="complete">Mark Completed</button>` : ''}
+          <button class="btn-pause btn-message" data-booking-id="${b.id}" data-traveler-id="${b.traveler_id || ''}">Messages<span class="msg-badge" id="msg-badge-${b.id}" style="display:none;"></span></button>
         </div>
         <div class="action-msg" id="booking-msg-${b.id}" style="font-size:12px; margin-top:8px; display:none;"></div>
+
+        <div class="msg-thread" id="msg-thread-${b.id}">
+          <div class="msg-list" id="msg-list-${b.id}"></div>
+          ${b.traveler_id
+            ? `<div class="msg-compose">
+                 <textarea id="msg-input-${b.id}" rows="2" placeholder="Message the traveler..."></textarea>
+                 <button class="btn-approve" data-send-for="${b.id}">Send</button>
+               </div>`
+            : `<div class="msg-empty">This booking doesn't have a linked account yet, so messaging isn't available — use the phone/email above instead.</div>`
+          }
+        </div>
       `;
       return card;
+  }
+
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  async function attachMessageListeners(bookings){
+    const bookingIds = bookings.filter(b => b.traveler_id).map(b => b.id);
+    if(bookingIds.length > 0){
+      const { data: unread } = await supabaseClient
+        .from('messages')
+        .select('booking_id')
+        .in('booking_id', bookingIds)
+        .is('read_at', null)
+        .neq('sender_id', currentUser.id);
+      if(unread){
+        const counts = {};
+        unread.forEach(m => { counts[m.booking_id] = (counts[m.booking_id] || 0) + 1; });
+        Object.entries(counts).forEach(([id, count]) => {
+          const badge = document.getElementById('msg-badge-' + id);
+          if(badge){ badge.textContent = count; badge.style.display = 'inline-block'; }
+        });
+      }
+    }
+
+    document.querySelectorAll('.btn-message').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.bookingId;
+        const thread = document.getElementById('msg-thread-' + id);
+        const isOpen = thread.classList.contains('open');
+        document.querySelectorAll('.msg-thread.open').forEach(t => t.classList.remove('open'));
+        if(!isOpen){
+          thread.classList.add('open');
+          loadMessageThread(id);
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-send-for]').forEach(btn => {
+      btn.addEventListener('click', () => sendMessage(btn.dataset.sendFor));
+    });
+  }
+
+  async function loadMessageThread(bookingId){
+    const list = document.getElementById('msg-list-' + bookingId);
+    list.innerHTML = '<div class="msg-empty">Loading...</div>';
+
+    const { data, error } = await supabaseClient
+      .from('messages')
+      .select('*')
+      .eq('booking_id', bookingId)
+      .order('created_at', { ascending: true });
+
+    if(error){
+      list.innerHTML = '<div class="msg-empty">Could not load messages.</div>';
+      return;
+    }
+
+    if(!data || data.length === 0){
+      list.innerHTML = '<div class="msg-empty">No messages yet — say hello!</div>';
+    } else {
+      list.innerHTML = data.map(m => `
+        <div class="msg-bubble ${m.sender_id === currentUser.id ? 'mine' : 'theirs'}">
+          ${escapeHtml(m.body)}
+          <span class="msg-time">${new Date(m.created_at).toLocaleString([], {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'})}</span>
+        </div>
+      `).join('');
+      list.scrollTop = list.scrollHeight;
+    }
+
+    const unreadIds = (data || []).filter(m => m.sender_id !== currentUser.id && !m.read_at).map(m => m.id);
+    if(unreadIds.length > 0){
+      await supabaseClient.from('messages').update({ read_at: new Date().toISOString() }).in('id', unreadIds);
+      const badge = document.getElementById('msg-badge-' + bookingId);
+      if(badge) badge.style.display = 'none';
+    }
+  }
+
+  async function sendMessage(bookingId){
+    const input = document.getElementById('msg-input-' + bookingId);
+    const body = input.value.trim();
+    if(!body) return;
+    const btn = document.querySelector(`[data-send-for="${bookingId}"]`);
+    btn.disabled = true;
+
+    const { error } = await supabaseClient.from('messages').insert({
+      booking_id: bookingId,
+      sender_id: currentUser.id,
+      body
+    });
+
+    btn.disabled = false;
+    if(error){
+      alert('Could not send message: ' + error.message);
+      return;
+    }
+    input.value = '';
+    loadMessageThread(bookingId);
   }
 
   async function sendReviewRequests(bookingId){
