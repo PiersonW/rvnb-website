@@ -3,20 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script>
-  // TEMPORARY DEBUG TOOL — remove once the traveler-dashboard messaging
-  // issue is found. Only loads when ?debug=1 is in the URL, so normal
-  // visitors never see it. Adds a floating on-screen console (tap the icon
-  // in the corner) so JS errors can be seen and screenshotted on a phone,
-  // no computer needed.
-  if (new URLSearchParams(window.location.search).get('debug') === '1') {
-    var erudaScript = document.createElement('script');
-    erudaScript.src = 'https://cdn.jsdelivr.net/npm/eruda';
-    erudaScript.async = false;
-    erudaScript.onload = function(){ eruda.init(); };
-    document.head.appendChild(erudaScript);
-  }
-</script>
 <title>Traveler Dashboard — RVnB</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -381,24 +367,14 @@
     // Previously that fetch ran first; if it ever threw (network blip,
     // unexpected response), the listeners below it never got attached and
     // tapping "Messages" would silently do nothing with no visible error.
-    const msgButtons = document.querySelectorAll('.btn-message');
-    console.log('[RVnB debug] attachMessageListeners: found', msgButtons.length, '.btn-message button(s)');
-    msgButtons.forEach(btn => {
+    document.querySelectorAll('.btn-message').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.dataset.bookingId;
-        console.log('[RVnB debug] Messages button clicked, booking id =', id);
         const thread = document.getElementById('msg-thread-' + id);
-        console.log('[RVnB debug] thread element found?', !!thread);
-        if(!thread){
-          console.error('[RVnB debug] No element with id msg-thread-' + id + ' — cannot open thread.');
-          return;
-        }
         const isOpen = thread.classList.contains('open');
-        console.log('[RVnB debug] thread currently open?', isOpen, '— toggling to', !isOpen);
         document.querySelectorAll('.msg-thread.open').forEach(t => t.classList.remove('open'));
         if(!isOpen){
           thread.classList.add('open');
-          console.log('[RVnB debug] added .open class, thread className is now:', thread.className);
           loadMessageThread(id);
         }
       });
