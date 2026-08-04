@@ -1201,7 +1201,7 @@
   }
 
   function attachBookingActionListeners(){
-    document.querySelectorAll('#bookings-container .card-actions button').forEach(btn => {
+    document.querySelectorAll('#bookings-container .card-actions button:not(.btn-message)').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.dataset.id;
         const action = btn.dataset.action;
