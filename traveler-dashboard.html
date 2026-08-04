@@ -254,24 +254,27 @@
     pastEl.innerHTML = '';
     if(past.length === 0){
       pastEl.innerHTML = '<div class="empty">No past trips yet.</div>';
-      return;
+    } else {
+      const toggleBtn = document.createElement('button');
+      toggleBtn.className = 'archive-toggle';
+      toggleBtn.textContent = showPastTrips
+        ? `Hide past & cancelled (${past.length})`
+        : `Show past & cancelled (${past.length})`;
+      toggleBtn.addEventListener('click', () => {
+        showPastTrips = !showPastTrips;
+        loadTrips();
+      });
+      pastEl.appendChild(toggleBtn);
+
+      if(showPastTrips){
+        past.forEach(b => pastEl.appendChild(renderCard(b, false)));
+      }
     }
 
-    const toggleBtn = document.createElement('button');
-    toggleBtn.className = 'archive-toggle';
-    toggleBtn.textContent = showPastTrips
-      ? `Hide past & cancelled (${past.length})`
-      : `Show past & cancelled (${past.length})`;
-    toggleBtn.addEventListener('click', () => {
-      showPastTrips = !showPastTrips;
-      loadTrips();
-    });
-    pastEl.appendChild(toggleBtn);
-
-    if(showPastTrips){
-      past.forEach(b => pastEl.appendChild(renderCard(b, false)));
-    }
-
+    // This must always run regardless of past-trip count — it used to sit
+    // after an early `return` in the `past.length === 0` branch above,
+    // which meant anyone with zero past trips (like a first-time traveler)
+    // never got their Messages button wired up at all.
     attachMessageListeners(data);
     openThreadFromUrl();
   }
@@ -378,14 +381,24 @@
     // Previously that fetch ran first; if it ever threw (network blip,
     // unexpected response), the listeners below it never got attached and
     // tapping "Messages" would silently do nothing with no visible error.
-    document.querySelectorAll('.btn-message').forEach(btn => {
+    const msgButtons = document.querySelectorAll('.btn-message');
+    console.log('[RVnB debug] attachMessageListeners: found', msgButtons.length, '.btn-message button(s)');
+    msgButtons.forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.dataset.bookingId;
+        console.log('[RVnB debug] Messages button clicked, booking id =', id);
         const thread = document.getElementById('msg-thread-' + id);
+        console.log('[RVnB debug] thread element found?', !!thread);
+        if(!thread){
+          console.error('[RVnB debug] No element with id msg-thread-' + id + ' — cannot open thread.');
+          return;
+        }
         const isOpen = thread.classList.contains('open');
+        console.log('[RVnB debug] thread currently open?', isOpen, '— toggling to', !isOpen);
         document.querySelectorAll('.msg-thread.open').forEach(t => t.classList.remove('open'));
         if(!isOpen){
           thread.classList.add('open');
+          console.log('[RVnB debug] added .open class, thread className is now:', thread.className);
           loadMessageThread(id);
         }
       });
