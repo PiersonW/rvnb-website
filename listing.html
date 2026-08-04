@@ -163,6 +163,7 @@
         </div>
       </div>
       <div class="note" id="booked-dates-note" style="display:none;"></div>
+      <div class="msg error" id="date-conflict-error" style="margin-bottom:4px;"></div>
       <div>
         <label for="guest_name">Your name</label>
         <input type="text" id="guest_name" required>
@@ -361,6 +362,11 @@
     const hasBookings = !error && data && data.length > 0;
     const hasBlocked = blocked && blocked.length > 0;
 
+    // Stash for client-side overlap checks in calcTotal() so travelers can't even
+    // submit blocked/booked dates without seeing an immediate error.
+    blockedRanges = hasBlocked ? blocked : [];
+    bookedRanges = hasBookings ? data : [];
+
     if(!hasBookings && !hasBlocked) return;
 
     const note = document.getElementById('booked-dates-note');
@@ -391,15 +397,38 @@
   const TAX_RATE = 0.07; // placeholder — confirm actual local rate before going live
 
   let currentPricing = null;
+  let blockedRanges = [];
+  let bookedRanges = [];
+
+  // Returns a short description of the conflict if [ci, co) overlaps a host-blocked
+  // range, or (for single-spot listings) an existing booking. Otherwise null.
+  // Plain ISO 'YYYY-MM-DD' strings compare correctly lexically, so no Date math needed.
+  function getDateConflict(ci, co){
+    for(const b of blockedRanges){
+      if(ci <= b.end_date && co > b.start_date){
+        return `blocked by the host from ${b.start_date} to ${b.end_date}`;
+      }
+    }
+    if(listing && listing.spots_available <= 1){
+      for(const bk of bookedRanges){
+        if(ci < bk.check_out && co > bk.check_in){
+          return `already booked from ${bk.check_in} to ${bk.check_out}`;
+        }
+      }
+    }
+    return null;
+  }
 
   function calcTotal(){
     const ci = document.getElementById('check_in').value;
     const co = document.getElementById('check_out').value;
     const breakdown = document.getElementById('price-breakdown');
     const cardWrap = document.getElementById('card-field-wrap');
+    const dateError = document.getElementById('date-conflict-error');
     if(!ci || !co || !listing){
       breakdown.style.display = 'none';
       cardWrap.style.display = 'none';
+      dateError.style.display = 'none';
       currentPricing = null;
       return;
     }
@@ -409,9 +438,21 @@
     if(validNights === 0){
       breakdown.style.display = 'none';
       cardWrap.style.display = 'none';
+      dateError.style.display = 'none';
       currentPricing = null;
       return;
     }
+
+    const conflict = getDateConflict(ci, co);
+    if(conflict){
+      breakdown.style.display = 'none';
+      cardWrap.style.display = 'none';
+      dateError.style.display = 'block';
+      dateError.textContent = `Those dates are ${conflict}. Please choose different dates.`;
+      currentPricing = null;
+      return;
+    }
+    dateError.style.display = 'none';
 
     const subtotal = validNights * listing.price_per_night;
     const travelerFee = subtotal * TRAVELER_FEE_RATE;
@@ -434,6 +475,18 @@
   }
   document.getElementById('check_in').addEventListener('change', calcTotal);
   document.getElementById('check_out').addEventListener('change', calcTotal);
+
+  // Prevent picking dates in the past, and keep check-out from being before check-in.
+  (function initDateMins(){
+    const todayStr = new Date().toISOString().split('T')[0];
+    const ciEl = document.getElementById('check_in');
+    const coEl = document.getElementById('check_out');
+    ciEl.min = todayStr;
+    coEl.min = todayStr;
+    ciEl.addEventListener('change', () => {
+      if(ciEl.value) coEl.min = ciEl.value;
+    });
+  })();
 
   const pageLoadTime = Date.now();
 
