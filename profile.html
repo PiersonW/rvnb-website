@@ -8,6 +8,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="push-subscribe.js"></script>
 <style>
   :root{ --night:#0B1220; --amber:#FFB547; --lane:#FAF7F0; --sign-green:#2F7D5B; --asphalt:#64748B; --red:#a4472b; }
   *{box-sizing:border-box; margin:0; padding:0;}
@@ -42,6 +43,29 @@
   .msg.show{display:block;}
   .msg.error{background:#fbeae0; color:#a4472b;}
   .msg.success{background:#e4efe8; color:#1f4a35;}
+
+  .section-label{
+    font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase;
+    color:var(--asphalt); letter-spacing:0.04em; margin-bottom:10px;
+  }
+  .toggle-row{display:flex; align-items:center; justify-content:space-between; gap:16px;}
+  .toggle-row:not(:last-child){margin-bottom:16px; padding-bottom:16px; border-bottom:1px solid #eee0cf;}
+  .toggle-row-text{flex:1;}
+  .toggle-row-title{font-weight:600; font-size:14px; margin-bottom:2px;}
+  .toggle-row-desc{font-size:12px; color:var(--asphalt);}
+  .switch{position:relative; display:inline-block; width:46px; height:26px; flex-shrink:0;}
+  .switch input{opacity:0; width:0; height:0;}
+  .switch-track{
+    position:absolute; cursor:pointer; inset:0; background:#d8d4c4; border-radius:999px;
+    transition:background 0.15s;
+  }
+  .switch-track::before{
+    content:''; position:absolute; height:20px; width:20px; left:3px; bottom:3px;
+    background:#fff; border-radius:50%; transition:transform 0.15s; box-shadow:0 1px 3px rgba(0,0,0,0.3);
+  }
+  .switch input:checked + .switch-track{background:var(--sign-green);}
+  .switch input:checked + .switch-track::before{transform:translateX(20px);}
+  .switch input:disabled + .switch-track{opacity:0.5; cursor:not-allowed;}
 </style>
   <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "36911a5edb0f4bdf95ab6da85ceccd46"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
@@ -62,6 +86,22 @@
   <div id="content">
     <h1>Settings</h1>
 
+    <div class="section-label">Notifications</div>
+    <div class="card" id="notif-card">
+      <div class="toggle-row">
+        <div class="toggle-row-text">
+          <div class="toggle-row-title">Push notifications</div>
+          <div class="toggle-row-desc" id="push-desc">Checking status on this device...</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="push-toggle" disabled>
+          <span class="switch-track"></span>
+        </label>
+      </div>
+      <div class="toggle-row-desc" style="margin-top:14px;">Booking updates and new messages also always show up in your <a href="notifications.html?return=profile.html" style="color:var(--sign-green); font-weight:600;">Notifications</a> list and get emailed to you — this toggle is just for real-time alerts on this device.</div>
+    </div>
+
+    <div class="section-label">Personal Info</div>
     <div class="card">
       <div class="field">
         <label>Full Name</label>
@@ -123,7 +163,56 @@
 
     document.getElementById('loading').style.display = 'none';
     document.getElementById('content').style.display = 'block';
+
+    refreshPushStatus();
   }
+
+  async function refreshPushStatus(){
+    const desc = document.getElementById('push-desc');
+    const toggle = document.getElementById('push-toggle');
+    const status = await RVnBPush.getStatus();
+
+    if(status === 'unsupported'){
+      desc.textContent = "Not supported in this browser.";
+      toggle.checked = false;
+      toggle.disabled = true;
+    } else if(status === 'denied'){
+      desc.textContent = "Blocked at the browser/device level — turn notifications back on for this site in your device settings to enable this.";
+      toggle.checked = false;
+      toggle.disabled = true;
+    } else if(status === 'subscribed'){
+      desc.textContent = "On for this device.";
+      toggle.checked = true;
+      toggle.disabled = false;
+    } else {
+      desc.textContent = "Off for this device.";
+      toggle.checked = false;
+      toggle.disabled = false;
+    }
+  }
+
+  document.getElementById('push-toggle').addEventListener('change', async (e) => {
+    const toggle = e.target;
+    const desc = document.getElementById('push-desc');
+    const turningOn = toggle.checked;
+    toggle.disabled = true;
+    desc.textContent = turningOn ? 'Turning on...' : 'Turning off...';
+
+    try {
+      if(turningOn){
+        await RVnBPush.subscribe(supabaseClient, currentUser.id);
+      } else {
+        await RVnBPush.unsubscribe(supabaseClient, currentUser.id);
+      }
+    } catch(err) {
+      console.error('Push toggle failed:', err);
+      desc.textContent = turningOn
+        ? "Couldn't turn this on — your browser may have blocked the permission prompt."
+        : "Couldn't turn this off — please try again.";
+    }
+
+    refreshPushStatus();
+  });
 
   document.getElementById('save-btn').addEventListener('click', async () => {
     const btn = document.getElementById('save-btn');

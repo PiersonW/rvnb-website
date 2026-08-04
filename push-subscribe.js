@@ -1,5 +1,5 @@
-// RVnB Push Notifications — shared by host-dashboard.html, admin.html, and
-// traveler-dashboard.html.
+// RVnB Push Notifications — shared by host-dashboard.html, admin.html,
+// traveler-dashboard.html, index.html, and profile.html (Settings).
 //
 // Usage: after you know who's logged in, call:
 //   RVnBPush.init(supabaseClient, currentUser.id);
@@ -10,6 +10,11 @@
 // no-op if already subscribed or if the browser doesn't support push
 // (e.g. Safari in a regular browser tab on iOS — only works once the site
 // is added to the home screen there).
+//
+// Also exposes RVnBPush.getStatus(), RVnBPush.subscribe(), and
+// RVnBPush.unsubscribe() for the Settings page toggle — these are the same
+// subscribe/unsubscribe code paths the banner uses, just callable directly
+// so the toggle and the banner never drift out of sync with each other.
 
 const RVNB_VAPID_PUBLIC_KEY = 'BIjQNRT4JyvklP6rmiUlPNbb6uQux3K02ugGEgkBlB0z0P3jGa-tWdfaSvhFpr-KfGJ7WZKOWHzdUWBXzel8KQM';
 
@@ -61,6 +66,49 @@ function rvnbHideEnableBanner() {
 }
 
 window.RVnBPush = {
+  // 'unsupported' | 'denied' | 'subscribed' | 'not-subscribed'
+  async getStatus() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return 'unsupported';
+    if (Notification.permission === 'denied') return 'denied';
+    try {
+      const reg = await navigator.serviceWorker.getRegistration('/service-worker.js');
+      if (!reg) return 'not-subscribed';
+      const existing = await reg.pushManager.getSubscription();
+      return existing ? 'subscribed' : 'not-subscribed';
+    } catch (err) {
+      console.error('Push getStatus failed:', err);
+      return 'not-subscribed';
+    }
+  },
+
+  // Requests permission (if needed) and subscribes this device. Throws on
+  // failure — the browser's own permission prompt is what most commonly
+  // causes that (user declines, or 'denied' from an earlier visit).
+  async subscribe(supabaseClient, userId) {
+    const reg = await navigator.serviceWorker.register('/service-worker.js');
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: rvnbUrlBase64ToUint8Array(RVNB_VAPID_PUBLIC_KEY)
+    });
+    await rvnbSaveSubscription(supabaseClient, userId, sub);
+    return sub;
+  },
+
+  // Unsubscribes this device locally and removes its row from
+  // push_subscriptions so the send-push function stops targeting it. Only
+  // affects the current device/browser — push subscriptions are inherently
+  // per-device, so a user with the site open on two phones needs to turn
+  // this off on each one.
+  async unsubscribe(supabaseClient, userId) {
+    const reg = await navigator.serviceWorker.getRegistration('/service-worker.js');
+    if (!reg) return;
+    const existing = await reg.pushManager.getSubscription();
+    if (!existing) return;
+    const endpoint = existing.endpoint;
+    await existing.unsubscribe();
+    await supabaseClient.from('push_subscriptions').delete().eq('user_id', userId).eq('endpoint', endpoint);
+  },
+
   async init(supabaseClient, userId) {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return; // unsupported browser/context
     if (!userId) return;
@@ -80,11 +128,7 @@ window.RVnBPush = {
 
       rvnbShowEnableBanner(async () => {
         try {
-          const sub = await reg.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: rvnbUrlBase64ToUint8Array(RVNB_VAPID_PUBLIC_KEY)
-          });
-          await rvnbSaveSubscription(supabaseClient, userId, sub);
+          await window.RVnBPush.subscribe(supabaseClient, userId);
         } catch (err) {
           console.error('Push subscribe failed:', err);
         }
