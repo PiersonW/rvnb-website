@@ -165,6 +165,14 @@
   const ADMIN_EMAIL = 'pierson.willhite@gmail.com';
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+  // Displays ISO 'YYYY-MM-DD' dates as M/D/YYYY. Parsed as plain strings
+  // (not `new Date()`) to avoid timezone shifting the date by a day.
+  function formatDate(dateStr){
+    if(!dateStr) return '';
+    const [y, m, d] = dateStr.split('-');
+    return `${parseInt(m, 10)}/${parseInt(d, 10)}/${y}`;
+  }
+
   let currentUser = null;
 
   async function init(){
@@ -284,7 +292,7 @@
         <div>
           <h3>${spot}</h3>
           <div class="meta">
-            <b>${b.check_in} → ${b.check_out}</b><br>
+            <b>${formatDate(b.check_in)} → ${formatDate(b.check_out)}</b><br>
             ${address}<br>
             $${b.total_charged ? Number(b.total_charged).toFixed(2) : Number(b.total_price).toFixed(2)} total (incl. fees &amp; tax)
           </div>

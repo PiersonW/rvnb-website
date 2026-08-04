@@ -151,6 +151,14 @@
   const SUPABASE_URL = 'https://icnhpciixqrhrqrzxkxg.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbmhwY2lpeHFyaHJxcnp4a3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2MDMsImV4cCI6MjA5OTczMjYwM30.5a8nNSiSA7U89f2kGAHGNPPfYpFra0Ve7PIFtOq3GDk';
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // Displays ISO 'YYYY-MM-DD' dates as M/D/YYYY. Parsed as plain strings
+  // (not `new Date()`) to avoid timezone shifting the date by a day.
+  function formatDate(dateStr){
+    if(!dateStr) return '';
+    const [y, m, d] = dateStr.split('-');
+    return `${parseInt(m, 10)}/${parseInt(d, 10)}/${y}`;
+  }
   const ADMIN_EMAIL = 'pierson.willhite@gmail.com';
   let currentUser = null;
 
@@ -407,7 +415,7 @@
       <tr>
         <td>${b.guest_name}</td>
         <td>${b.partners ? b.partners.business_name : '—'}</td>
-        <td>${b.check_in} → ${b.check_out}</td>
+        <td>${formatDate(b.check_in)} → ${formatDate(b.check_out)}</td>
         <td>$${b.total_charged ? Number(b.total_charged).toFixed(2) : Number(b.total_price || 0).toFixed(2)}</td>
         <td><span class="status-pill ${b.status}">${b.status}</span></td>
       </tr>

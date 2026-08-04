@@ -65,6 +65,14 @@
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbmhwY2lpeHFyaHJxcnp4a3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2MDMsImV4cCI6MjA5OTczMjYwM30.5a8nNSiSA7U89f2kGAHGNPPfYpFra0Ve7PIFtOq3GDk';
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+  // Displays ISO 'YYYY-MM-DD' dates as M/D/YYYY. Parsed as plain strings
+  // (not `new Date()`) to avoid timezone shifting the date by a day.
+  function formatDate(dateStr){
+    if(!dateStr) return '';
+    const [y, m, d] = dateStr.split('-');
+    return `${parseInt(m, 10)}/${parseInt(d, 10)}/${y}`;
+  }
+
   const params = new URLSearchParams(window.location.search);
   const bookingId = params.get('booking');
 
@@ -95,7 +103,7 @@
     const b = data.booking;
     document.getElementById('trip-details').innerHTML = `
       <div class="row"><span class="label">Location</span><span>${b.business_name || '—'}</span></div>
-      <div class="row"><span class="label">Dates</span><span>${b.check_in} → ${b.check_out}</span></div>
+      <div class="row"><span class="label">Dates</span><span>${formatDate(b.check_in)} → ${formatDate(b.check_out)}</span></div>
       <div class="row"><span class="label">Status</span><span>${b.status}</span></div>
       ${b.total_charged ? `<div class="row"><span class="label">Total</span><span>$${Number(b.total_charged).toFixed(2)}</span></div>` : ''}
     `;

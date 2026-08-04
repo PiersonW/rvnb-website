@@ -205,6 +205,17 @@
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbmhwY2lpeHFyaHJxcnp4a3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2MDMsImV4cCI6MjA5OTczMjYwM30.5a8nNSiSA7U89f2kGAHGNPPfYpFra0Ve7PIFtOq3GDk';
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+  // Displays ISO 'YYYY-MM-DD' dates as M/D/YYYY. Parsed as plain strings
+  // (not `new Date()`) to avoid timezone shifting the date by a day.
+  // Only used for text shown to the traveler — the check_in/check_out
+  // <input type="date"> values and all overlap-checking logic below stay
+  // in raw ISO, since that's what the browser and the database expect.
+  function formatDate(dateStr){
+    if(!dateStr) return '';
+    const [y, m, d] = dateStr.split('-');
+    return `${parseInt(m, 10)}/${parseInt(d, 10)}/${y}`;
+  }
+
   const stripe = Stripe('pk_live_51TuFPSCiyzdwSMUZzn04rm52CYdTEMZuobrouDReqX6zvbWzknQzAR8JYDyyptR5NAi4YNFmN1gI0Od8td8RJxgS00JIvDIA0b');
   const stripeElements = stripe.elements();
   const cardElement = stripeElements.create('card', {
@@ -374,11 +385,11 @@
 
     let text = '';
     if(hasBlocked){
-      const blockedList = blocked.map(b => `${b.start_date} to ${b.end_date}`).join(', ');
+      const blockedList = blocked.map(b => `${formatDate(b.start_date)} to ${formatDate(b.end_date)}`).join(', ');
       text += `Not available (blocked by host): ${blockedList}. `;
     }
     if(hasBookings){
-      const dateList = data.map(b => `${b.check_in} to ${b.check_out}`).join(', ');
+      const dateList = data.map(b => `${formatDate(b.check_in)} to ${formatDate(b.check_out)}`).join(', ');
       if(listing.spots_available > 1){
         text += `Other travelers have reserved: ${dateList}. This listing has ${listing.spots_available} spots, so it may still be available — try your dates and you'll be told right away if it's full.`;
       } else {
@@ -406,13 +417,13 @@
   function getDateConflict(ci, co){
     for(const b of blockedRanges){
       if(ci <= b.end_date && co > b.start_date){
-        return `blocked by the host from ${b.start_date} to ${b.end_date}`;
+        return `blocked by the host from ${formatDate(b.start_date)} to ${formatDate(b.end_date)}`;
       }
     }
     if(listing && listing.spots_available <= 1){
       for(const bk of bookedRanges){
         if(ci < bk.check_out && co > bk.check_in){
-          return `already booked from ${bk.check_in} to ${bk.check_out}`;
+          return `already booked from ${formatDate(bk.check_in)} to ${formatDate(bk.check_out)}`;
         }
       }
     }

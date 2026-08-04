@@ -442,6 +442,14 @@
   const ADMIN_EMAIL = 'pierson.willhite@gmail.com';
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+  // Displays ISO 'YYYY-MM-DD' dates as M/D/YYYY. Parsed as plain strings
+  // (not `new Date()`) to avoid timezone shifting the date by a day.
+  function formatDate(dateStr){
+    if(!dateStr) return '';
+    const [y, m, d] = dateStr.split('-');
+    return `${parseInt(m, 10)}/${parseInt(d, 10)}/${y}`;
+  }
+
   const loginView = document.getElementById('login-view');
   const dashboardView = document.getElementById('dashboard-view');
   const loginError = document.getElementById('login-error');
@@ -979,7 +987,7 @@
             <h3>${b.guest_name} <span id="rating-${b.id}" class="traveler-rating"></span></h3>
             <div class="meta">
               <b>${spot}</b><br>
-              ${b.check_in} → ${b.check_out}<br>
+              ${formatDate(b.check_in)} → ${formatDate(b.check_out)}<br>
               Traveler pays: $${(b.total_charged ?? b.total_price)?.toFixed ? (b.total_charged ?? b.total_price).toFixed(2) : (b.total_charged ?? b.total_price)} · Host gets: $${b.host_payout ? Number(b.host_payout).toFixed(2) : '—'} · RVnB: $${b.traveler_fee && b.host_fee ? (Number(b.traveler_fee) + Number(b.host_fee)).toFixed(2) : '—'}<br>
               ${b.guest_email}${b.guest_phone ? ' · ' + b.guest_phone : ''}
             </div>
@@ -1103,8 +1111,8 @@
         <table style="border-collapse:collapse; margin:14px 0;">
           <tr><td style="padding:4px 12px 4px 0; color:#555;">Location</td><td><b>${p ? p.business_name : ''}</b></td></tr>
           <tr><td style="padding:4px 12px 4px 0; color:#555;">Address</td><td>${p ? p.address + ', ' + p.city + ', ' + p.state : ''}</td></tr>
-          <tr><td style="padding:4px 12px 4px 0; color:#555;">Check-in date</td><td>${booking.check_in}</td></tr>
-          <tr><td style="padding:4px 12px 4px 0; color:#555;">Check-out date</td><td>${booking.check_out}</td></tr>
+          <tr><td style="padding:4px 12px 4px 0; color:#555;">Check-in date</td><td>${formatDate(booking.check_in)}</td></tr>
+          <tr><td style="padding:4px 12px 4px 0; color:#555;">Check-out date</td><td>${formatDate(booking.check_out)}</td></tr>
           <tr><td style="padding:4px 12px 4px 0; color:#555;">Arrive after</td><td>${p ? formatTime12hr(p.arrival_time) : ''}</td></tr>
           <tr><td style="padding:4px 12px 4px 0; color:#555;">Leave by</td><td>${p ? formatTime12hr(p.departure_time) : ''}</td></tr>
           ${booking.total_charged ? `<tr><td style="padding:4px 12px 4px 0; color:#555;">Total paid</td><td>$${Number(booking.total_charged).toFixed(2)}</td></tr>` : ''}
@@ -1113,7 +1121,7 @@
         <p><b>⚠ Daily departure required.</b> Even for multi-night stays, your vehicle must leave the lot by <b>${p ? formatTime12hr(p.departure_time) : 'the departure time'}</b> each morning and may not return until <b>${p ? formatTime12hr(p.arrival_time) : 'the arrival time'}</b> that evening — every night of your stay, not just once.</p>
         <p>Safe travels!</p>
       `
-      : `<p>Hi ${booking.guest_name},</p><p>Unfortunately your booking request at <b>${spot}</b> for ${booking.check_in} → ${booking.check_out} was not able to be confirmed. Your card was not charged — any authorization hold will be released automatically by your bank within a few days.</p><p>Feel free to look for another spot on RVnB.</p>`;
+      : `<p>Hi ${booking.guest_name},</p><p>Unfortunately your booking request at <b>${spot}</b> for ${formatDate(booking.check_in)} → ${formatDate(booking.check_out)} was not able to be confirmed. Your card was not charged — any authorization hold will be released automatically by your bank within a few days.</p><p>Feel free to look for another spot on RVnB.</p>`;
 
     const { data, error } = await supabaseClient.functions.invoke('send-email', {
       body: { to: booking.guest_email, subject, html }
