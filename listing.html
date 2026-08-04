@@ -94,6 +94,27 @@
   .msg.show{display:block;}
   .msg.success{background:#20402f; color:#8fd8ac;}
   .msg.error{background:#402020; color:#ff9d7a;}
+
+  .success-modal-overlay{
+    display:none; position:fixed; inset:0; background:rgba(11,18,32,0.75); z-index:1000;
+    align-items:center; justify-content:center; padding:24px;
+  }
+  .success-modal-overlay.show{display:flex;}
+  .success-modal{
+    background:var(--night); color:var(--lane); border-radius:16px; padding:32px 26px; max-width:400px;
+    width:100%; text-align:center; border:2px solid var(--sign-green);
+  }
+  .success-modal .checkmark{
+    width:56px; height:56px; border-radius:50%; background:var(--sign-green); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:28px; margin:0 auto 16px;
+  }
+  .success-modal h3{font-family:'Manrope',sans-serif; text-transform:uppercase; font-size:20px; margin-bottom:12px; color:var(--amber);}
+  .success-modal p{font-size:14px; line-height:1.6; color:var(--lane); opacity:0.9; margin-bottom:22px;}
+  .success-modal button{
+    width:100%; padding:14px; background:var(--amber); color:var(--night); font-weight:700;
+    text-transform:uppercase; font-size:13px; border:none; border-radius:10px; cursor:pointer;
+  }
+  .success-modal .redirect-note{font-family:'JetBrains Mono',monospace; font-size:11px; color:#8a92a0; margin-top:12px; margin-bottom:0;}
 </style>
   <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "36911a5edb0f4bdf95ab6da85ceccd46"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
@@ -125,8 +146,8 @@
     <div class="details">
       <div><b>Spots available</b><span id="l-spots"></span></div>
       <div><b>Max rig length</b><span id="l-length"></span></div>
-      <div><b>Earliest arrival</b><span id="l-arrival"></span></div>
-      <div><b>Latest departure</b><span id="l-departure"></span></div>
+      <div id="l-arrival-box"><b>Earliest arrival</b><span id="l-arrival"></span></div>
+      <div id="l-departure-box"><b>Latest departure</b><span id="l-departure"></span></div>
     </div>
 
     <div class="rules-box" id="l-rules-box" style="display:none;">
@@ -197,6 +218,16 @@
       <div class="note">Your card will be authorized now but not charged until the host confirms. If declined, you're never charged.</div>
       <div class="msg" id="form-msg"></div>
     </form>
+  </div>
+</div>
+
+<div class="success-modal-overlay" id="success-modal-overlay">
+  <div class="success-modal">
+    <div class="checkmark">✓</div>
+    <h3>Request Sent</h3>
+    <p id="success-modal-text"></p>
+    <button id="success-modal-btn" type="button">Go to My Trips</button>
+    <p class="redirect-note" id="success-modal-redirect-note" style="display:none;">Taking you there now...</p>
   </div>
 </div>
 
@@ -291,6 +322,11 @@
 
     const turnoverNotice = document.getElementById('daily-turnover-notice');
     if(data.allows_24hr_parking){
+      // For a 24-hour spot, "earliest arrival / latest departure" reads as a
+      // contradiction right next to the green 24-hour banner below — this
+      // listing doesn't have a daily turnover window, so don't show one.
+      document.getElementById('l-arrival-box').style.display = 'none';
+      document.getElementById('l-departure-box').style.display = 'none';
       turnoverNotice.style.background = '#16321f';
       turnoverNotice.style.color = '#8fd8ac';
       turnoverNotice.innerHTML = `<b>✓ 24-hour parking.</b> This is a designated RV spot — you're welcome to stay parked here for the full length of your booking without leaving and returning daily.`;
@@ -667,7 +703,28 @@
     }
 
     msg.className = 'msg show success';
-    msg.textContent = 'Request sent! Check your email for a confirmation. The host will confirm shortly. Remember: your vehicle must leave the lot each morning by the departure time and return after arrival time — every night of your stay.';
+    msg.textContent = 'Request sent!';
+
+    const turnoverLine = listing.allows_24hr_parking
+      ? 'This is a 24-hour parking spot, so there\'s no daily departure to worry about — stay parked for your whole visit.'
+      : 'Remember: your vehicle must leave the lot each morning by the departure time and return after the arrival time — every night of your stay.';
+    document.getElementById('success-modal-text').textContent =
+      `Check your email for a confirmation. The host will confirm shortly. ${turnoverLine}`;
+
+    const modalOverlay = document.getElementById('success-modal-overlay');
+    const modalBtn = document.getElementById('success-modal-btn');
+    const redirectNote = document.getElementById('success-modal-redirect-note');
+    modalOverlay.classList.add('show');
+
+    if(loggedInTraveler){
+      modalBtn.textContent = 'Go to My Trips';
+      modalBtn.onclick = () => { window.location.href = 'traveler-dashboard.html'; };
+      redirectNote.style.display = 'block';
+      setTimeout(() => { window.location.href = 'traveler-dashboard.html'; }, 3000);
+    } else {
+      modalBtn.textContent = 'Got it';
+      modalBtn.onclick = () => { modalOverlay.classList.remove('show'); };
+    }
 
     const cancelLink = 'https://tryrvnb.com/cancel-booking.html?booking=' + insertedBooking.id;
 
@@ -682,7 +739,7 @@
           <table style="border-collapse:collapse; margin:14px 0;">
             <tr><td style="padding:4px 12px 4px 0; color:#555;">Location</td><td><b>${listing.business_name}</b></td></tr>
             <tr><td style="padding:4px 12px 4px 0; color:#555;">Address</td><td>${listing.address}, ${listing.city}, ${listing.state}</td></tr>
-            <tr><td style="padding:4px 12px 4px 0; color:#555;">Dates</td><td>${ci} → ${co}</td></tr>
+            <tr><td style="padding:4px 12px 4px 0; color:#555;">Dates</td><td>${formatDate(ci)} → ${formatDate(co)}</td></tr>
             <tr><td style="padding:4px 12px 4px 0; color:#555;">Total</td><td>$${currentPricing.totalCharged.toFixed(2)}</td></tr>
           </table>
           <p>Need to cancel? <a href="${cancelLink}">Cancel this trip</a> — no account needed.</p>
@@ -697,7 +754,7 @@
           body: {
             to: hostProfile.email,
             subject: `New booking request — ${listing.business_name}`,
-            html: `<p>Hi,</p><p>You have a new booking request from <b>${bookingPayload.guest_name}</b> for ${ci} → ${co}.</p><p>Log into your <a href="https://tryrvnb.com/host-dashboard.html">host dashboard</a> to confirm or decline.</p>`
+            html: `<p>Hi,</p><p>You have a new booking request from <b>${bookingPayload.guest_name}</b> for ${formatDate(ci)} → ${formatDate(co)}.</p><p>Log into your <a href="https://tryrvnb.com/host-dashboard.html">host dashboard</a> to confirm or decline.</p>`
           }
         }).catch(() => {});
       }

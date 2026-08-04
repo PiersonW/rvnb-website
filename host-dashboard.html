@@ -159,7 +159,7 @@
   }
   .block-form input{
     width:100%; min-width:0; padding:9px 11px; border:2px solid var(--night); border-radius:10px;
-    font-family:'Inter',sans-serif; font-size:13px;
+    font-family:'Inter',sans-serif; font-size:13px; background:#fff; color:var(--night);
   }
   .btn-add-block{
     grid-column:1/-1; background:var(--night); color:var(--amber); border:none; padding:10px;
@@ -970,9 +970,31 @@
     const container = document.getElementById('bookings-container');
     container.innerHTML = '<div class="empty">Loading...</div>';
 
+    // Get this host's own listing IDs first and scope the query to them.
+    // bookings don't store host_id directly, and RLS on bookings separately
+    // allows a user to see rows where THEY are the traveler (needed for
+    // traveler-dashboard.html) — that policy is additive/OR'd with the host
+    // policy, so an unscoped query here would also pull in bookings this
+    // user made as a traveler on someone else's listing.
+    const { data: myListings, error: listingsError } = await supabaseClient
+      .from('partners')
+      .select('id')
+      .eq('host_id', currentUser.id);
+
+    if(listingsError){
+      container.innerHTML = '<div class="empty">Could not load bookings: ' + listingsError.message + '</div>';
+      return;
+    }
+    const listingIds = (myListings || []).map(l => l.id);
+    if(listingIds.length === 0){
+      container.innerHTML = '<div class="empty">No booking requests yet.</div>';
+      return;
+    }
+
     const { data, error } = await supabaseClient
       .from('bookings')
       .select('*, partners(business_name)')
+      .in('partner_id', listingIds)
       .order('created_at', { ascending: false });
 
     if(error){
@@ -1092,24 +1114,8 @@
   }
 
   async function attachMessageListeners(bookings){
-    const bookingIds = bookings.filter(b => b.traveler_id).map(b => b.id);
-    if(bookingIds.length > 0){
-      const { data: unread } = await supabaseClient
-        .from('messages')
-        .select('booking_id')
-        .in('booking_id', bookingIds)
-        .is('read_at', null)
-        .neq('sender_id', currentUser.id);
-      if(unread){
-        const counts = {};
-        unread.forEach(m => { counts[m.booking_id] = (counts[m.booking_id] || 0) + 1; });
-        Object.entries(counts).forEach(([id, count]) => {
-          const badge = document.getElementById('msg-badge-' + id);
-          if(badge){ badge.textContent = count; badge.style.display = 'inline-block'; }
-        });
-      }
-    }
-
+    // Attach the click listeners first and unconditionally — opening a
+    // thread must never depend on the unread-count fetch below succeeding.
     document.querySelectorAll('.btn-message').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.dataset.bookingId;
@@ -1126,6 +1132,29 @@
     document.querySelectorAll('[data-send-for]').forEach(btn => {
       btn.addEventListener('click', () => sendMessage(btn.dataset.sendFor));
     });
+
+    const bookingIds = bookings.filter(b => b.traveler_id).map(b => b.id);
+    if(bookingIds.length > 0){
+      try {
+        const { data: unread, error } = await supabaseClient
+          .from('messages')
+          .select('booking_id')
+          .in('booking_id', bookingIds)
+          .is('read_at', null)
+          .neq('sender_id', currentUser.id);
+        if(error) console.error('Unread message count failed:', error);
+        if(unread){
+          const counts = {};
+          unread.forEach(m => { counts[m.booking_id] = (counts[m.booking_id] || 0) + 1; });
+          Object.entries(counts).forEach(([id, count]) => {
+            const badge = document.getElementById('msg-badge-' + id);
+            if(badge){ badge.textContent = count; badge.style.display = 'inline-block'; }
+          });
+        }
+      } catch(err) {
+        console.error('Unread message count threw:', err);
+      }
+    }
   }
 
   async function loadMessageThread(bookingId){
@@ -1336,8 +1365,10 @@
           <tr><td style="padding:4px 12px 4px 0; color:#555;">Address</td><td>${p ? p.address + ', ' + p.city + ', ' + p.state : ''}</td></tr>
           <tr><td style="padding:4px 12px 4px 0; color:#555;">Check-in date</td><td>${formatDate(booking.check_in)}</td></tr>
           <tr><td style="padding:4px 12px 4px 0; color:#555;">Check-out date</td><td>${formatDate(booking.check_out)}</td></tr>
+          ${!(p && p.allows_24hr_parking) ? `
           <tr><td style="padding:4px 12px 4px 0; color:#555;">Arrive after</td><td>${p ? formatTime12hr(p.arrival_time) : ''}</td></tr>
           <tr><td style="padding:4px 12px 4px 0; color:#555;">Leave by</td><td>${p ? formatTime12hr(p.departure_time) : ''}</td></tr>
+          ` : ''}
           ${booking.total_charged ? `<tr><td style="padding:4px 12px 4px 0; color:#555;">Total paid</td><td>$${Number(booking.total_charged).toFixed(2)}</td></tr>` : ''}
         </table>
         ${p && p.rules ? `<p><b>Host rules:</b><br>${p.rules}</p>` : ''}

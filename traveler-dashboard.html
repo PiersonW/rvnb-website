@@ -301,11 +301,15 @@
       </div>
 
       ${p ? `
+      ${(!p.allows_24hr_parking || p.rules) ? `
       <div class="trip-details">
+        ${!p.allows_24hr_parking ? `
         <div class="detail-row"><span class="detail-label">Arrive after</span><span>${formatTime12hr(p.arrival_time)}</span></div>
         <div class="detail-row"><span class="detail-label">Leave by</span><span>${formatTime12hr(p.departure_time)}</span></div>
+        ` : ''}
         ${p.rules ? `<div class="detail-row full"><span class="detail-label">House rules</span><span>${p.rules}</span></div>` : ''}
       </div>
+      ` : ''}
       <div class="turnover-reminder${p.allows_24hr_parking ? ' allows-24hr' : ''}">${
         p.allows_24hr_parking
           ? '✓ 24-hour parking — this is a designated RV spot, no daily departure required.'
@@ -355,24 +359,11 @@
   }
 
   async function attachMessageListeners(bookings){
-    const bookingIds = bookings.map(b => b.id);
-    if(bookingIds.length > 0){
-      const { data: unread } = await supabaseClient
-        .from('messages')
-        .select('booking_id')
-        .in('booking_id', bookingIds)
-        .is('read_at', null)
-        .neq('sender_id', currentUser.id);
-      if(unread){
-        const counts = {};
-        unread.forEach(m => { counts[m.booking_id] = (counts[m.booking_id] || 0) + 1; });
-        Object.entries(counts).forEach(([id, count]) => {
-          const badge = document.getElementById('msg-badge-' + id);
-          if(badge){ badge.textContent = count; badge.style.display = 'inline-block'; }
-        });
-      }
-    }
-
+    // Attach the click listeners first and unconditionally — opening a
+    // thread must never depend on the unread-count fetch below succeeding.
+    // Previously that fetch ran first; if it ever threw (network blip,
+    // unexpected response), the listeners below it never got attached and
+    // tapping "Messages" would silently do nothing with no visible error.
     document.querySelectorAll('.btn-message').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.dataset.bookingId;
@@ -389,6 +380,29 @@
     document.querySelectorAll('[data-send-for]').forEach(btn => {
       btn.addEventListener('click', () => sendMessage(btn.dataset.sendFor));
     });
+
+    const bookingIds = bookings.map(b => b.id);
+    if(bookingIds.length > 0){
+      try {
+        const { data: unread, error } = await supabaseClient
+          .from('messages')
+          .select('booking_id')
+          .in('booking_id', bookingIds)
+          .is('read_at', null)
+          .neq('sender_id', currentUser.id);
+        if(error) console.error('Unread message count failed:', error);
+        if(unread){
+          const counts = {};
+          unread.forEach(m => { counts[m.booking_id] = (counts[m.booking_id] || 0) + 1; });
+          Object.entries(counts).forEach(([id, count]) => {
+            const badge = document.getElementById('msg-badge-' + id);
+            if(badge){ badge.textContent = count; badge.style.display = 'inline-block'; }
+          });
+        }
+      } catch(err) {
+        console.error('Unread message count threw:', err);
+      }
+    }
   }
 
   async function loadMessageThread(bookingId){
