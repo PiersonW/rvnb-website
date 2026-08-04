@@ -199,7 +199,7 @@
     window.location.href = 'traveler-login.html';
   });
 
-  let showPastTrips = false;
+  let showPastTrips = new URLSearchParams(window.location.search).has('thread');
 
   async function loadTrips(){
     const upcomingEl = document.getElementById('upcoming-container');
@@ -247,6 +247,18 @@
     }
 
     attachMessageListeners(data);
+    openThreadFromUrl();
+  }
+
+  function openThreadFromUrl(){
+    const threadId = new URLSearchParams(window.location.search).get('thread');
+    if(!threadId) return;
+    const thread = document.getElementById('msg-thread-' + threadId);
+    if(!thread) return;
+    document.querySelectorAll('.msg-thread.open').forEach(t => t.classList.remove('open'));
+    thread.classList.add('open');
+    loadMessageThread(threadId);
+    thread.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   function formatTime12hr(hhmm){

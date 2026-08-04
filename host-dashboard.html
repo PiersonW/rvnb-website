@@ -951,7 +951,7 @@
     });
   }
 
-  let showArchivedBookings = false;
+  let showArchivedBookings = new URLSearchParams(window.location.search).has('thread');
 
   async function loadBookings(){
     const container = document.getElementById('bookings-container');
@@ -1000,6 +1000,18 @@
     attachBookingActionListeners();
     attachMessageListeners(data);
     loadTravelerRatings(data);
+    openThreadFromUrl();
+  }
+
+  function openThreadFromUrl(){
+    const threadId = new URLSearchParams(window.location.search).get('thread');
+    if(!threadId) return;
+    const thread = document.getElementById('msg-thread-' + threadId);
+    if(!thread) return;
+    document.querySelectorAll('.msg-thread.open').forEach(t => t.classList.remove('open'));
+    thread.classList.add('open');
+    loadMessageThread(threadId);
+    thread.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   async function loadTravelerRatings(bookings){
