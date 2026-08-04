@@ -44,6 +44,17 @@
     font-family:'Inter',sans-serif; font-size:15px; border-radius:10px; color:var(--night);
   }
   textarea{resize:vertical; min-height:80px;}
+  .preset-chips{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;}
+  .preset-chip{
+    display:flex; align-items:center; gap:6px; border:2px solid var(--night); border-radius:20px;
+    padding:7px 13px; font-size:13px; cursor:pointer; user-select:none; transition:background 0.15s, color 0.15s;
+    background:#fff; color:var(--night);
+  }
+  .preset-chip input{width:auto; margin:0; flex-shrink:0;}
+  .preset-chip.checked{background:var(--night); color:#fff;}
+  .preset-hint{
+    font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--asphalt); margin-top:-4px; margin-bottom:10px; display:block;
+  }
   .row2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
   .row2 > div{min-width:0;}
   @media(max-width:520px){.row2{grid-template-columns:1fr;}}
@@ -218,8 +229,19 @@
       </div>
 
       <div>
-        <label for="rules">Rules / notes (optional)</label>
-        <textarea id="rules" placeholder="e.g. no generators after 10pm, quiet hours, entrance on the north side..."></textarea>
+        <label>Rules</label>
+        <span class="preset-hint">Tap to toggle common rules</span>
+        <div class="preset-chips" id="rule-presets"></div>
+        <label for="rules">Additional notes (optional)</label>
+        <textarea id="rules" placeholder="Anything else travelers should know"></textarea>
+      </div>
+
+      <div>
+        <label>Amenities</label>
+        <span class="preset-hint">Tap to toggle what's available</span>
+        <div class="preset-chips" id="amenity-presets"></div>
+        <label for="amenities">Other amenities (optional)</label>
+        <textarea id="amenities" placeholder="Anything else worth mentioning"></textarea>
       </div>
 
       <div>
@@ -250,6 +272,57 @@
     msg.textContent = text;
     msg.className = 'msg show ' + type;
   }
+
+  // ============================================
+  // Preset rule/amenity chips
+  // ============================================
+  const RULE_PRESETS = [
+    'No generators after 9 PM',
+    'Quiet hours 10 PM–7 AM',
+    'No littering',
+    'No loitering outside your vehicle',
+    'No open flames or campfires',
+    'One vehicle per reserved space',
+    'Leashed pets only',
+    'No hookups available on-site'
+  ];
+
+  const AMENITY_PRESETS = [
+    'Restrooms available',
+    'Water fill-up available',
+    'Trash disposal available',
+    'Well-lit area',
+    'Security cameras on-site',
+    'WiFi available',
+    'Paved surface',
+    'Electric hookup available',
+    'Dump station on-site',
+    'Easy pull-through parking'
+  ];
+
+  function buildPresetString(checkedValues, customText){
+    const parts = [...checkedValues];
+    if(customText && customText.trim()) parts.push(customText.trim());
+    return parts.join('; ');
+  }
+
+  function renderPresetChips(containerId, presets, cbClass){
+    const container = document.getElementById(containerId);
+    container.innerHTML = presets.map(label => `
+      <label class="preset-chip">
+        <input type="checkbox" class="${cbClass}" data-value="${label}">
+        <span>${label}</span>
+      </label>
+    `).join('');
+    container.querySelectorAll('.preset-chip input').forEach(cb => {
+      cb.addEventListener('change', () => {
+        cb.closest('.preset-chip').classList.toggle('checked', cb.checked);
+      });
+    });
+  }
+
+  renderPresetChips('rule-presets', RULE_PRESETS, 'rule-preset');
+  renderPresetChips('amenity-presets', AMENITY_PRESETS, 'amenity-preset');
 
   // ============================================
   // ACCOUNT GATE — hosts must be logged in so listings tie to their account
@@ -503,6 +576,12 @@
     const ACTIVE_MARKET_STATES = ['UT'];
     const isActiveMarket = ACTIVE_MARKET_STATES.includes(state.trim().toUpperCase());
 
+    const checkedRulePresets = Array.from(document.querySelectorAll('.rule-preset:checked')).map(cb => cb.dataset.value);
+    const rulesValue = buildPresetString(checkedRulePresets, document.getElementById('rules').value);
+
+    const checkedAmenityPresets = Array.from(document.querySelectorAll('.amenity-preset:checked')).map(cb => cb.dataset.value);
+    const amenitiesValue = buildPresetString(checkedAmenityPresets, document.getElementById('amenities').value);
+
     const payload = {
       business_name: document.getElementById('business_name').value.trim(),
       address: address,
@@ -517,7 +596,8 @@
       arrival_time: document.getElementById('arrival_time').value,
       departure_time: document.getElementById('departure_time').value,
       allows_24hr_parking: document.getElementById('allows_24hr_parking').checked,
-      rules: document.getElementById('rules').value.trim(),
+      rules: rulesValue,
+      amenities: amenitiesValue,
       contact_name: document.getElementById('contact_name').value.trim(),
       contact_email: document.getElementById('contact_email').value.trim(),
       photo_urls: photoUrls.join(','),
