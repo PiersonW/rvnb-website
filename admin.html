@@ -1001,6 +1001,7 @@
               Traveler pays: $${(b.total_charged ?? b.total_price)?.toFixed ? (b.total_charged ?? b.total_price).toFixed(2) : (b.total_charged ?? b.total_price)} · Host gets: $${b.host_payout ? Number(b.host_payout).toFixed(2) : '—'} · RVnB: $${b.traveler_fee && b.host_fee ? (Number(b.traveler_fee) + Number(b.host_fee)).toFixed(2) : '—'}<br>
               ${escapeHtml(b.guest_email)}${b.guest_phone ? ' · ' + escapeHtml(b.guest_phone) : ''}
               ${Number(b.refunded_amount) > 0 ? `<div style="font-size:12px; color:#2F7D5B; margin-top:6px; font-weight:600;">Refunded $${Number(b.refunded_amount).toFixed(2)}${b.cancelled_by ? ' · cancelled by ' + b.cancelled_by : ''}</div>` : (b.status === 'cancelled' && b.cancelled_by ? `<div style="font-size:12px; color:#888; margin-top:6px;">Cancelled by ${b.cancelled_by}${b.payment_status === 'paid' ? ' · not refunded' : ''}</div>` : '')}
+              ${b.payout_status ? `<div style="font-size:12px; margin-top:6px; color:${b.payout_status === 'paid' ? '#2F7D5B' : b.payout_status === 'not_owed' ? '#888' : '#a4472b'};">Payout: ${b.payout_status.replace(/_/g, ' ')}${b.payout_amount != null ? ' · $' + Number(b.payout_amount).toFixed(2) : ''}${Number(b.payout_reversed_amount) > 0 ? ' · $' + Number(b.payout_reversed_amount).toFixed(2) + ' reversed' : ''}${b.payout_error ? ' · ' + escapeHtml(b.payout_error) : ''}</div>` : ''}
             </div>
           </div>
           <span class="status ${b.status}">${b.status}</span>
@@ -1009,6 +1010,7 @@
           ${b.status !== 'confirmed' && b.status !== 'cancelled' && b.status !== 'completed' ? `<button class="btn-approve" data-id="${b.id}" data-action="capture">Confirm &amp; Charge</button>` : ''}
           ${b.status === 'pending' ? `<button class="btn-reject" data-id="${b.id}" data-action="cancel">Decline</button>` : ''}
           ${b.status === 'confirmed' && checkoutHasPassed ? `<button class="btn-pause" data-id="${b.id}" data-action="complete">Mark Completed</button>` : ''}
+          ${b.payout_status === 'failed' || b.payout_status === 'waiting_on_host' ? `<button class="btn-pause" data-id="${b.id}" data-action="retry-payout">Retry Payout</button>` : ''}
           ${b.status === 'confirmed' && b.payment_status === 'paid' && !checkoutHasPassed ? `<button class="btn-reject" data-id="${b.id}" data-action="refund-cancel" data-remaining="${(Number(b.total_charged ?? b.total_price) - Number(b.refunded_amount || 0)).toFixed(2)}">Cancel &amp; Refund</button>` : ''}
           ${['paid', 'partially_refunded'].includes(b.payment_status) && (Number(b.total_charged ?? b.total_price) - Number(b.refunded_amount || 0)).toFixed(2) > 0 ? `<button class="btn-pause" data-id="${b.id}" data-action="refund" data-remaining="${(Number(b.total_charged ?? b.total_price) - Number(b.refunded_amount || 0)).toFixed(2)}">Refund…</button>` : ''}
         </div>
@@ -1070,6 +1072,18 @@
         if(action === 'complete'){
           await supabaseClient.from('bookings').update({ status: 'completed' }).eq('id', id);
           sendReviewRequests(id);
+          // Pay the host now instead of waiting for the hourly payout run.
+          await supabaseClient.functions.invoke('process-payouts', { body: { bookingId: id } });
+          loadBookings();
+          return;
+        }
+
+        if(action === 'retry-payout'){
+          btn.disabled = true;
+          btn.textContent = 'Retrying...';
+          const { data } = await supabaseClient.functions.invoke('process-payouts', { body: { bookingId: id } });
+          const result = data?.results?.[id] || data?.error || 'nothing to do';
+          alert('Payout: ' + String(result).replace(/_/g, ' '));
           loadBookings();
           return;
         }
@@ -1108,6 +1122,7 @@
           return;
         }
 
+        if(data?.payoutWarning) alert(data.payoutWarning);
         // Refunds are emailed to the traveler by cancel-payment itself.
         const emailError = data?.emailedGuest ? null : await notifyTraveler(id, action);
         if(emailError){

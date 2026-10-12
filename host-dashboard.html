@@ -470,7 +470,7 @@
       banner.style.background = '#e4efe8';
       banner.style.border = '2px solid #2F7D5B';
       banner.style.color = '#1f4a35';
-      banner.textContent = '✓ Payouts active — confirmed bookings will pay out to your bank automatically.';
+      banner.textContent = '✓ Payouts active — you\'re paid automatically after each stay, and Stripe sends it on to your bank.';
     } else if(data.connected){
       banner.style.background = '#fbeccf';
       banner.style.border = '2px solid #e0983a';
@@ -1088,6 +1088,10 @@
           ${formatDate(b.check_in)} → ${formatDate(b.check_out)} · You receive: $${b.host_payout ? Number(b.host_payout).toFixed(2) : Number(b.total_price).toFixed(2)}<br>
           ${escapeHtml(b.guest_email)}${b.guest_phone ? ' · ' + escapeHtml(b.guest_phone) : ''}
           ${Number(b.refunded_amount) > 0 ? `<div style="font-size:12px; color:#2F7D5B; margin-top:6px; font-weight:600;">Refunded $${Number(b.refunded_amount).toFixed(2)}${b.cancelled_by ? ' · cancelled by ' + b.cancelled_by : ''}</div>` : (b.status === 'cancelled' && b.cancelled_by ? `<div style="font-size:12px; color:#888; margin-top:6px;">Cancelled by ${b.cancelled_by}${b.payment_status === 'paid' ? ' · not refunded' : ''}</div>` : '')}
+          ${b.payout_status === 'paid' ? `<div style="font-size:12px; color:#2F7D5B; margin-top:6px; font-weight:600;">Paid out $${Number(b.payout_amount).toFixed(2)} on ${formatDate(String(b.paid_out_at).slice(0, 10))}${Number(b.payout_reversed_amount) > 0 ? ` ($${Number(b.payout_reversed_amount).toFixed(2)} taken back after a refund)` : ''}</div>`
+            : b.payout_status === 'waiting_on_host' ? `<div style="font-size:12px; color:#a4472b; margin-top:6px; font-weight:600;">$${Number(b.payout_amount).toFixed(2)} is waiting for you — finish payout setup above to receive it.</div>`
+            : b.payout_status === 'failed' || b.payout_status === 'processing' ? `<div style="font-size:12px; color:#888; margin-top:6px;">Payout of $${Number(b.payout_amount || b.host_payout).toFixed(2)} is in progress.</div>`
+            : b.status === 'confirmed' && b.payment_status === 'paid' ? `<div style="font-size:12px; color:#888; margin-top:6px;">You'll be paid $${Number(b.host_payout).toFixed(2)} automatically after checkout.</div>` : ''}
         </div>
         <div class="card-actions">
           ${b.status !== 'confirmed' && b.status !== 'cancelled' && b.status !== 'completed' ? `<button class="btn-approve" data-id="${b.id}" data-action="capture">Confirm &amp; Charge</button>` : ''}
@@ -1270,6 +1274,8 @@
         if(action === 'complete'){
           await supabaseClient.from('bookings').update({ status: 'completed' }).eq('id', id);
           sendReviewRequests(id);
+          // Pay the host now instead of waiting for the hourly payout run.
+          await supabaseClient.functions.invoke('process-payouts', { body: { bookingId: id } });
           loadBookings();
           return;
         }

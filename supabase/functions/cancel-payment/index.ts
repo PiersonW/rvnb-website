@@ -10,6 +10,9 @@
 //     booking, including completed or already-cancelled ones (policy exceptions),
 //     optionally without cancelling ({ cancel: false }), with a note.
 //
+// If the host was already paid for the stay (process-payouts), their share of
+// the refund is taken back with a transfer reversal.
+//
 // Emails the traveler whenever money is refunded. (Plain declines are still
 // emailed by the host/admin page.)
 
@@ -156,6 +159,28 @@ Deno.serve(async (req) => {
       `rvnb-refund-${booking.id}-${toCents(booking.refunded_amount)}-${refundCents}`);
     if (!ok) return json({ error: data.error?.message || 'Stripe refund failed' }, 400);
 
+    // Already paid the host for this stay? Take back their share of the refund
+    // (same proportion they were paid: host_payout / total charged).
+    let reversal: Record<string, unknown> = {};
+    if (booking.payout_status === 'paid' && booking.payout_transfer_id) {
+      const totalCents = toCents(booking.total_charged ?? booking.total_price);
+      const alreadyReversed = toCents(booking.payout_reversed_amount);
+      const reverseCents = Math.min(
+        Math.round(refundCents * toCents(booking.host_payout) / Math.max(totalCents, 1)),
+        toCents(booking.payout_amount) - alreadyReversed,
+      );
+      if (reverseCents > 0) {
+        const rp = new URLSearchParams();
+        rp.append('amount', String(reverseCents));
+        rp.append('metadata[booking_id]', booking.id);
+        const r = await stripePost(`transfers/${booking.payout_transfer_id}/reversals`, STRIPE_SECRET_KEY, rp,
+          `rvnb-reversal-${booking.id}-${alreadyReversed}-${reverseCents}`);
+        reversal = r.ok
+          ? { payout_reversed_amount: (alreadyReversed + reverseCents) / 100 }
+          : { payout_error: `Refund issued, but taking back the host's $${(reverseCents / 100).toFixed(2)} failed: ${r.data.error?.message || 'unknown error'}` };
+      }
+    }
+
     const refundedTotalCents = toCents(booking.refunded_amount) + refundCents;
     const fullyRefunded = refundedTotalCents >= toCents(booking.total_charged ?? booking.total_price);
     await adminClient.from('bookings')
@@ -163,6 +188,7 @@ Deno.serve(async (req) => {
         payment_status: fullyRefunded ? 'refunded' : 'partially_refunded',
         refunded_amount: refundedTotalCents / 100,
         refunded_at: new Date().toISOString(),
+        ...reversal,
         ...(note ? { refund_note: String(note).slice(0, 1000) } : {}),
         ...(shouldCancel ? { status: 'cancelled', cancelled_by: actor } : {}),
       })
@@ -179,7 +205,7 @@ Deno.serve(async (req) => {
       `<p>A refund of <b>${dollars}</b> is on its way to your original payment method. It usually shows up within 5–10 business days, depending on your bank.</p>` +
       (shouldCancel ? `<p>Sorry for the trouble — feel free to look for another spot on <a href="https://tryrvnb.com/browse.html">RVnB</a>.</p>` : ''));
 
-    return json({ success: true, refundAmount: refundCents / 100, cancelled: shouldCancel, emailedGuest: true });
+    return json({ success: true, refundAmount: refundCents / 100, cancelled: shouldCancel, emailedGuest: true, payoutWarning: reversal.payout_error || null });
   } catch (err) {
     return json({ error: (err as Error).message }, 500);
   }
