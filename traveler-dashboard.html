@@ -299,7 +299,7 @@
           <div class="meta">
             <b>${formatDate(b.check_in)} → ${formatDate(b.check_out)}</b><br>
             ${address}<br>
-            $${b.total_charged ? Number(b.total_charged).toFixed(2) : Number(b.total_price).toFixed(2)} total (incl. fees &amp; tax)
+            $${b.total_charged ? Number(b.total_charged).toFixed(2) : Number(b.total_price).toFixed(2)} total (incl. fees &amp; tax)${Number(b.refunded_amount) > 0 ? `<br><span style="color:#2F7D5B; font-weight:600;">Refunded $${Number(b.refunded_amount).toFixed(2)}</span>` : ''}
           </div>
         </div>
         <span class="status ${b.status}">${b.status}</span>
@@ -339,8 +339,16 @@
     const cancelBtn = card.querySelector('.btn-cancel');
     if(cancelBtn){
       cancelBtn.addEventListener('click', async () => {
-        if(!confirm('Cancel this trip? The host will be notified.')) return;
         cancelBtn.disabled = true;
+        // Ask the server what cancelling means right now (refund or not) before confirming.
+        const { data: preview } = await supabaseClient.functions.invoke('traveler-cancel-booking', {
+          body: { bookingId: cancelBtn.dataset.id, confirm: false }
+        });
+        const refundNote = preview?.outcome?.message ? '\n\n' + preview.outcome.message : '';
+        if(!confirm('Cancel this trip? The host will be notified.' + refundNote)){
+          cancelBtn.disabled = false;
+          return;
+        }
         cancelBtn.textContent = 'Cancelling...';
         const { data, error } = await supabaseClient.functions.invoke('traveler-cancel-booking', {
           body: { bookingId: cancelBtn.dataset.id, confirm: true }

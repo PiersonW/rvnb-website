@@ -111,6 +111,7 @@
       <div class="row"><span class="label">Dates</span><span>${formatDate(b.check_in)} → ${formatDate(b.check_out)}</span></div>
       <div class="row"><span class="label">Status</span><span>${b.status}</span></div>
       ${b.total_charged ? `<div class="row"><span class="label">Total</span><span>$${Number(b.total_charged).toFixed(2)}</span></div>` : ''}
+      ${data.outcome ? `<div class="row"><span class="label">If you cancel</span><span>${escapeHtml(data.outcome.message)}</span></div>` : ''}
     `;
     document.getElementById('content').style.display = 'block';
   }
@@ -135,7 +136,7 @@
     }
 
     msg.className = 'msg show success';
-    msg.textContent = 'Your trip has been cancelled. The host has been notified.';
+    msg.textContent = 'Your trip has been cancelled. The host has been notified.' + (data?.outcome?.message ? ' ' + data.outcome.message.replace(/^You'll get/, 'You\'ll get').replace(/will be released/, 'has been released') : '');
     btn.style.display = 'none';
   });
 

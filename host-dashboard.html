@@ -1080,18 +1080,20 @@
       const checkoutHasPassed = b.check_out <= todayStr;
       card.innerHTML = `
         <div class="card-top">
-          <h3>${b.guest_name} <span id="rating-${b.id}" class="traveler-rating"></span></h3>
+          <h3>${escapeHtml(b.guest_name)} <span id="rating-${b.id}" class="traveler-rating"></span></h3>
           <span class="status ${b.status}">${b.status}</span>
         </div>
         <div class="meta">
           <b>${b.partners ? b.partners.business_name : ''}</b><br>
           ${formatDate(b.check_in)} → ${formatDate(b.check_out)} · You receive: $${b.host_payout ? Number(b.host_payout).toFixed(2) : Number(b.total_price).toFixed(2)}<br>
-          ${b.guest_email}${b.guest_phone ? ' · ' + b.guest_phone : ''}
+          ${escapeHtml(b.guest_email)}${b.guest_phone ? ' · ' + escapeHtml(b.guest_phone) : ''}
+          ${Number(b.refunded_amount) > 0 ? `<div style="font-size:12px; color:#2F7D5B; margin-top:6px; font-weight:600;">Refunded $${Number(b.refunded_amount).toFixed(2)}${b.cancelled_by ? ' · cancelled by ' + b.cancelled_by : ''}</div>` : (b.status === 'cancelled' && b.cancelled_by ? `<div style="font-size:12px; color:#888; margin-top:6px;">Cancelled by ${b.cancelled_by}${b.payment_status === 'paid' ? ' · not refunded' : ''}</div>` : '')}
         </div>
         <div class="card-actions">
           ${b.status !== 'confirmed' && b.status !== 'cancelled' && b.status !== 'completed' ? `<button class="btn-approve" data-id="${b.id}" data-action="capture">Confirm &amp; Charge</button>` : ''}
           ${b.status === 'pending' ? `<button class="btn-reject" data-id="${b.id}" data-action="cancel">Decline</button>` : ''}
           ${b.status === 'confirmed' && checkoutHasPassed ? `<button class="btn-pause" data-id="${b.id}" data-action="complete">Mark Completed</button>` : ''}
+          ${b.status === 'confirmed' && b.payment_status === 'paid' && !checkoutHasPassed ? `<button class="btn-reject" data-id="${b.id}" data-action="refund-cancel" data-remaining="${(Number(b.total_charged ?? b.total_price) - Number(b.refunded_amount || 0)).toFixed(2)}">Cancel &amp; Refund</button>` : ''}
           <button class="btn-pause btn-message" data-booking-id="${b.id}" data-traveler-id="${b.traveler_id || ''}">Messages<span class="msg-badge" id="msg-badge-${b.id}" style="display:none;"></span></button>
         </div>
         ${b.status === 'confirmed' && !checkoutHasPassed ? `<div style="font-size:11px; color:var(--asphalt); margin-top:8px; font-family:'JetBrains Mono',monospace;">Can be marked completed after ${formatDate(b.check_out)}</div>` : ''}
@@ -1273,13 +1275,17 @@
         }
 
         const functionName = action === 'capture' ? 'capture-payment' : 'cancel-payment';
+        const originalLabel = btn.textContent;
         const confirmMsg = action === 'capture'
           ? 'Confirm this booking and charge the traveler\'s card now?'
-          : 'Decline this booking? Any card hold will be released.';
-        if(!confirm(confirmMsg)) return;
+          : action === 'refund-cancel'
+            ? 'Cancel this confirmed booking? The traveler gets a full refund of $' + btn.dataset.remaining + ' and will be emailed.'
+            : action === 'refund' ? null
+            : 'Decline this booking? Any card hold will be released.';
+        if(confirmMsg && !confirm(confirmMsg)) return;
 
         btn.disabled = true;
-        btn.textContent = action === 'capture' ? 'Charging...' : 'Cancelling...';
+        btn.textContent = action === 'capture' ? 'Charging...' : (action === 'cancel' ? 'Cancelling...' : 'Refunding...');
 
         const { data, error } = await supabaseClient.functions.invoke(functionName, { body: { bookingId: id } });
 
@@ -1288,11 +1294,12 @@
           msgEl.style.color = '#a4472b';
           msgEl.textContent = 'Failed: ' + (data?.error || error?.message || 'unknown error');
           btn.disabled = false;
-          btn.textContent = action === 'capture' ? 'Confirm & Charge' : 'Decline';
+          btn.textContent = originalLabel;
           return;
         }
 
-        const emailError = await notifyTraveler(id, action);
+        // Refunds are emailed to the traveler by cancel-payment itself.
+        const emailError = data?.emailedGuest ? null : await notifyTraveler(id, action);
         if(emailError){
           alert('Booking updated, but the traveler email failed to send:\n' + emailError);
         }
