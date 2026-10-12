@@ -248,6 +248,11 @@
 <div id="status">Loading spots...</div>
 
 <script>
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : String(str);
+    return div.innerHTML.replace(/"/g, '&quot;');
+  }
   // ============================================
   // CONFIG — paste your Supabase project values here
   // Find these in Supabase: Project Settings → API
@@ -357,11 +362,11 @@
       card.className = 'carousel-card';
       card.innerHTML = `
         ${photos.length > 0
-          ? `<img src="${photos[0]}" alt="${p.business_name}">`
+          ? `<img src="${photos[0]}" alt="${escapeHtml(p.business_name)}">`
           : `<div class="no-photo">No photo</div>`}
         <div class="info">
-          <h4>${p.business_name}</h4>
-          <div class="addr">${p.address}, ${p.city}, ${p.state}</div>
+          <h4>${escapeHtml(p.business_name)}</h4>
+          <div class="addr">${escapeHtml(`${p.address}, ${p.city}, ${p.state}`)}</div>
           <div class="price">$${p.price_per_night}/night</div>
         </div>
       `;
@@ -490,8 +495,8 @@
       marker.bindPopup(`
         <div class="rv-popup">
           ${thumb}
-          <h3>${p.business_name}</h3>
-          <div>${p.city}, ${p.state}</div>
+          <h3>${escapeHtml(p.business_name)}</h3>
+          <div>${escapeHtml(`${p.city}, ${p.state}`)}</div>
           <div class="price">$${p.price_per_night}/night</div>
           <div class="meta">${p.spots_available} spot(s) · check-in ${formatTime12hr(p.arrival_time)} · check-out ${formatTime12hr(p.departure_time)}</div>
           <a href="listing.html?id=${p.id}&from=map" style="display:inline-block; margin-top:8px; background:#0B1220; color:#FFB547; padding:6px 12px; border-radius:10px; font-size:12px; font-weight:700; text-decoration:none; text-transform:uppercase;">View &amp; Book</a>
@@ -502,7 +507,7 @@
 
     if(data.length === 0){
       statusEl.style.display = 'block';
-      statusEl.textContent = 'No approved listings yet — add one in Supabase to see it here.';
+      statusEl.innerHTML = 'No spots listed yet. <a href="index.html#signup" style="color:#FFB547;">Join the waitlist</a> and we\'ll let you know when one opens near you.';
     }
 
     renderCarousel();

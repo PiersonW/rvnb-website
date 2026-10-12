@@ -232,6 +232,11 @@
 </div>
 
 <script>
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : String(str);
+    return div.innerHTML.replace(/"/g, '&quot;');
+  }
   const SUPABASE_URL = 'https://icnhpciixqrhrqrzxkxg.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbmhwY2lpeHFyaHJxcnp4a3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2MDMsImV4cCI6MjA5OTczMjYwM30.5a8nNSiSA7U89f2kGAHGNPPfYpFra0Ve7PIFtOq3GDk';
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -351,7 +356,7 @@
       const gallery = document.getElementById('l-photos');
       gallery.style.display = 'block';
       gallery.innerHTML = `
-        <img class="photo-main" id="main-photo" src="${photos[0]}" alt="${data.business_name}">
+        <img class="photo-main" id="main-photo" src="${photos[0]}" alt="${escapeHtml(data.business_name)}">
         ${photos.length > 1 ? `<div class="photo-thumbs">${photos.map((url,i) => `<img src="${url}" class="${i===0?'active':''}" data-src="${url}">`).join('')}</div>` : ''}
       `;
       document.querySelectorAll('.photo-thumbs img').forEach(thumb => {
@@ -389,7 +394,7 @@
     list.innerHTML = data.map(r => `
       <div style="background:#fff; border:2px solid var(--night); border-radius:10px; padding:14px 16px; margin-bottom:10px;">
         <div style="color:var(--amber); font-size:14px;">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
-        ${r.comment ? `<div style="font-size:14px; color:#2a2f3a; margin-top:6px;">${r.comment}</div>` : ''}
+        ${r.comment ? `<div style="font-size:14px; color:#2a2f3a; margin-top:6px;">${escapeHtml(r.comment)}</div>` : ''}
       </div>
     `).join('');
   }
