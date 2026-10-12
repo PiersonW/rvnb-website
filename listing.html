@@ -612,15 +612,18 @@
     msg.className = 'msg show';
     msg.textContent = '';
 
-    // Step 1: ask our Edge Function to create a Stripe PaymentIntent (manual capture)
+    // Step 1: ask our Edge Function to create a Stripe PaymentIntent (manual capture).
+    // The server prices the stay itself from the listing and dates — it never
+    // takes an amount from the browser.
     const { data: piData, error: piError } = await supabaseClient.functions.invoke('create-payment-intent', {
       body: {
-        amount: currentPricing.totalCharged,
-        guestEmail: guestEmail,
-        listingName: listing.business_name,
         partnerId: listing.id,
-        hostFeeAmount: currentPricing.hostFee,
-        travelerFeeAmount: currentPricing.travelerFee
+        checkIn: ci,
+        checkOut: co,
+        guestName: guestName,
+        guestEmail: guestEmail,
+        guestPhone: guestPhone,
+        termsAccepted: true
       }
     });
 
@@ -667,45 +670,36 @@
 
     submitBtn.textContent = 'Saving your request...';
 
-    const bookingPayload = {
-      partner_id: listing.id,
-      check_in: ci,
-      check_out: co,
-      subtotal: currentPricing.subtotal,
-      traveler_fee: currentPricing.travelerFee,
-      tax_amount: currentPricing.taxAmount,
-      total_charged: currentPricing.totalCharged,
-      host_fee: currentPricing.hostFee,
-      host_payout: currentPricing.hostPayout,
-      tax_rate: TAX_RATE,
-      total_price: currentPricing.totalCharged, // kept for backward compatibility
-      guest_name: guestName,
-      guest_email: guestEmail,
-      guest_phone: guestPhone,
-      traveler_id: loggedInTraveler ? loggedInTraveler.id : null,
-      payment_intent_id: paymentIntent.id,
-      status: 'pending',
-      payment_status: 'authorized',
-      terms_accepted_at: new Date().toISOString()
-    };
+    // Step 3: the server creates the booking from the authorized PaymentIntent
+    // (and emails the guest and host). If the dates were taken in the meantime,
+    // it releases the card hold right away.
+    const { data: bookingData, error: bookingError } = await supabaseClient.functions.invoke('confirm-booking', {
+      body: { paymentIntentId: paymentIntent.id }
+    });
 
-    const { data: insertedBooking, error } = await supabaseClient.from('bookings').insert(bookingPayload).select().single();
-
-    if(error){
+    if(bookingError || !bookingData || bookingData.error){
+      let errorBody = bookingData;
+      if(bookingError?.context){
+        try { errorBody = await bookingError.context.json(); } catch(e){ /* keep generic message */ }
+      }
+      const reason = errorBody?.reason;
       msg.className = 'msg show error';
-      if(error.message && error.message.includes('fully booked')){
-        msg.textContent = 'Sorry, this listing is fully booked for those dates — all spots are taken. Please choose different dates. Your card was authorized but not charged; the hold will release automatically.';
+      if(reason === 'fully_booked'){
+        msg.textContent = 'Sorry, this listing is fully booked for those dates — all spots are taken. Please choose different dates. Your card was not charged and the hold has been released.';
         loadBookedDates();
-      } else if(error.message && error.message.includes('blocked')){
-        msg.textContent = 'Sorry, the host has blocked those dates for this listing. Please choose different dates. Your card was authorized but not charged; the hold will release automatically.';
+      } else if(reason === 'blocked'){
+        msg.textContent = 'Sorry, the host has blocked those dates for this listing. Please choose different dates. Your card was not charged and the hold has been released.';
         loadBookedDates();
       } else {
-        msg.textContent = 'Your card was authorized but saving your request failed: ' + error.message + '. Please contact us — do not try again without checking first.';
+        msg.textContent = 'Your card was authorized but saving your request failed: ' + (errorBody?.error || bookingError?.message || 'unknown error') + '. Please contact us — do not try again without checking first.';
       }
       submitBtn.disabled = false;
       submitBtn.textContent = 'Request to Book';
       return;
     }
+
+    // The server's numbers are the real ones.
+    if(bookingData.pricing) currentPricing = bookingData.pricing;
 
     msg.className = 'msg show success';
     msg.textContent = 'Request sent!';
@@ -731,40 +725,6 @@
       modalBtn.onclick = () => { modalOverlay.classList.remove('show'); };
     }
 
-    const cancelLink = 'https://tryrvnb.com/cancel-booking.html?booking=' + insertedBooking.id;
-
-    // Confirm to the guest, with everything they need — including how to cancel without an account
-    supabaseClient.functions.invoke('send-email', {
-      body: {
-        to: bookingPayload.guest_email,
-        subject: `Request received — ${listing.business_name}`,
-        html: `
-          <p>Hi ${bookingPayload.guest_name},</p>
-          <p>We got your booking request. The host will confirm shortly — you'll get another email the moment they do.</p>
-          <table style="border-collapse:collapse; margin:14px 0;">
-            <tr><td style="padding:4px 12px 4px 0; color:#555;">Location</td><td><b>${listing.business_name}</b></td></tr>
-            <tr><td style="padding:4px 12px 4px 0; color:#555;">Address</td><td>${listing.address}, ${listing.city}, ${listing.state}</td></tr>
-            <tr><td style="padding:4px 12px 4px 0; color:#555;">Dates</td><td>${formatDate(ci)} → ${formatDate(co)}</td></tr>
-            <tr><td style="padding:4px 12px 4px 0; color:#555;">Total</td><td>$${currentPricing.totalCharged.toFixed(2)}</td></tr>
-          </table>
-          <p>Need to cancel? <a href="${cancelLink}">Cancel this trip</a> — no account needed.</p>
-        `
-      }
-    }).catch(() => {});
-
-    // Notify the host directly, not just the admin inbox
-    supabaseClient.from('profiles').select('email').eq('id', listing.host_id).single().then(({ data: hostProfile }) => {
-      if(hostProfile && hostProfile.email){
-        supabaseClient.functions.invoke('send-email', {
-          body: {
-            to: hostProfile.email,
-            subject: `New booking request — ${listing.business_name}`,
-            html: `<p>Hi,</p><p>You have a new booking request from <b>${bookingPayload.guest_name}</b> for ${formatDate(ci)} → ${formatDate(co)}.</p><p>Log into your <a href="https://tryrvnb.com/host-dashboard.html">host dashboard</a> to confirm or decline.</p>`
-          }
-        }).catch(() => {});
-      }
-    }).catch(() => {});
-
     // Notify admin inbox immediately instead of relying on manually checking the dashboard
     fetch('https://api.web3forms.com/submit', {
       method: 'POST',
@@ -773,12 +733,12 @@
         access_key: '7e10b2cb-2e39-4f72-b665-924100b8e61e',
         subject: '🚐 New booking request — ' + listing.business_name,
         from_name: 'RVnB Website',
-        replyto: bookingPayload.guest_email,
+        replyto: guestEmail,
         message:
           `New booking request:\n\n` +
           `Listing: ${listing.business_name} (${listing.city}, ${listing.state})\n` +
-          `Guest: ${bookingPayload.guest_name} (${bookingPayload.guest_email})` +
-          `${bookingPayload.guest_phone ? ' · ' + bookingPayload.guest_phone : ''}\n` +
+          `Guest: ${guestName} (${guestEmail})` +
+          `${guestPhone ? ' · ' + guestPhone : ''}\n` +
           `Dates: ${ci} → ${co}\n` +
           `Traveler pays: $${currentPricing.totalCharged.toFixed(2)} · Host receives: $${currentPricing.hostPayout.toFixed(2)}\n\n` +
           `Review it: https://tryrvnb.com/admin.html`
