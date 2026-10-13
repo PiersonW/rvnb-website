@@ -13,8 +13,8 @@
 // If the host was already paid for the stay (process-payouts), their share of
 // the refund is taken back with a transfer reversal.
 //
-// Emails the traveler whenever money is refunded. (Plain declines are still
-// emailed by the host/admin page.)
+// Emails the traveler on every outcome — decline, cancellation, refund — and
+// returns emailedGuest so the host/admin pages and app don't send a second copy.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -112,7 +112,25 @@ Deno.serve(async (req) => {
       await adminClient.from('bookings')
         .update({ status: 'cancelled', payment_status: 'cancelled', cancelled_by: actor })
         .eq('id', bookingId);
-      return json({ success: true, released: true, refundAmount: 0 });
+
+      // Tell the traveler (the pages skip their own copy when emailedGuest is true).
+      let emailedGuest = false;
+      if (RESEND_API_KEY && booking.guest_email) {
+        const spot = esc(`${booking.partners?.business_name || 'your listing'}`);
+        const res = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from: 'RVnB <notifications@tryrvnb.com>',
+            to: [booking.guest_email],
+            reply_to: 'pierson.willhite@gmail.com',
+            subject: `Booking update — ${booking.partners?.business_name || 'RVnB'}`,
+            html: `<p>Hi ${esc(booking.guest_name)},</p><p>Unfortunately your booking request at <b>${spot}</b> for ${booking.check_in} → ${booking.check_out} was not able to be confirmed. Your card was not charged — the hold has been released, and your bank usually clears it within a few days.</p><p>Feel free to look for another spot on <a href="https://tryrvnb.com/browse.html">RVnB</a>.</p>`,
+          }),
+        }).catch(() => null);
+        emailedGuest = !!res?.ok;
+      }
+      return json({ success: true, released: true, refundAmount: 0, emailedGuest });
     }
 
     // 2. Charged booking: refund.
