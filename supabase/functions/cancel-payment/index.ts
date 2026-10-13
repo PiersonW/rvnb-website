@@ -6,9 +6,12 @@
 //   - Pending request (card only held): releases the hold. Host or admin.
 //   - Confirmed and charged: cancels and fully refunds the traveler — per the
 //     cancellation policy, a host cancellation is always a full refund. Host or admin.
-//   - Admin only: refund a custom amount ({ amount } in dollars) on any charged
-//     booking, including completed or already-cancelled ones (policy exceptions),
-//     optionally without cancelling ({ cancel: false }), with a note.
+//   - Completed stay: the host can refund all or part of it ({ amount } in
+//     dollars, default everything left) without cancelling, e.g. a goodwill
+//     refund after a bad night.
+//   - Admin only: refund a custom amount on any charged booking, including
+//     already-cancelled ones (policy exceptions), optionally without
+//     cancelling ({ cancel: false }), with a note.
 //
 // If the host was already paid for the stay (process-payouts), their share of
 // the refund is taken back with a transfer reversal.
@@ -151,18 +154,19 @@ Deno.serve(async (req) => {
     let refundCents = remainingCents;
     let shouldCancel = true;
     if (isAdmin) {
-      if (amount !== undefined && amount !== null && amount !== '') {
-        refundCents = toCents(amount);
-        if (!(refundCents > 0 && refundCents <= remainingCents)) {
-          return json({ error: `Refund must be between $0.01 and $${(remainingCents / 100).toFixed(2)}.` }, 400);
-        }
-      }
       shouldCancel = cancel !== false && booking.status !== 'completed' && booking.status !== 'cancelled';
-    } else {
-      // Host: cancelling a confirmed stay is always a full refund. Completed
-      // stays and exceptions go through the admin.
-      if (booking.status !== 'confirmed') {
-        return json({ error: 'Only confirmed bookings can be cancelled here. Contact RVnB for help with this booking.' }, 400);
+    } else if (booking.status === 'completed') {
+      // Host refunding a finished stay: any amount, booking stays completed.
+      shouldCancel = false;
+    } else if (booking.status !== 'confirmed') {
+      return json({ error: 'This booking can’t be refunded here. Contact RVnB for help with it.' }, 400);
+    }
+    // A host cancelling a confirmed stay always refunds in full (cancellation policy).
+    const customAmount = amount !== undefined && amount !== null && amount !== '';
+    if (customAmount && (isAdmin || booking.status === 'completed')) {
+      refundCents = toCents(amount);
+      if (!(refundCents > 0 && refundCents <= remainingCents)) {
+        return json({ error: `Refund must be between $0.01 and $${(remainingCents / 100).toFixed(2)}.` }, 400);
       }
     }
 
@@ -201,12 +205,25 @@ Deno.serve(async (req) => {
 
     const refundedTotalCents = toCents(booking.refunded_amount) + refundCents;
     const fullyRefunded = refundedTotalCents >= toCents(booking.total_charged ?? booking.total_price);
+
+    // Host not paid yet for a finished stay (e.g. still setting up payouts)?
+    // Shrink what they're owed to match. process-payouts only looks at paid /
+    // partially refunded bookings, so a full refund has to close it out here.
+    let payoutUpdate: Record<string, unknown> = {};
+    if (!shouldCancel && ['waiting_on_host', 'failed'].includes(booking.payout_status)) {
+      const totalCents = toCents(booking.total_charged ?? booking.total_price);
+      const owedCents = Math.round(toCents(booking.host_payout) * Math.max(0, totalCents - refundedTotalCents) / Math.max(totalCents, 1));
+      payoutUpdate = owedCents > 0
+        ? { payout_amount: owedCents / 100 }
+        : { payout_status: 'not_owed', payout_amount: 0, payout_error: null };
+    }
     await adminClient.from('bookings')
       .update({
         payment_status: fullyRefunded ? 'refunded' : 'partially_refunded',
         refunded_amount: refundedTotalCents / 100,
         refunded_at: new Date().toISOString(),
         ...reversal,
+        ...payoutUpdate,
         ...(note ? { refund_note: String(note).slice(0, 1000) } : {}),
         ...(shouldCancel ? { status: 'cancelled', cancelled_by: actor } : {}),
       })

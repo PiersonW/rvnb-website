@@ -130,13 +130,8 @@
   // bookings not already claimed by someone else.
   async function claimGuestBookings(email){
     if(!email) return;
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if(!user) return;
-    await supabaseClient
-      .from('bookings')
-      .update({ traveler_id: user.id })
-      .eq('guest_email', email)
-      .is('traveler_id', null);
+    // Server-side so the email match ignores capitalization.
+    await supabaseClient.rpc('rvnb_claim_guest_bookings');
   }
 
   // Tabs
