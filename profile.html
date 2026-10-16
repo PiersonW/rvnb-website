@@ -10,11 +10,14 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="push-subscribe.js"></script>
 <style>
-  :root{ --night:#0B1220; --amber:#FFB547; --lane:#FAF7F0; --sign-green:#2F7D5B; --asphalt:#64748B; --red:#a4472b; }
+  :root{
+    --cta:#2D6A4F;
+    --cta-dark:#24573F;
+    --tint:#DCEFE4; --night:#1E2B25; --amber:#BFE3CF; --lane:#F5F8F6; --sign-green:#2D6A4F; --asphalt:#66756D; --red:#B4492E; }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{font-family:'Inter',sans-serif; background:var(--lane); color:var(--night); line-height:1.6;}
   .wrap{max-width:520px; margin:0 auto; padding:0 24px;}
-  header{background:var(--night); color:var(--lane); padding:16px 0;}
+  header{background:var(--cta); color:var(--lane); padding:16px 0;}
   header .wrap{display:flex; justify-content:space-between; align-items:center;}
   header a{color:var(--amber); text-decoration:none; font-size:14px;}
   h1{font-family:'Manrope',sans-serif; text-transform:uppercase; font-size:clamp(24px,4vw,30px); margin:36px 0 20px;}
@@ -35,7 +38,7 @@
   .hint{font-size:12px; color:var(--asphalt); margin-top:6px;}
 
   button{
-    width:100%; padding:15px; background:var(--night); color:var(--amber); font-weight:700;
+    width:100%; padding:15px; background:var(--cta); color:#fff; font-weight:700;
     text-transform:uppercase; font-size:14px; border:none; border-radius:10px; cursor:pointer;
   }
   button:disabled{opacity:0.6; cursor:wait;}
@@ -49,7 +52,7 @@
     color:var(--asphalt); letter-spacing:0.04em; margin-bottom:10px;
   }
   .toggle-row{display:flex; align-items:center; justify-content:space-between; gap:16px;}
-  .toggle-row:not(:last-child){margin-bottom:16px; padding-bottom:16px; border-bottom:1px solid #eee0cf;}
+  .toggle-row:not(:last-child){margin-bottom:16px; padding-bottom:16px; border-bottom:1px solid #E3E9E5;}
   .toggle-row-text{flex:1;}
   .toggle-row-title{font-weight:600; font-size:14px; margin-bottom:2px;}
   .toggle-row-desc{font-size:12px; color:var(--asphalt);}
@@ -66,6 +69,10 @@
   .switch input:checked + .switch-track{background:var(--sign-green);}
   .switch input:checked + .switch-track::before{transform:translateX(20px);}
   .switch input:disabled + .switch-track{opacity:0.5; cursor:not-allowed;}
+
+  /* Clean green: white header bar, ink text, green links. */
+  header{background:#fff !important; color:var(--night) !important; border-bottom:1px solid var(--lane-dim);}
+  header a, header a.back{color:var(--cta) !important;}
 </style>
   <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "36911a5edb0f4bdf95ab6da85ceccd46"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
@@ -74,7 +81,7 @@
 <header>
   <div class="wrap">
     <a href="index.html" style="color:inherit; text-decoration:none; display:flex; align-items:center; gap:8px; font-family:'Manrope',sans-serif; font-weight:700; text-transform:uppercase;">
-      <img src="logo-64-light.png" width="20" height="20" alt="" style="flex-shrink:0;"><span style="text-transform:none;">RV<span style="color:var(--sign-green);">n</span>B</span>
+      <img src="logo-64.png" width="20" height="20" alt="" style="flex-shrink:0;"><span style="text-transform:none;">RV<span style="color:var(--sign-green);">n</span>B</span>
     </a>
     <a href="index.html" id="back-link">← Back</a>
   </div>

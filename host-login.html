@@ -10,36 +10,54 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <style>
-  :root{ --night:#0B1220; --amber:#FFB547; --lane:#FAF7F0; --sign-green:#2F7D5B; }
+  :root{
+    --cta:#2D6A4F;
+    --cta-dark:#24573F;
+    --tint:#DCEFE4; --night:#1E2B25; --amber:#BFE3CF; --lane:#F5F8F6; --sign-green:#2D6A4F; }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{
-    font-family:'Inter',sans-serif; background:var(--night); color:var(--lane);
+    font-family:'Inter',sans-serif; background:var(--cta); color:var(--lane);
     min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px;
   }
   .site-logo{display:flex; align-items:center; gap:8px; text-decoration:none; font-family:'Manrope',sans-serif; font-weight:700; font-size:20px; color:var(--lane);}
-  .box{background:#141b2e; padding:40px; border-radius:12px; width:100%; max-width:360px;}
+  .box{background:#24573F; padding:40px; border-radius:12px; width:100%; max-width:360px;}
   h1{font-family:'Manrope',sans-serif; text-transform:uppercase; color:var(--amber); font-size:22px; margin-bottom:6px;}
   .sub{font-size:13px; opacity:0.7; margin-bottom:20px;}
-  .tabs{display:flex; gap:0; border:2px solid #3d4657; border-radius:10px; overflow:hidden; margin-bottom:20px;}
-  .tab-btn{flex:1; padding:10px; background:#0B1220; color:var(--lane); border:none; font-size:12px; font-weight:700; text-transform:uppercase; cursor:pointer;}
-  .tab-btn.active{background:var(--amber); color:var(--night);}
+  .tabs{display:flex; gap:0; border:2px solid #4E8468; border-radius:10px; overflow:hidden; margin-bottom:20px;}
+  .tab-btn{flex:1; padding:10px; background:#1F4D39; color:var(--lane); border:none; font-size:12px; font-weight:700; text-transform:uppercase; cursor:pointer;}
+  .tab-btn.active{background:var(--cta); color:#fff;}
   form{display:flex; flex-direction:column; gap:12px;}
   form.hidden{display:none;}
-  input{padding:12px 14px; border:2px solid #3d4657; background:#0B1220; color:var(--lane); border-radius:10px; font-family:'Inter',sans-serif;}
-  button[type=submit], button[type=button]{padding:13px; background:var(--amber); color:var(--night); font-weight:700; text-transform:uppercase; font-size:13px; border:none; border-radius:10px; cursor:pointer;}
+  input{padding:12px 14px; border:2px solid #4E8468; background:#1F4D39; color:var(--lane); border-radius:10px; font-family:'Inter',sans-serif;}
+  button[type=submit], button[type=button]{padding:13px; background:var(--cta); color:#fff; font-weight:700; text-transform:uppercase; font-size:13px; border:none; border-radius:10px; cursor:pointer;}
   button[type=submit]:disabled, button[type=button]:disabled{opacity:0.6;}
   .msg{font-size:12px; margin-top:4px; display:none;}
   .msg.show{display:block;}
-  .msg.error{color:#ff9d7a;}
+  .msg.error{color:#FFD1C2;}
   .msg.success{color:#8fd8ac;}
   a.back{display:block; text-align:center; margin-top:18px; font-size:13px; color:var(--lane); opacity:0.6; text-decoration:none;}
+
+  /* Clean green: light page, white card, green actions. */
+  body{background:var(--lane) !important; color:var(--night) !important;}
+  .site-logo{color:var(--night) !important;}
+  .box, .login-box{background:#fff !important; border:1px solid var(--lane-dim); box-shadow:0 2px 12px rgba(30,43,37,0.06);}
+  h1{color:var(--cta) !important;}
+  .sub{color:var(--asphalt); opacity:1 !important;}
+  .tabs{border:1.5px solid #CFDAD3 !important;}
+  .tab-btn{background:#fff !important; color:var(--night) !important;}
+  .tab-btn.active{background:var(--cta) !important; color:#fff !important;}
+  input{background:#fff !important; border:1.5px solid #CFDAD3 !important; color:var(--night) !important;}
+  input:focus{border-color:var(--cta) !important; outline:none;}
+  .msg.error{color:#B4492E !important;} .msg.success{color:#2D6A4F !important;}
+  a.back{color:var(--asphalt) !important; opacity:1 !important;}
+  .box a, .login-box a{color:var(--cta);}
 </style>
   <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "36911a5edb0f4bdf95ab6da85ceccd46"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
 <body>
 
 <a href="index.html" class="site-logo">
-  <img src="logo-64-light.png" width="30" height="30" alt="">
+  <img src="logo-64.png" width="30" height="30" alt="">
   <span>RV<span style="color:var(--sign-green);">n</span>B</span>
 </a>
 
@@ -48,12 +66,12 @@
   <div class="sub">Sign in to manage your listing and bookings.</div>
   <div class="msg show error" id="paused-banner" style="display:none;">Your account has been paused. Please contact us if you believe this is a mistake.</div>
 
-  <button type="button" id="google-signin-btn" style="width:100%; padding:12px; background:#fff; color:#0B1220; border:2px solid #3d4657; border-radius:10px; font-weight:600; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:16px;">
+  <button type="button" id="google-signin-btn" style="width:100%; padding:12px; background:#fff; color:#1E2B25; border:2px solid #4E8468; border-radius:10px; font-weight:600; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:16px;">
     <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.91-2.26c-.81.54-1.85.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.96v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.96 10.71a5.4 5.4 0 0 1 0-3.42V4.96H.96a9 9 0 0 0 0 8.08l3-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.96l3 2.33C4.67 5.16 6.66 3.58 9 3.58z"/></svg>
     Continue with Google
   </button>
   <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px; color:#5a6472; font-size:11px; font-family:'JetBrains Mono',monospace; text-transform:uppercase;">
-    <div style="flex:1; height:1px; background:#3d4657;"></div>or<div style="flex:1; height:1px; background:#3d4657;"></div>
+    <div style="flex:1; height:1px; background:#CFDAD3;"></div>or<div style="flex:1; height:1px; background:#CFDAD3;"></div>
   </div>
 
   <div class="tabs">
@@ -66,7 +84,7 @@
     <input type="password" id="login-password" placeholder="Password" required>
     <div class="cf-turnstile" data-sitekey="0x4AAAAAAD3dYgYRVK0pvWHm" data-callback="onLoginCaptcha"></div>
     <button type="button" id="login-submit-btn" onclick="window.doLogin()">Log In</button>
-    <a href="#" id="forgot-password-link" style="font-size:12px; color:var(--lane); opacity:0.7; text-align:center; text-decoration:underline;">Forgot password?</a>
+    <a href="#" id="forgot-password-link" style="font-size:12px; color:var(--cta); text-align:center; text-decoration:underline;">Forgot password?</a>
     <div class="msg" id="login-msg"></div>
     <div style="font-size:10px; color:#5a6472; font-family:monospace; display:none;" id="login-debug">debug: waiting</div>
     <script>document.getElementById('login-debug').textContent = 'debug: inline script ran (v2)';</script>
@@ -81,13 +99,13 @@
     <input type="email" id="signup-email" placeholder="Email" required>
     <input type="password" id="signup-password" placeholder="Password (min 6 characters)" minlength="6" required>
     <div class="cf-turnstile" data-sitekey="0x4AAAAAAD3dYgYRVK0pvWHm" data-callback="onSignupCaptcha"></div>
-    <label style="display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--lane); opacity:0.85; cursor:pointer;">
+    <label style="display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--night); cursor:pointer;">
       <input type="checkbox" id="signup-age-checkbox" style="margin-top:2px; flex-shrink:0; width:15px; height:15px;">
       <span>I confirm that I am 18 years of age or older.</span>
     </label>
-    <label style="display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--lane); opacity:0.85; cursor:pointer;">
+    <label style="display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--night); cursor:pointer;">
       <input type="checkbox" id="signup-terms-checkbox" style="margin-top:2px; flex-shrink:0; width:15px; height:15px;">
-      <span>I agree to RVnB's <a href="terms.html" target="_blank" style="color:var(--amber); text-decoration:underline;">Terms of Service</a>.</span>
+      <span>I agree to RVnB's <a href="terms.html" target="_blank" style="color:var(--cta); text-decoration:underline;">Terms of Service</a>.</span>
     </label>
     <button type="button" id="signup-submit-btn" onclick="doSignup()">Create Account</button>
     <div class="msg" id="signup-msg"></div>
@@ -112,7 +130,7 @@
     }
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   } catch(initErr){
-    document.body.innerHTML = '<div style="max-width:400px; margin:60px auto; padding:24px; background:#402020; color:#ff9d7a; border-radius:12px; font-family:monospace; font-size:13px;">' +
+    document.body.innerHTML = '<div style="max-width:400px; margin:60px auto; padding:24px; background:#402020; color:#FFD1C2; border-radius:12px; font-family:monospace; font-size:13px;">' +
       '<b>Page failed to load properly:</b><br><br>' + initErr.message +
       '<br><br>Try refreshing the page, checking your internet connection, or disabling any ad blocker / privacy extension for this site.</div>';
     throw initErr;
@@ -171,7 +189,7 @@
   setTimeout(() => {
     if(typeof window.turnstile === 'undefined'){
       document.querySelectorAll('.cf-turnstile').forEach(el => {
-        el.innerHTML = '<div style="color:#ff9d7a; font-size:12px;">Verification widget failed to load. Please disable any ad blocker or tracking protection for this site and refresh the page.</div>';
+        el.innerHTML = '<div style="color:#FFD1C2; font-size:12px;">Verification widget failed to load. Please disable any ad blocker or tracking protection for this site and refresh the page.</div>';
       });
     }
   }, 4000);
@@ -200,7 +218,7 @@
   window.doLogin = async function(){
     try{
       const debugEl = document.getElementById('login-debug');
-      debugEl.style.color = '#ff9d7a';
+      debugEl.style.color = '#FFD1C2';
       debugEl.textContent = 'debug: doLogin() called ✓';
 
       const msg = document.getElementById('login-msg');

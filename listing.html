@@ -11,7 +11,10 @@
 <script src="https://js.stripe.com/v3/"></script>
 <style>
   :root{
-    --night:#0B1220; --amber:#FFB547; --lane:#FAF7F0; --sign-green:#2F7D5B; --asphalt:#64748B;
+    --cta:#2D6A4F;
+    --cta-dark:#24573F;
+    --tint:#DCEFE4;
+    --night:#1E2B25; --amber:#BFE3CF; --lane:#F5F8F6; --sign-green:#2D6A4F; --asphalt:#66756D;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{font-family:'Inter',sans-serif; background:var(--lane); color:var(--night); line-height:1.5;}
@@ -19,7 +22,7 @@
   a{color:inherit;}
   .wrap{max-width:640px; margin:0 auto; padding:0 24px;}
 
-  header{background:var(--night); color:var(--lane); padding:16px 0;}
+  header{background:var(--cta); color:var(--lane); padding:16px 0;}
   header .wrap{display:flex; align-items:center; justify-content:space-between;}
   header .brand{font-family:'Manrope',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:0.03em;}
   header a.back{color:var(--amber); text-decoration:none; font-size:14px;}
@@ -32,7 +35,7 @@
   .listing-head h1{font-size:clamp(26px,5vw,36px);}
   .listing-head .addr{color:var(--asphalt); margin-top:6px;}
   .price-tag{
-    display:inline-block; margin-top:14px; background:var(--night); color:var(--amber);
+    display:inline-block; margin-top:14px; background:var(--cta); color:#fff;
     padding:8px 16px; font-family:'Manrope',sans-serif; font-weight:700; font-size:18px; border-radius:10px;
   }
 
@@ -59,41 +62,41 @@
   .rules-box{background:#fff; border:2px solid var(--night); padding:16px; border-radius:10px; margin-bottom:32px;}
   .rules-box b{display:block; font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; color:var(--asphalt); margin-bottom:6px;}
 
-  form{background:var(--night); color:var(--lane); padding:28px; border-radius:12px; margin-bottom:60px; display:flex; flex-direction:column; gap:14px;}
+  form{background:var(--cta); color:var(--lane); padding:28px; border-radius:12px; margin-bottom:60px; display:flex; flex-direction:column; gap:14px;}
   form h2{color:var(--amber); font-size:20px; margin-bottom:4px;}
   label{font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--lane); opacity:0.8; display:block; margin-bottom:6px;}
-  input{width:100%; padding:12px 14px; border:2px solid #3d4657; background:#141b2e; color:var(--lane); border-radius:10px; font-family:'Inter',sans-serif; font-size:14px;}
+  input{width:100%; padding:12px 14px; border:2px solid #4E8468; background:#24573F; color:var(--lane); border-radius:10px; font-family:'Inter',sans-serif; font-size:14px;}
   .row2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
   .row2 > div{min-width:0;}
   @media(max-width:480px){.row2{grid-template-columns:1fr;}}
   input[type="time"], input[type="date"]{min-width:0; max-width:100%; box-sizing:border-box; -webkit-min-logical-width:0; text-align:left; overflow:hidden; -webkit-appearance:none; appearance:none;}
   .price-breakdown{
     font-family:'JetBrains Mono',monospace; font-size:13px;
-    border-top:1px solid #3d4657; padding-top:10px; display:flex; flex-direction:column; gap:6px;
+    border-top:1px solid #4E8468; padding-top:10px; display:flex; flex-direction:column; gap:6px;
   }
-  .pb-row{display:flex; justify-content:space-between; color:#c5cad4;}
+  .pb-row{display:flex; justify-content:space-between; color:var(--asphalt);}
   .pb-row.pb-total{
-    border-top:1px solid #3d4657; padding-top:8px; margin-top:2px;
+    border-top:1px solid #4E8468; padding-top:8px; margin-top:2px;
     font-size:15px; color:var(--amber); font-weight:700;
   }
   #card-field-wrap label{
     font-family:'JetBrains Mono', monospace; font-size:11px; text-transform:uppercase;
-    letter-spacing:0.05em; color:var(--lane); opacity:0.8; display:block; margin-bottom:6px;
+    letter-spacing:0.05em; color:var(--asphalt); display:block; margin-bottom:6px;
   }
   #card-element{
-    padding:13px 14px; background:#141b2e; border:2px solid #3d4657; border-radius:10px;
+    padding:13px 14px; background:#fff; border:1.5px solid #CFDAD3; border-radius:10px;
   }
-  #card-errors{ color:#ff9d7a; font-size:12px; margin-top:6px; min-height:16px; }
+  #card-errors{ color:#B4492E; font-size:12px; margin-top:6px; min-height:16px; }
   button[type=submit]{
-    margin-top:6px; padding:15px; background:var(--amber); color:var(--night); font-weight:700;
+    margin-top:6px; padding:15px; background:var(--cta); color:#fff; font-weight:700;
     text-transform:uppercase; font-size:14px; border:none; border-radius:10px; cursor:pointer;
   }
   button[type=submit]:disabled{opacity:0.6;}
-  .note{font-family:'JetBrains Mono',monospace; font-size:11px; color:#8a92a0; min-width:0; overflow-wrap:break-word;}
+  .note{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--asphalt); min-width:0; overflow-wrap:break-word;}
   .msg{font-family:'JetBrains Mono',monospace; font-size:13px; padding:12px; border-radius:10px; display:none;}
   .msg.show{display:block;}
-  .msg.success{background:#20402f; color:#8fd8ac;}
-  .msg.error{background:#402020; color:#ff9d7a;}
+  .msg.success{background:var(--tint); color:var(--cta);}
+  .msg.error{background:#FBEDE6; color:#B4492E;}
 
   .success-modal-overlay{
     display:none; position:fixed; inset:0; background:rgba(11,18,32,0.75); z-index:1000;
@@ -101,7 +104,7 @@
   }
   .success-modal-overlay.show{display:flex;}
   .success-modal{
-    background:var(--night); color:var(--lane); border-radius:16px; padding:32px 26px; max-width:400px;
+    background:var(--cta); color:var(--lane); border-radius:16px; padding:32px 26px; max-width:400px;
     width:100%; text-align:center; border:2px solid var(--sign-green);
   }
   .success-modal .checkmark{
@@ -109,12 +112,24 @@
     display:flex; align-items:center; justify-content:center; font-size:28px; margin:0 auto 16px;
   }
   .success-modal h3{font-family:'Manrope',sans-serif; text-transform:uppercase; font-size:20px; margin-bottom:12px; color:var(--amber);}
-  .success-modal p{font-size:14px; line-height:1.6; color:var(--lane); opacity:0.9; margin-bottom:22px;}
+  .success-modal p{font-size:14px; line-height:1.6; color:var(--asphalt); margin-bottom:22px;}
   .success-modal button{
-    width:100%; padding:14px; background:var(--amber); color:var(--night); font-weight:700;
+    width:100%; padding:14px; background:var(--cta); color:#fff; font-weight:700;
     text-transform:uppercase; font-size:13px; border:none; border-radius:10px; cursor:pointer;
   }
-  .success-modal .redirect-note{font-family:'JetBrains Mono',monospace; font-size:11px; color:#8a92a0; margin-top:12px; margin-bottom:0;}
+  .success-modal .redirect-note{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--asphalt); margin-top:12px; margin-bottom:0;}
+
+  /* Clean green: white header bar, ink text, green links. */
+  header{background:#fff !important; color:var(--night) !important; border-bottom:1px solid var(--lane-dim);}
+  header a, header a.back{color:var(--cta) !important;}
+
+  /* Clean green: booking form and success modal as light cards. */
+  form, .success-modal{background:#fff !important; color:var(--night) !important; border:1px solid var(--lane-dim);}
+  form h2, .success-modal h3{color:var(--cta) !important;}
+  form label{color:var(--asphalt);}
+  form input, form select, form textarea{background:#fff !important; border:1.5px solid #CFDAD3 !important; color:var(--night) !important;}
+  .pb-row.pb-total{color:var(--cta) !important; border-top-color:var(--lane-dim) !important;}
+  .success-modal .checkmark{background:var(--tint) !important; color:var(--cta) !important;}
 </style>
   <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "36911a5edb0f4bdf95ab6da85ceccd46"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
@@ -123,7 +138,7 @@
 <header>
   <div class="wrap">
     <a href="index.html" class="brand" style="text-decoration:none; display:flex; align-items:center; gap:8px;">
-      <img src="logo-64-light.png" width="20" height="20" alt="" style="flex-shrink:0;"><span style="text-transform:none; letter-spacing:normal;">RV<span style="color:var(--sign-green);">n</span>B</span>
+      <img src="logo-64.png" width="20" height="20" alt="" style="flex-shrink:0;"><span style="text-transform:none; letter-spacing:normal;">RV<span style="color:var(--sign-green);">n</span>B</span>
     </a>
     <a class="back" href="browse.html" id="back-link">← Back</a>
   </div>
@@ -167,8 +182,8 @@
 
     <form id="booking-form">
       <h2>Request to Book</h2>
-      <div id="login-banner" style="display:none; background:#20402f; color:#8fd8ac; padding:10px 14px; border-radius:10px; font-size:13px; margin-bottom:4px; min-width:0; overflow-wrap:break-word;"></div>
-      <div id="daily-turnover-notice" style="background:#402a10; color:#f5c877; padding:12px 14px; border-radius:10px; font-size:13px; line-height:1.5; margin-bottom:4px;"></div>
+      <div id="login-banner" style="display:none; background:var(--tint); color:var(--cta); padding:10px 14px; border-radius:10px; font-size:13px; margin-bottom:4px; min-width:0; overflow-wrap:break-word;"></div>
+      <div id="daily-turnover-notice" style="background:#FDF1DC; color:#7A4E0E; padding:12px 14px; border-radius:10px; font-size:13px; line-height:1.5; margin-bottom:4px;"></div>
       <div style="position:absolute; left:-9999px;" aria-hidden="true">
         <label for="website">Leave this field blank</label>
         <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
@@ -210,9 +225,9 @@
         <div id="card-element"></div>
         <div id="card-errors" role="alert"></div>
       </div>
-      <label id="terms-check-wrap" style="display:flex; align-items:flex-start; gap:8px; font-size:13px; color:var(--lane); cursor:pointer;">
+      <label id="terms-check-wrap" style="display:flex; align-items:flex-start; gap:8px; font-size:13px; color:var(--night); cursor:pointer;">
         <input type="checkbox" id="terms-checkbox" style="margin-top:3px; flex-shrink:0; width:16px; height:16px;">
-        <span>I agree to RVnB's <a href="terms.html" target="_blank" style="color:var(--amber); text-decoration:underline;">Terms of Service</a> and <a href="cancellation-policy.html" target="_blank" style="color:var(--amber); text-decoration:underline;">Cancellation Policy</a>.</span>
+        <span>I agree to RVnB's <a href="terms.html" target="_blank" style="color:var(--cta); text-decoration:underline;">Terms of Service</a> and <a href="cancellation-policy.html" target="_blank" style="color:var(--cta); text-decoration:underline;">Cancellation Policy</a>.</span>
       </label>
       <button type="submit" id="submit-btn">Request to Book</button>
       <div class="note">Your card will be authorized now but not charged until the host confirms. If declined, you're never charged.</div>
@@ -256,8 +271,8 @@
   const stripeElements = stripe.elements();
   const cardElement = stripeElements.create('card', {
     style: {
-      base: { color: '#FAF7F0', fontFamily: 'Inter, sans-serif', fontSize: '15px', '::placeholder': { color: '#7a8291' } },
-      invalid: { color: '#ff9d7a' }
+      base: { color: '#1E2B25', fontFamily: 'Inter, sans-serif', fontSize: '15px', '::placeholder': { color: '#8A978F' } },
+      invalid: { color: '#B4492E' }
     }
   });
   cardElement.mount('#card-element');
@@ -276,7 +291,7 @@
     if(data.session && data.session.user){
       loggedInTraveler = data.session.user;
       banner.style.display = 'block';
-      banner.innerHTML = `Booking as <b>${loggedInTraveler.email}</b> — this trip will show up in your <a href="traveler-dashboard.html" style="color:#8fd8ac; text-decoration:underline;">Travelers Dashboard</a> page. <a href="#" id="not-you-link" style="color:#8fd8ac; text-decoration:underline;">Not you?</a>`;
+      banner.innerHTML = `Booking as <b>${loggedInTraveler.email}</b> — this trip will show up in your <a href="traveler-dashboard.html" style="color:var(--cta); text-decoration:underline;">Travelers Dashboard</a> page. <a href="#" id="not-you-link" style="color:var(--cta); text-decoration:underline;">Not you?</a>`;
       document.getElementById('guest_email').value = loggedInTraveler.email;
       const notYou = document.getElementById('not-you-link');
       if(notYou){
@@ -288,9 +303,9 @@
       }
     } else {
       banner.style.display = 'block';
-      banner.style.background = '#141b2e';
-      banner.style.color = '#FFB547';
-      banner.innerHTML = `<a href="traveler-login.html?return=${encodeURIComponent(location.pathname + location.search)}" style="color:#FFB547; text-decoration:underline;">Log in</a> to track this trip in your booking history — or just book below as a guest.`;
+      banner.style.background = 'var(--tint)';
+      banner.style.color = 'var(--night)';
+      banner.innerHTML = `<a href="traveler-login.html?return=${encodeURIComponent(location.pathname + location.search)}" style="color:var(--cta); text-decoration:underline;">Log in</a> to track this trip in your booking history — or just book below as a guest.`;
     }
   }
 
@@ -332,12 +347,12 @@
       // listing doesn't have a daily turnover window, so don't show one.
       document.getElementById('l-arrival-box').style.display = 'none';
       document.getElementById('l-departure-box').style.display = 'none';
-      turnoverNotice.style.background = '#16321f';
-      turnoverNotice.style.color = '#8fd8ac';
+      turnoverNotice.style.background = 'var(--tint)';
+      turnoverNotice.style.color = 'var(--cta)';
       turnoverNotice.innerHTML = `<b>✓ 24-hour parking.</b> This is a designated RV spot — you're welcome to stay parked here for the full length of your booking without leaving and returning daily.`;
     } else {
-      turnoverNotice.style.background = '#402a10';
-      turnoverNotice.style.color = '#f5c877';
+      turnoverNotice.style.background = '#FDF1DC';
+      turnoverNotice.style.color = '#7A4E0E';
       turnoverNotice.innerHTML = `<b>⚠ Daily departure required.</b> Even for multi-night stays, your vehicle must leave the lot by <b>${formatTime12hr(data.departure_time)}</b> each morning and may not return until <b>${formatTime12hr(data.arrival_time)}</b> that evening. This is not a spot to park continuously for the length of your stay — it's overnight parking only, every night of your booking.`;
     }
 

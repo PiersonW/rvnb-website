@@ -21,16 +21,19 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
-    --night:#0B1220;
-    --night-2:#141b2e;
-    --amber:#FFB547;
-    --amber-dim:#e0983a;
-    --lane:#FAF7F0;
-    --lane-dim:#e8e2d4;
-    --sign-green:#2F7D5B;
-    --asphalt:#64748B;
-    --asphalt-dark:#3d4657;
-    --red:#a4472b;
+    --cta:#2D6A4F;
+    --cta-dark:#24573F;
+    --tint:#DCEFE4;
+    --night:#1E2B25;
+    --night-2:#24573F;
+    --amber:#BFE3CF;
+    --amber-dim:#A9D6BD;
+    --lane:#F5F8F6;
+    --lane-dim:#E3E9E5;
+    --sign-green:#2D6A4F;
+    --asphalt:#66756D;
+    --asphalt-dark:#3B4A43;
+    --red:#B4492E;
     --radius:14px;
     --radius-card:22px;
     --radius-pill:999px;
@@ -88,7 +91,7 @@
   }
   .navlinks{display:flex; gap:32px; font-size:14px; font-weight:600;}
   .navlinks a{padding:4px 2px; border-bottom:2px solid transparent;}
-  .navlinks a:hover{border-color:var(--amber);}
+  .navlinks a:hover{border-color:var(--cta);}
   .navlinks{display:none;}
   @media(min-width:720px){.navlinks{display:flex;}}
   @media(max-width:400px){
@@ -131,7 +134,7 @@
     font-size:12px; letter-spacing:0.14em; text-transform:uppercase;
     color:var(--sign-green); margin-bottom:18px; display:flex; align-items:center; gap:10px;
   }
-  .eyebrow::before{content:''; width:8px; height:8px; background:var(--amber); border-radius:50%; display:inline-block;}
+  .eyebrow::before{content:''; width:8px; height:8px; background:var(--cta); border-radius:50%; display:inline-block;}
   .hero h1{
     font-size:clamp(34px,5.2vw,58px);
     line-height:1.05;
@@ -152,8 +155,8 @@
     display:inline-flex; align-items:center; gap:8px;
     transition:transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
   }
-  .btn-amber{background:var(--amber); color:var(--night);}
-  .btn-amber:hover{background:#ffc670; transform:translateY(-1px); box-shadow:0 10px 24px rgba(255,181,71,0.35);}
+  .btn-amber{background:var(--cta); color:#fff;}
+  .btn-amber:hover{background:var(--cta-dark); transform:translateY(-1px); box-shadow:0 10px 24px rgba(45,106,79,0.35);}
   .btn-outline{border:1.5px solid var(--night); color:var(--night);}
   .btn-outline:hover{border-color:var(--sign-green); color:var(--sign-green); transform:translateY(-1px);}
 
@@ -200,7 +203,7 @@
   .slider-thumb{
     position:absolute; left:50%; top:30%; width:26px; height:26px;
     transform:translate(-50%,-50%);
-    background:var(--amber); border-radius:50%; border:3px solid #141a2b;
+    background:var(--cta); border-radius:50%; border:3px solid #141a2b;
     display:flex; align-items:center; justify-content:center;
     cursor:grab; box-shadow:0 3px 10px rgba(0,0,0,0.4);
     touch-action:none;
@@ -282,7 +285,7 @@
     background:transparent; color:var(--night); border-radius:var(--radius-pill);
     transition:background 0.2s ease, color 0.2s ease;
   }
-  .tab-btn.active{background:var(--night); color:var(--amber);}
+  .tab-btn.active{background:var(--cta); color:#fff;}
   .tab-panel{display:none;}
   .tab-panel.active{display:grid;}
   .steps{
@@ -300,7 +303,7 @@
   .step:hover{transform:translateY(-3px); box-shadow:0 14px 28px rgba(11,18,32,0.1);}
   .step .num{
     font-family:'JetBrains Mono', monospace;
-    color:var(--amber-dim); background:#fff3e2; display:inline-block;
+    color:var(--cta); background:var(--tint); display:inline-block;
     padding:3px 10px; font-size:12px; margin-bottom:16px; border-radius:var(--radius-pill); font-weight:600;
   }
   .step h3{font-size:17px; margin-bottom:8px; color:var(--night); font-weight:700;}
@@ -309,7 +312,7 @@
   /* ---------- PERFECT FOR ---------- */
   .perfect{background:#fff;}
   .perfect .section-head .eyebrow{color:var(--sign-green);}
-  .perfect .section-head .eyebrow::before{background:var(--amber);}
+  .perfect .section-head .eyebrow::before{background:var(--cta);}
   .perfect .section-head h2{color:var(--night);}
   .perfect .section-head p{color:var(--asphalt);}
   .grid-tags{display:grid; grid-template-columns:repeat(2,1fr); gap:12px;}
@@ -341,7 +344,7 @@
   /* ---------- SIGNUP ---------- */
   .signup{background:var(--lane-dim);}
   .signup-card{
-    background:var(--night); color:var(--lane);
+    background:var(--cta); color:var(--lane);
     padding:44px 36px;
     border-radius:var(--radius-card);
     display:grid; gap:28px;
@@ -353,14 +356,21 @@
   .role-pick{display:flex; gap:8px; margin-bottom:6px;}
   .role-btn{
     flex:1; padding:11px; font-size:13px; font-weight:700;
-    background:var(--night-2); color:var(--lane-dim); border:2px solid var(--asphalt); border-radius:var(--radius-pill);
+    background:var(--cta-dark); color:var(--lane-dim); border:2px solid var(--asphalt); border-radius:var(--radius-pill);
   }
-  .role-btn.active{background:var(--amber); color:var(--night); border-color:var(--amber);}
+  .role-btn.active{background:var(--cta); color:#fff; border-color:var(--cta);}
   input[type=email], input[type=text]{
-    padding:14px 16px; background:var(--night-2); border:2px solid var(--asphalt-dark);
+    padding:14px 16px; background:var(--cta-dark); border:2px solid var(--asphalt-dark);
     color:var(--lane); font-family:'Inter',sans-serif; font-size:14px; border-radius:var(--radius);
   }
   input::placeholder{color:#8b93a3;}
+  /* The signup card is green, so its controls invert to white. */
+  .signup-card .btn-amber{background:#fff; color:var(--cta);}
+  .signup-card .btn-amber:hover{background:var(--tint); box-shadow:none;}
+  .signup-card .role-btn{background:transparent; color:#fff; border-color:rgba(255,255,255,0.4);}
+  .signup-card .role-btn.active{background:#fff; color:var(--cta); border-color:#fff;}
+  .signup-card input[type=email], .signup-card input[type=text]{background:rgba(255,255,255,0.12); border-color:rgba(255,255,255,0.35); color:#fff;}
+  .signup-card input::placeholder{color:#CFE5D8;}
   input:focus, .role-btn:focus, .btn:focus, .tab-btn:focus, .switch-btn:focus{outline:3px solid var(--amber); outline-offset:2px;}
   .form-note{font-family:'JetBrains Mono', monospace; font-size:11px; color:#9aa3b5;}
   .form-msg{font-size:13px; font-weight:600; color:var(--amber); min-height:18px;}
@@ -370,9 +380,12 @@
   }
 
   /* ---------- FOOTER ---------- */
-  footer{background:var(--night); color:var(--lane-dim); padding:36px 0; border-top:1px solid var(--asphalt-dark);}
+  footer{background:var(--cta); color:var(--lane-dim); padding:36px 0; border-top:1px solid var(--asphalt-dark);}
   footer .wrap{display:flex; flex-wrap:wrap; justify-content:space-between; gap:16px; align-items:center;}
   footer .mono{font-size:12px;}
+
+  /* Clean green: light footer. */
+  footer{background:#fff !important; color:var(--asphalt) !important; border-top:1px solid var(--lane-dim) !important;}
 </style>
   <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "36911a5edb0f4bdf95ab6da85ceccd46"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
@@ -396,7 +409,7 @@
           Login ▾
         </button>
         <div id="login-menu-dropdown" style="display:none; position:absolute; top:calc(100% + 8px); left:0; background:#fff; border:1.5px solid var(--night); border-radius:12px; min-width:170px; z-index:100; overflow:hidden; box-shadow:0 6px 16px rgba(0,0,0,0.2);">
-          <a href="traveler-login.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #e0ddd0;">Traveler Login</a>
+          <a href="traveler-login.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #E3E9E5;">Traveler Login</a>
           <a href="host-login.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none;">Host Login</a>
         </div>
       </div>
@@ -405,7 +418,7 @@
           Get Started ▾
         </button>
         <div id="get-started-menu-dropdown" style="display:none; position:absolute; top:calc(100% + 8px); right:0; background:#fff; border:1.5px solid var(--night); border-radius:12px; min-width:190px; z-index:100; overflow:hidden; box-shadow:0 6px 16px rgba(0,0,0,0.2);">
-          <a href="browse.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #e0ddd0;">Find a Spot (Traveler)</a>
+          <a href="browse.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #E3E9E5;">Find a Spot (Traveler)</a>
           <a href="list-your-lot.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none;">List Your Lot (Host)</a>
         </div>
       </div>
@@ -419,19 +432,19 @@
           <span id="menu-notif-dot" style="display:none; position:absolute; bottom:-3px; left:-3px; width:16px; height:16px; border-radius:50%; background:var(--red);"></span>
         </button>
         <div id="account-menu-dropdown" style="display:none; position:absolute; top:calc(100% + 8px); right:0; background:#fff; border:1.5px solid var(--night); border-radius:12px; min-width:190px; z-index:100; overflow:hidden; box-shadow:0 6px 16px rgba(0,0,0,0.2);">
-          <a href="profile.html?return=index.html" id="account-email-full" style="display:block; padding:10px 14px; border-bottom:1px solid #e0ddd0; text-decoration:none; color:inherit;">
+          <a href="profile.html?return=index.html" id="account-email-full" style="display:block; padding:10px 14px; border-bottom:1px solid #E3E9E5; text-decoration:none; color:inherit;">
             <span id="account-email-text" style="display:block; font-size:11px; color:var(--asphalt); word-break:break-all;"></span>
             <span style="display:block; font-size:10px; font-weight:700; color:var(--sign-green); text-transform:uppercase; letter-spacing:0.03em; margin-top:4px;">Settings →</span>
           </a>
-          <a href="browse.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #e0ddd0;">Browse Listings</a>
-          <a href="notifications.html?return=index.html" style="display:flex; align-items:center; justify-content:space-between; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #e0ddd0;">
+          <a href="browse.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #E3E9E5;">Browse Listings</a>
+          <a href="notifications.html?return=index.html" style="display:flex; align-items:center; justify-content:space-between; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #E3E9E5;">
             Notifications
             <span id="menu-notif-count" style="display:none; background:var(--red); color:#fff; font-size:10px; font-weight:700; min-width:16px; height:16px; border-radius:8px; align-items:center; justify-content:center; padding:0 4px;"></span>
           </a>
-          <a href="admin.html" id="admin-btn" style="display:none; padding:11px 14px; font-size:13px; font-weight:600; color:var(--sign-green); text-decoration:none; border-bottom:1px solid #e0ddd0;">Admin Dashboard</a>
-          <a href="analytics.html" id="analytics-btn" style="display:none; padding:11px 14px; font-size:13px; font-weight:600; color:var(--sign-green); text-decoration:none; border-bottom:1px solid #e0ddd0;">Analytics</a>
-          <a href="traveler-dashboard.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #e0ddd0;">Traveler Dashboard</a>
-          <a href="host-dashboard.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #e0ddd0;">Host Dashboard</a>
+          <a href="admin.html" id="admin-btn" style="display:none; padding:11px 14px; font-size:13px; font-weight:600; color:var(--sign-green); text-decoration:none; border-bottom:1px solid #E3E9E5;">Admin Dashboard</a>
+          <a href="analytics.html" id="analytics-btn" style="display:none; padding:11px 14px; font-size:13px; font-weight:600; color:var(--sign-green); text-decoration:none; border-bottom:1px solid #E3E9E5;">Analytics</a>
+          <a href="traveler-dashboard.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #E3E9E5;">Traveler Dashboard</a>
+          <a href="host-dashboard.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #E3E9E5;">Host Dashboard</a>
           <button id="signout-btn" style="display:block; width:100%; text-align:left; padding:11px 14px; font-size:13px; font-weight:600; color:var(--red,#a4472b); background:none; border:none; cursor:pointer;">Sign Out</button>
         </div>
       </div>
@@ -645,7 +658,7 @@
     </div>
 
     <div class="showcase-chips">
-      <div class="chip"><span class="chip-icon" style="background:#2F7D5B;">💰</span><div><b>Earn while closed</b><span>Turn unused overnight space into passive income</span></div></div>
+      <div class="chip"><span class="chip-icon" style="background:#2D6A4F;">💰</span><div><b>Earn while closed</b><span>Turn unused overnight space into passive income</span></div></div>
       <div class="chip"><span class="chip-icon" style="background:#2E5E8C;">🛡️</span><div><b>Safe &amp; accountable</b><span>Every guest has an account, a card on file, and gets rated by the hosts they stay with</span></div></div>
       <div class="chip"><span class="chip-icon" style="background:#7A5CB8;">🎛️</span><div><b>You stay in control</b><span>Set your own hours, rules, and who gets approved</span></div></div>
     </div>
@@ -766,14 +779,14 @@
 <footer>
   <div class="wrap">
     <div class="logo" style="font-size:15px;">
-      <img src="logo-64-light.png" width="24" height="24" alt="RVnB" style="flex-shrink:0; display:block;">
+      <img src="logo-64.png" width="24" height="24" alt="RVnB" style="flex-shrink:0; display:block;">
       <span style="text-transform:none; letter-spacing:normal;">RV<span style="color:var(--sign-green);">n</span>B</span>
     </div>
     <div class="mono">tryrvnb.com · Founder: Pierson Willhite</div>
     <div class="mono" style="margin-top:8px;">
-      <a href="terms.html" style="color:var(--lane-dim);">Terms of Service</a>
+      <a href="terms.html" style="color:var(--cta);">Terms of Service</a>
       &nbsp;·&nbsp;
-      <a href="cancellation-policy.html" style="color:var(--lane-dim);">Cancellation Policy</a>
+      <a href="cancellation-policy.html" style="color:var(--cta);">Cancellation Policy</a>
     </div>
   </div>
 </footer>

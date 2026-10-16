@@ -10,8 +10,11 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
-    --night:#0B1220; --amber:#FFB547; --lane:#FAF7F0; --sign-green:#2F7D5B;
-    --asphalt:#64748B; --red:#a4472b;
+    --cta:#2D6A4F;
+    --cta-dark:#24573F;
+    --tint:#DCEFE4;
+    --night:#1E2B25; --amber:#BFE3CF; --lane:#F5F8F6; --sign-green:#2D6A4F;
+    --asphalt:#66756D; --red:#B4492E;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{font-family:'Inter',sans-serif; background:var(--lane); color:var(--night);}
@@ -29,20 +32,20 @@
   }
 
   #login-view{
-    min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--night);
+    min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--cta);
   }
-  .login-box{ background:#141b2e; padding:40px; border-radius:12px; width:100%; max-width:340px; }
+  .login-box{ background:#24573F; padding:40px; border-radius:12px; width:100%; max-width:340px; }
   header h1{font-size:20px;}
   .login-box h1{color:var(--amber); font-size:22px; margin-bottom:20px;}
   .login-box input{
-    width:100%; padding:12px 14px; margin-bottom:12px; border:2px solid #3d4657; background:#0B1220;
+    width:100%; padding:12px 14px; margin-bottom:12px; border:2px solid #4E8468; background:#1F4D39;
     color:var(--lane); border-radius:10px; font-family:'Inter',sans-serif;
   }
   .login-box button{
-    width:100%; padding:13px; background:var(--amber); color:var(--night); font-weight:700;
+    width:100%; padding:13px; background:var(--cta); color:#fff; font-weight:700;
     text-transform:uppercase; font-size:13px; border:none; border-radius:10px; cursor:pointer;
   }
-  .login-error{color:#ff9d7a; font-size:12px; margin-top:8px;}
+  .login-error{color:#FFD1C2; font-size:12px; margin-top:8px;}
 
   #dashboard-view{display:none;}
   .empty{color:var(--asphalt); font-family:'JetBrains Mono',monospace; font-size:13px; text-align:center; padding:40px 0;}
@@ -64,7 +67,7 @@
   .chart-value{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--night); margin-bottom:4px;}
 
   table{width:100%; border-collapse:collapse; font-size:13px;}
-  th, td{text-align:left; padding:8px 10px; border-bottom:1px solid #e0ddd0;}
+  th, td{text-align:left; padding:8px 10px; border-bottom:1px solid #E3E9E5;}
   th{font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; color:var(--asphalt);}
   .status-pill{
     font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase;
@@ -73,6 +76,22 @@
   .status-pill.approved, .status-pill.confirmed, .status-pill.completed{background:#d8ebe0; color:var(--sign-green);}
   .status-pill.pending{background:#f2e4c4; color:#8a6415;}
   .status-pill.paused, .status-pill.cancelled{background:#e6e6e6; color:var(--asphalt);}
+
+  /* Clean green: light page, white card, green actions. */
+  #login-view{background:var(--lane) !important;}
+  body{background:var(--lane) !important; color:var(--night) !important;}
+  .site-logo{color:var(--night) !important;}
+  .box, .login-box{background:#fff !important; border:1px solid var(--lane-dim); box-shadow:0 2px 12px rgba(30,43,37,0.06);}
+  h1{color:var(--cta) !important;}
+  .sub{color:var(--asphalt); opacity:1 !important;}
+  .tabs{border-color:var(--lane-dim) !important;}
+  .tab-btn{background:#fff !important; color:var(--night) !important;}
+  .tab-btn.active{background:var(--cta) !important; color:#fff !important;}
+  input{background:#fff !important; border:1.5px solid #CFDAD3 !important; color:var(--night) !important;}
+  input:focus{border-color:var(--cta) !important; outline:none;}
+  .msg.error{color:#B4492E !important;} .msg.success{color:#2D6A4F !important;}
+  a.back{color:var(--asphalt) !important; opacity:1 !important;}
+  .box a, .login-box a{color:var(--cta);}
 </style>
   <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "36911a5edb0f4bdf95ab6da85ceccd46"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
@@ -104,20 +123,20 @@
             <span id="menu-notif-dot" style="display:none; position:absolute; bottom:-3px; left:-3px; width:16px; height:16px; border-radius:50%; background:var(--red);"></span>
           </button>
           <div id="admin-menu-dropdown" style="display:none; position:absolute; top:calc(100% + 8px); right:0; background:#fff; border:1.5px solid var(--night); border-radius:12px; min-width:190px; z-index:100; overflow:hidden; box-shadow:0 6px 16px rgba(0,0,0,0.2);">
-            <a href="profile.html?return=analytics.html" id="account-email-full" style="display:block; padding:10px 14px; border-bottom:1px solid #e0ddd0; text-decoration:none; color:inherit;">
+            <a href="profile.html?return=analytics.html" id="account-email-full" style="display:block; padding:10px 14px; border-bottom:1px solid #E3E9E5; text-decoration:none; color:inherit;">
               <span id="account-email-text" style="display:block; font-size:11px; color:var(--asphalt); word-break:break-all;"></span>
               <span style="display:block; font-size:10px; font-weight:700; color:var(--sign-green); text-transform:uppercase; letter-spacing:0.03em; margin-top:4px;">Settings →</span>
             </a>
-            <a href="index.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #e0ddd0;">Home</a>
-            <a href="browse.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #e0ddd0;">Browse Listings</a>
-            <a href="notifications.html?return=analytics.html" style="display:flex; align-items:center; justify-content:space-between; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #e0ddd0;">
+            <a href="index.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #E3E9E5;">Home</a>
+            <a href="browse.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #E3E9E5;">Browse Listings</a>
+            <a href="notifications.html?return=analytics.html" style="display:flex; align-items:center; justify-content:space-between; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #E3E9E5;">
               Notifications
               <span id="menu-notif-count" style="display:none; background:var(--red); color:#fff; font-size:10px; font-weight:700; min-width:16px; height:16px; border-radius:8px; align-items:center; justify-content:center; padding:0 4px;"></span>
             </a>
-            <a href="admin.html" id="admin-btn" style="display:none; padding:11px 14px; font-size:13px; font-weight:600; color:var(--sign-green); text-decoration:none; border-bottom:1px solid #e0ddd0;">Admin Dashboard</a>
-            <a href="analytics.html" id="analytics-btn" style="display:none; padding:11px 14px; font-size:13px; font-weight:600; color:var(--sign-green); text-decoration:none; border-bottom:1px solid #e0ddd0;">Analytics</a>
-            <a href="traveler-dashboard.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #e0ddd0;">Traveler Dashboard</a>
-            <a href="host-dashboard.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #e0ddd0;">Host Dashboard</a>
+            <a href="admin.html" id="admin-btn" style="display:none; padding:11px 14px; font-size:13px; font-weight:600; color:var(--sign-green); text-decoration:none; border-bottom:1px solid #E3E9E5;">Admin Dashboard</a>
+            <a href="analytics.html" id="analytics-btn" style="display:none; padding:11px 14px; font-size:13px; font-weight:600; color:var(--sign-green); text-decoration:none; border-bottom:1px solid #E3E9E5;">Analytics</a>
+            <a href="traveler-dashboard.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #E3E9E5;">Traveler Dashboard</a>
+            <a href="host-dashboard.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #E3E9E5;">Host Dashboard</a>
             <button id="logout-btn" style="display:block; width:100%; text-align:left; padding:11px 14px; font-size:13px; font-weight:600; text-transform:none; color:var(--red,#a4472b); background:none; border:none; border-radius:0; cursor:pointer;">Sign Out</button>
           </div>
         </div>

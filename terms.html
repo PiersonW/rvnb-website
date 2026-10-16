@@ -8,13 +8,16 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
 <style>
-  :root{ --night:#0B1220; --amber:#FFB547; --lane:#FAF7F0; --sign-green:#2F7D5B; --asphalt:#64748B; }
+  :root{
+    --cta:#2D6A4F;
+    --cta-dark:#24573F;
+    --tint:#DCEFE4; --night:#1E2B25; --amber:#BFE3CF; --lane:#F5F8F6; --sign-green:#2D6A4F; --asphalt:#66756D; }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{font-family:'Inter',sans-serif; background:var(--lane); color:var(--night); line-height:1.65;}
   h1,h2{font-family:'Manrope',sans-serif; text-transform:uppercase; letter-spacing:0.02em;}
   a{color:var(--sign-green);}
   .wrap{max-width:760px; margin:0 auto; padding:0 24px;}
-  header{background:var(--night); color:var(--lane); padding:16px 0;}
+  header{background:var(--cta); color:var(--lane); padding:16px 0;}
   header .wrap{display:flex; justify-content:space-between; align-items:center;}
   header a.back{color:var(--amber); text-decoration:none; font-size:14px;}
   .intro{padding:44px 0 8px;}
@@ -25,6 +28,10 @@
   ul, ol{padding-left:22px; margin-bottom:12px;}
   .placeholder{background:#fbeccf; padding:1px 5px; border-radius:10px; font-weight:600;}
   footer{padding:50px 0 60px; font-size:13px; color:var(--asphalt);}
+
+  /* Clean green: white header bar, ink text, green links. */
+  header{background:#fff !important; color:var(--night) !important; border-bottom:1px solid var(--lane-dim);}
+  header a, header a.back{color:var(--cta) !important;}
 </style>
   <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "36911a5edb0f4bdf95ab6da85ceccd46"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
@@ -33,7 +40,7 @@
 <header>
   <div class="wrap">
     <a href="index.html" style="font-family:'Manrope',sans-serif; font-weight:700; text-transform:uppercase; color:var(--lane); text-decoration:none; display:flex; align-items:center; gap:8px;">
-      <img src="logo-64-light.png" width="20" height="20" alt="" style="flex-shrink:0;"><span style="text-transform:none; letter-spacing:normal;">RV<span style="color:var(--sign-green);">n</span>B</span>
+      <img src="logo-64.png" width="20" height="20" alt="" style="flex-shrink:0;"><span style="text-transform:none; letter-spacing:normal;">RV<span style="color:var(--sign-green);">n</span>B</span>
     </a>
     <a class="back" href="index.html">← Back to home</a>
   </div>

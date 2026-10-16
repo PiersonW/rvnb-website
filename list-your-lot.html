@@ -11,8 +11,11 @@
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <style>
   :root{
-    --night:#0B1220; --amber:#FFB547; --amber-dim:#e0983a; --lane:#FAF7F0; --lane-dim:#e8e2d4;
-    --sign-green:#2F7D5B; --asphalt:#64748B; --asphalt-dark:#2c303a;
+    --cta:#2D6A4F;
+    --cta-dark:#24573F;
+    --tint:#DCEFE4;
+    --night:#1E2B25; --amber:#BFE3CF; --amber-dim:#A9D6BD; --lane:#F5F8F6; --lane-dim:#E3E9E5;
+    --sign-green:#2D6A4F; --asphalt:#66756D; --asphalt-dark:#3B4A43;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{font-family:'Inter',sans-serif; background:var(--lane); color:var(--night); line-height:1.5; overflow-x:hidden;}
@@ -20,7 +23,7 @@
   a{color:inherit;}
   .wrap{max-width:640px; margin:0 auto; padding:0 24px;}
 
-  header{background:var(--night); color:var(--lane); padding:16px 0;}
+  header{background:var(--cta); color:var(--lane); padding:16px 0;}
   header .wrap{display:flex; align-items:center; justify-content:space-between;}
   header .brand{font-family:'Manrope',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:0.03em;}
   header a.back{color:var(--amber); text-decoration:none; font-size:14px;}
@@ -51,7 +54,7 @@
     background:#fff; color:var(--night);
   }
   .preset-chip input{width:auto; margin:0; flex-shrink:0;}
-  .preset-chip.checked{background:var(--night); color:#fff;}
+  .preset-chip.checked{background:var(--cta); color:#fff;}
   .preset-hint{
     font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--asphalt); margin-top:-4px; margin-bottom:10px; display:block;
   }
@@ -62,11 +65,11 @@
   .hint{font-size:12px; color:var(--asphalt); margin-top:4px;}
 
   button[type=submit]{
-    margin-top:8px; padding:16px 24px; background:var(--amber); color:var(--night);
+    margin-top:8px; padding:16px 24px; background:var(--cta); color:#fff;
     font-weight:700; font-size:14px; text-transform:uppercase; letter-spacing:0.03em;
     border:none; border-radius:10px; cursor:pointer;
   }
-  button[type=submit]:hover{background:#ffc670;}
+  button[type=submit]:hover{background:var(--cta-dark);}
   button[type=submit]:disabled{opacity:0.6; cursor:default;}
 
   .msg{
@@ -78,21 +81,32 @@
   .msg.loading{background:#eee; color:var(--asphalt); border:2px solid var(--asphalt);}
 
   .auth-box{
-    background:var(--night); color:var(--lane); padding:28px; border-radius:12px; margin:24px 0;
+    background:var(--cta); color:var(--lane); padding:28px; border-radius:12px; margin:24px 0;
     display:flex; flex-direction:column; gap:12px; max-width:420px;
   }
-  .auth-tabs{display:flex; gap:0; border:2px solid #3d4657; border-radius:10px; overflow:hidden; margin-bottom:6px;}
+  .auth-tabs{display:flex; gap:0; border:2px solid #4E8468; border-radius:10px; overflow:hidden; margin-bottom:6px;}
   .auth-tab{
-    flex:1; padding:10px; background:#141b2e; color:var(--lane); border:none; font-weight:700;
+    flex:1; padding:10px; background:#24573F; color:var(--lane); border:none; font-weight:700;
     font-size:12px; text-transform:uppercase; cursor:pointer;
   }
-  .auth-tab.active{background:var(--amber); color:var(--night);}
-  .auth-note{font-size:12px; color:#a9aebb;}
-  .auth-box input{padding:12px 14px; background:#141b2e; border:2px solid #3d4657; color:var(--lane); border-radius:10px;}
+  .auth-tab.active{background:var(--cta); color:#fff;}
+  .auth-note{font-size:12px; color:var(--asphalt);}
+  .auth-box input{padding:12px 14px; background:#24573F; border:2px solid #4E8468; color:var(--lane); border-radius:10px;}
   #auth-submit{
-    padding:13px; background:var(--amber); color:var(--night); font-weight:700; text-transform:uppercase;
+    padding:13px; background:var(--cta); color:#fff; font-weight:700; text-transform:uppercase;
     font-size:13px; border:none; border-radius:10px; cursor:pointer;
   }
+
+  /* Clean green: white header bar, ink text, green links. */
+  header{background:#fff !important; color:var(--night) !important; border-bottom:1px solid var(--lane-dim);}
+  header a, header a.back{color:var(--cta) !important;}
+
+  /* Clean green: sign-up box as a light card. */
+  .auth-box{background:#fff !important; color:var(--night) !important; border:1px solid var(--lane-dim);}
+  .auth-tabs{border-color:var(--lane-dim) !important;}
+  .auth-tab{background:#fff !important; color:var(--night) !important;}
+  .auth-tab.active{background:var(--cta) !important; color:#fff !important;}
+  .auth-box input{background:#fff !important; border:1.5px solid #CFDAD3 !important; color:var(--night) !important;}
 </style>
   <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "36911a5edb0f4bdf95ab6da85ceccd46"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
@@ -101,7 +115,7 @@
 <header>
   <div class="wrap">
     <a href="index.html" class="brand" style="text-decoration:none; display:flex; align-items:center; gap:8px;">
-      <img src="logo-64-light.png" width="20" height="20" alt="" style="flex-shrink:0;"><span style="text-transform:none; letter-spacing:normal;">RV<span style="color:var(--sign-green);">n</span>B</span>
+      <img src="logo-64.png" width="20" height="20" alt="" style="flex-shrink:0;"><span style="text-transform:none; letter-spacing:normal;">RV<span style="color:var(--sign-green);">n</span>B</span>
     </a>
     <a class="back" href="index.html">← Back to home</a>
   </div>
@@ -116,12 +130,12 @@
 
   <!-- ACCOUNT GATE -->
   <div id="auth-gate" class="auth-box">
-    <button type="button" id="google-signin-btn" style="width:100%; padding:12px; background:#fff; color:#0B1220; border:2px solid #3d4657; border-radius:10px; font-weight:600; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px;">
+    <button type="button" id="google-signin-btn" style="width:100%; padding:12px; background:#fff; color:#1E2B25; border:2px solid #4E8468; border-radius:10px; font-weight:600; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px;">
       <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.91-2.26c-.81.54-1.85.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.96v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.96 10.71a5.4 5.4 0 0 1 0-3.42V4.96H.96a9 9 0 0 0 0 8.08l3-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.96l3 2.33C4.67 5.16 6.66 3.58 9 3.58z"/></svg>
       Continue with Google
     </button>
     <div style="display:flex; align-items:center; gap:10px; color:#5a6472; font-size:11px; font-family:'JetBrains Mono',monospace; text-transform:uppercase;">
-      <div style="flex:1; height:1px; background:#3d4657;"></div>or<div style="flex:1; height:1px; background:#3d4657;"></div>
+      <div style="flex:1; height:1px; background:#CFDAD3;"></div>or<div style="flex:1; height:1px; background:#CFDAD3;"></div>
     </div>
     <div class="auth-tabs">
       <button class="auth-tab active" data-mode="signup" type="button">Create Account</button>
@@ -131,7 +145,7 @@
     <input type="email" id="auth-email" placeholder="Email" required>
     <input type="password" id="auth-password" placeholder="Password (min 6 characters)" required>
     <div class="cf-turnstile" data-sitekey="0x4AAAAAAD3dYgYRVK0pvWHm" data-callback="onAuthCaptcha" style="margin:6px 0;"></div>
-    <label id="auth-terms-wrap" style="display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--lane); opacity:0.85; cursor:pointer;">
+    <label id="auth-terms-wrap" style="display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--night); cursor:pointer;">
       <input type="checkbox" id="auth-terms-checkbox" style="margin-top:2px; flex-shrink:0; width:15px; height:15px;">
       <span>I agree to RVnB's <a href="terms.html" target="_blank" style="color:var(--sign-green); text-decoration:underline;">Terms of Service</a>.</span>
     </label>

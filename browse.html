@@ -12,12 +12,15 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
-    --night:#0B1220; --amber:#FFB547; --lane:#FAF7F0; --sign-green:#2F7D5B; --asphalt:#64748B;
+    --cta:#2D6A4F;
+    --cta-dark:#24573F;
+    --tint:#DCEFE4;
+    --night:#1E2B25; --amber:#BFE3CF; --lane:#F5F8F6; --sign-green:#2D6A4F; --asphalt:#66756D;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{font-family:'Inter',sans-serif; background:var(--lane);}
   header{
-    background:var(--night); color:var(--lane);
+    background:var(--cta); color:var(--lane);
     padding:16px 24px; display:flex; align-items:center; justify-content:space-between;
     font-family:'Manrope',sans-serif; text-transform:uppercase; font-weight:700; letter-spacing:0.03em;
   }
@@ -69,7 +72,7 @@
       width:7px; height:7px; border-radius:50%; background:var(--lane-dim,#d8d3c4);
       cursor:pointer; transition:background 0.15s ease, transform 0.15s ease;
     }
-    #carousel-dots .dot.active{ background:var(--amber); transform:scale(1.3); }
+    #carousel-dots .dot.active{ background:var(--cta); transform:scale(1.3); }
   }
   #carousel-header{
     padding:16px 18px; font-weight:700;
@@ -82,7 +85,7 @@
     display:flex; gap:10px; padding:10px; border:2px solid transparent; border-radius:14px;
     cursor:pointer; margin-bottom:8px; transition:border-color 0.15s ease, background 0.15s ease;
   }
-  .carousel-card:hover, .carousel-card.active{ border-color:var(--amber); background:#fdf6e8; }
+  .carousel-card:hover, .carousel-card.active{ border-color:var(--cta); background:#fdf6e8; }
   .carousel-card img{
     width:74px; height:74px; object-fit:cover; border-radius:10px; flex-shrink:0; background:#e6e2d4;
   }
@@ -120,7 +123,7 @@
   .rv-popup .meta{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--asphalt); margin-top:4px; }
   #status{
     position:fixed; bottom:16px; left:50%; transform:translateX(-50%);
-    background:var(--night); color:var(--lane); padding:10px 18px; border-radius:20px;
+    background:var(--cta); color:var(--lane); padding:10px 18px; border-radius:20px;
     font-family:'JetBrains Mono',monospace; font-size:12px; z-index:1000; display:none;
   }
   #search-bar{
@@ -132,7 +135,7 @@
     flex:1; border:none; padding:12px 14px; font-family:'Inter',sans-serif; font-size:14px;
   }
   #search-btn{
-    background:var(--amber); color:var(--night); border:none; padding:0 18px;
+    background:var(--cta); color:#fff; border:none; padding:0 18px;
     font-weight:700; text-transform:uppercase; font-size:12px; cursor:pointer;
   }
   #search-clear{
@@ -140,7 +143,7 @@
   }
   #search-area-btn{
     position:absolute; top:128px; left:50%; transform:translateX(-50%);
-    z-index:1000; background:var(--night); color:var(--amber); border:none;
+    z-index:1000; background:var(--cta); color:#fff; border:none;
     padding:9px 18px; border-radius:20px; font-family:'JetBrains Mono',monospace;
     font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.03em;
     cursor:pointer; box-shadow:0 3px 10px rgba(0,0,0,0.3); display:none;
@@ -158,7 +161,7 @@
     display:flex; align-items:center; justify-content:center;
     box-shadow:0 3px 10px rgba(0,0,0,0.15);
   }
-  #locate-btn.active{ background:var(--night); color:var(--amber); }
+  #locate-btn.active{ background:var(--cta); color:#fff; }
   #locate-btn:disabled{ opacity:0.5; cursor:wait; }
   #filters-panel{
     position:absolute; top:128px; left:16px; z-index:1000;
@@ -177,8 +180,12 @@
     flex:1; padding:9px; border:none; border-radius:10px; font-size:12px; font-weight:700;
     text-transform:uppercase; cursor:pointer;
   }
-  #filters-apply-btn{background:var(--amber); color:var(--night);}
+  #filters-apply-btn{background:var(--cta); color:#fff;}
   #filters-clear-btn{background:#e6e6e6; color:var(--night);}
+
+  /* Clean green: white header bar, ink text, green links. */
+  header{background:#fff !important; color:var(--night) !important; border-bottom:1px solid var(--lane-dim);}
+  header a, header a.back{color:var(--cta) !important;}
 </style>
   <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "36911a5edb0f4bdf95ab6da85ceccd46"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
@@ -186,7 +193,7 @@
 
 <header>
   <a href="index.html" style="color:inherit; text-decoration:none; display:flex; align-items:center; gap:8px;">
-    <img src="logo-64-light.png" width="20" height="20" alt="" style="flex-shrink:0;"><span style="text-transform:none; letter-spacing:normal;">RV<span style="color:var(--sign-green);">n</span>B</span> — Find a Spot
+    <img src="logo-64.png" width="20" height="20" alt="" style="flex-shrink:0;"><span style="text-transform:none; letter-spacing:normal;">RV<span style="color:var(--sign-green);">n</span>B</span> — Find a Spot
   </a>
   <a href="index.html">← Back to home</a>
 </header>
@@ -499,7 +506,7 @@
           <div>${escapeHtml(`${p.city}, ${p.state}`)}</div>
           <div class="price">$${p.price_per_night}/night</div>
           <div class="meta">${p.spots_available} spot(s) · check-in ${formatTime12hr(p.arrival_time)} · check-out ${formatTime12hr(p.departure_time)}</div>
-          <a href="listing.html?id=${p.id}&from=map" style="display:inline-block; margin-top:8px; background:#0B1220; color:#FFB547; padding:6px 12px; border-radius:10px; font-size:12px; font-weight:700; text-decoration:none; text-transform:uppercase;">View &amp; Book</a>
+          <a href="listing.html?id=${p.id}&from=map" style="display:inline-block; margin-top:8px; background:#1F4D39; color:#BFE3CF; padding:6px 12px; border-radius:10px; font-size:12px; font-weight:700; text-decoration:none; text-transform:uppercase;">View &amp; Book</a>
         </div>
       `);
       allMarkers.push({ marker, data: p });
@@ -507,7 +514,7 @@
 
     if(data.length === 0){
       statusEl.style.display = 'block';
-      statusEl.innerHTML = 'No spots listed yet. <a href="index.html#signup" style="color:#FFB547;">Join the waitlist</a> and we\'ll let you know when one opens near you.';
+      statusEl.innerHTML = 'No spots listed yet. <a href="index.html#signup" style="color:#BFE3CF;">Join the waitlist</a> and we\'ll let you know when one opens near you.';
     }
 
     renderCarousel();

@@ -12,8 +12,11 @@
 <script src="push-subscribe.js"></script>
 <style>
   :root{
-    --night:#0B1220; --amber:#FFB547; --lane:#FAF7F0; --sign-green:#2F7D5B;
-    --asphalt:#64748B; --red:#a4472b;
+    --cta:#2D6A4F;
+    --cta-dark:#24573F;
+    --tint:#DCEFE4;
+    --night:#1E2B25; --amber:#BFE3CF; --lane:#F5F8F6; --sign-green:#2D6A4F;
+    --asphalt:#66756D; --red:#B4492E;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{font-family:'Inter',sans-serif; background:var(--lane); color:var(--night);}
@@ -33,7 +36,7 @@
 
   .tabs{display:flex; gap:0; border:2px solid var(--night); width:fit-content; margin-bottom:24px; border-radius:10px; overflow:hidden;}
   .tab-btn{padding:10px 20px; font-weight:700; font-size:12px; text-transform:uppercase; background:#fff; color:var(--night); border:none; cursor:pointer;}
-  .tab-btn.active{background:var(--night); color:var(--amber);}
+  .tab-btn.active{background:var(--cta); color:#fff;}
   .tab-panel{display:none;}
   .tab-panel.active{display:block;}
 
@@ -63,7 +66,7 @@
   .chart-value{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--night); margin-bottom:4px;}
 
   table.revenue-table{width:100%; border-collapse:collapse; font-size:13px; background:#fff; border:none; border-radius:14px; box-shadow:0 2px 10px rgba(11,18,32,0.06); overflow:hidden;}
-  table.revenue-table th, table.revenue-table td{text-align:left; padding:10px 12px; border-bottom:1px solid #e0ddd0;}
+  table.revenue-table th, table.revenue-table td{text-align:left; padding:10px 12px; border-bottom:1px solid #E3E9E5;}
   table.revenue-table th{font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; color:var(--asphalt); background:#f5f2e9;}
 
   .card{background:#fff; border:none; border-radius:14px; box-shadow:0 2px 10px rgba(11,18,32,0.06); padding:20px; margin-bottom:16px;}
@@ -115,12 +118,12 @@
   }
 
   .msg-badge{background:var(--red); color:#fff; border-radius:10px; font-size:10px; padding:1px 6px; margin-left:4px; font-family:'JetBrains Mono',monospace;}
-  .msg-thread{display:none; margin-top:14px; border-top:1px solid #e0ddd0; padding-top:14px;}
+  .msg-thread{display:none; margin-top:14px; border-top:1px solid #E3E9E5; padding-top:14px;}
   .msg-thread.open{display:block;}
   .msg-list{max-height:260px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; margin-bottom:10px;}
   .msg-bubble{max-width:80%; padding:8px 12px; border-radius:12px; font-size:13px; line-height:1.4;}
   .msg-bubble.theirs{background:#f0eee4; align-self:flex-start; border-bottom-left-radius:2px;}
-  .msg-bubble.mine{background:var(--night); color:#fff; align-self:flex-end; border-bottom-right-radius:2px;}
+  .msg-bubble.mine{background:var(--cta); color:#fff; align-self:flex-end; border-bottom-right-radius:2px;}
   .msg-bubble .msg-time{display:block; font-family:'JetBrains Mono',monospace; font-size:9px; opacity:0.6; margin-top:3px;}
   .msg-compose{display:flex; gap:8px; align-items:flex-end;}
   .msg-compose textarea{flex:1; resize:none; padding:9px 11px; border:2px solid var(--night); border-radius:10px; font-family:'Inter',sans-serif; font-size:13px; min-width:0;}
@@ -129,14 +132,14 @@
 
   .card-actions{display:flex; gap:8px; margin-top:16px; flex-wrap:wrap;}
   .card-actions button{padding:9px 16px; border-radius:10px; font-size:12px; font-weight:700; text-transform:uppercase; border:none; cursor:pointer;}
-  .btn-save{background:var(--amber); color:var(--night);}
-  .btn-save-info{background:var(--night); color:var(--amber); border:none; padding:10px 18px; border-radius:10px; font-weight:700; font-size:12px; text-transform:uppercase; cursor:pointer;}
+  .btn-save{background:var(--cta); color:#fff;}
+  .btn-save-info{background:var(--cta); color:#fff; border:none; padding:10px 18px; border-radius:10px; font-weight:700; font-size:12px; text-transform:uppercase; cursor:pointer;}
   .btn-approve{background:var(--sign-green); color:#fff;}
   .btn-pause{background:#e6e6e6; color:var(--night);}
   .btn-reject{background:var(--red); color:#fff;}
   .save-msg{font-size:12px; margin-top:8px; color:var(--sign-green); display:none;}
 
-  .blocked-section{margin-top:18px; padding-top:16px; border-top:2px solid #eee0cf;}
+  .blocked-section{margin-top:18px; padding-top:16px; border-top:2px solid #E3E9E5;}
   .blocked-section h4{font-size:12px; letter-spacing:0.04em; margin-bottom:10px;}
   .blocked-list{display:flex; flex-direction:column; gap:8px; margin-bottom:12px;}
   .blocked-row{
@@ -161,12 +164,12 @@
     font-family:'Inter',sans-serif; font-size:13px; background:#fff; color:var(--night);
   }
   .btn-add-block{
-    grid-column:1/-1; background:var(--night); color:var(--amber); border:none; padding:10px;
+    grid-column:1/-1; background:var(--cta); color:#fff; border:none; padding:10px;
     font-weight:700; font-size:12px; text-transform:uppercase; border-radius:10px; cursor:pointer; margin-top:2px;
   }
 
   /* Photos */
-  .photos-section{margin-top:18px; padding-top:16px; border-top:2px solid #eee0cf;}
+  .photos-section{margin-top:18px; padding-top:16px; border-top:2px solid #E3E9E5;}
   .photos-section h4{font-size:12px; letter-spacing:0.04em; margin-bottom:10px;}
   .photo-grid{display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px;}
   .photo-thumb{
@@ -185,7 +188,7 @@
   }
   .photo-upload-hint{font-size:11px; color:var(--asphalt); margin-top:6px;}
   .btn-upload-photos{
-    background:var(--night); color:var(--amber); border:none; padding:9px 16px;
+    background:var(--cta); color:#fff; border:none; padding:9px 16px;
     font-weight:700; font-size:12px; text-transform:uppercase; border-radius:10px; cursor:pointer;
   }
 
@@ -271,20 +274,20 @@
           <span id="menu-notif-dot" style="display:none; position:absolute; bottom:-3px; left:-3px; width:16px; height:16px; border-radius:50%; background:var(--red);"></span>
         </button>
         <div id="host-menu-dropdown" style="display:none; position:absolute; top:calc(100% + 8px); right:0; background:#fff; border:1.5px solid var(--night); border-radius:12px; min-width:190px; z-index:100; overflow:hidden; box-shadow:0 6px 16px rgba(0,0,0,0.2);">
-          <a href="profile.html?return=host-dashboard.html" id="account-email-full" style="display:block; padding:10px 14px; border-bottom:1px solid #e0ddd0; text-decoration:none; color:inherit;">
+          <a href="profile.html?return=host-dashboard.html" id="account-email-full" style="display:block; padding:10px 14px; border-bottom:1px solid #E3E9E5; text-decoration:none; color:inherit;">
             <span id="account-email-text" style="display:block; font-size:11px; color:var(--asphalt); word-break:break-all;"></span>
             <span style="display:block; font-size:10px; font-weight:700; color:var(--sign-green); text-transform:uppercase; letter-spacing:0.03em; margin-top:4px;">Settings →</span>
           </a>
-          <a href="index.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #e0ddd0;">Home</a>
-          <a href="browse.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #e0ddd0;">Browse Listings</a>
-          <a href="notifications.html?return=host-dashboard.html" style="display:flex; align-items:center; justify-content:space-between; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #e0ddd0;">
+          <a href="index.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #E3E9E5;">Home</a>
+          <a href="browse.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #E3E9E5;">Browse Listings</a>
+          <a href="notifications.html?return=host-dashboard.html" style="display:flex; align-items:center; justify-content:space-between; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #E3E9E5;">
             Notifications
             <span id="menu-notif-count" style="display:none; background:var(--red); color:#fff; font-size:10px; font-weight:700; min-width:16px; height:16px; border-radius:8px; align-items:center; justify-content:center; padding:0 4px;"></span>
           </a>
-          <a href="admin.html" id="admin-btn" style="display:none; padding:11px 14px; font-size:13px; font-weight:600; color:var(--sign-green); text-decoration:none; border-bottom:1px solid #e0ddd0;">Admin Dashboard</a>
-          <a href="analytics.html" id="analytics-btn" style="display:none; padding:11px 14px; font-size:13px; font-weight:600; color:var(--sign-green); text-decoration:none; border-bottom:1px solid #e0ddd0;">Analytics</a>
-          <a href="traveler-dashboard.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #e0ddd0;">Traveler Dashboard</a>
-          <a href="host-dashboard.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #e0ddd0;">Host Dashboard</a>
+          <a href="admin.html" id="admin-btn" style="display:none; padding:11px 14px; font-size:13px; font-weight:600; color:var(--sign-green); text-decoration:none; border-bottom:1px solid #E3E9E5;">Admin Dashboard</a>
+          <a href="analytics.html" id="analytics-btn" style="display:none; padding:11px 14px; font-size:13px; font-weight:600; color:var(--sign-green); text-decoration:none; border-bottom:1px solid #E3E9E5;">Analytics</a>
+          <a href="traveler-dashboard.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #E3E9E5;">Traveler Dashboard</a>
+          <a href="host-dashboard.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #E3E9E5;">Host Dashboard</a>
           <button id="logout-btn" style="display:block; width:100%; text-align:left; padding:11px 14px; font-size:13px; font-weight:600; text-transform:none; color:var(--red,#a4472b); background:none; border:none; border-radius:0; cursor:pointer;">Sign Out</button>
         </div>
       </div>
@@ -301,7 +304,7 @@
   </div>
 
   <div id="listings-container" class="tab-panel">
-    <a href="list-your-lot.html" style="display:inline-flex; align-items:center; gap:6px; background:var(--amber); color:var(--night); padding:10px 18px; font-size:12px; font-weight:700; text-transform:uppercase; border-radius:999px; text-decoration:none; margin-bottom:18px;">+ List Another Lot</a>
+    <a href="list-your-lot.html" style="display:inline-flex; align-items:center; gap:6px; background:var(--cta); color:#fff; padding:10px 18px; font-size:12px; font-weight:700; text-transform:uppercase; border-radius:999px; text-decoration:none; margin-bottom:18px;">+ List Another Lot</a>
     <div id="listings-list"><div class="empty">Loading...</div></div>
   </div>
   <div id="bookings-container" class="tab-panel active"></div>
@@ -468,20 +471,20 @@
 
     if(data.payoutsEnabled){
       banner.style.background = '#e4efe8';
-      banner.style.border = '2px solid #2F7D5B';
+      banner.style.border = '2px solid #2D6A4F';
       banner.style.color = '#1f4a35';
       banner.textContent = '✓ Payouts active — you\'re paid automatically after each stay, and Stripe sends it on to your bank.';
     } else if(data.connected){
       banner.style.background = '#fbeccf';
       banner.style.border = '2px solid #e0983a';
       banner.style.color = '#6b4a10';
-      banner.innerHTML = 'Your payout setup is incomplete. <button id="finish-payout-btn" style="background:#e0983a; color:#fff; border:none; padding:6px 14px; border-radius:10px; font-weight:700; cursor:pointer; margin-left:8px;">Finish Setup</button>';
+      banner.innerHTML = 'Your payout setup is incomplete. <button id="finish-payout-btn" style="background:var(--cta-dark); color:#fff; border:none; padding:6px 14px; border-radius:10px; font-weight:700; cursor:pointer; margin-left:8px;">Finish Setup</button>';
       document.getElementById('finish-payout-btn').addEventListener('click', startPayoutOnboarding);
     } else {
-      banner.style.background = '#141b2e';
-      banner.style.border = '2px solid #FFB547';
-      banner.style.color = '#FFB547';
-      banner.innerHTML = 'You haven\'t set up payouts yet — bookings can still come in, but you won\'t get paid automatically until this is done. <button id="setup-payout-btn" style="background:#FFB547; color:#0B1220; border:none; padding:6px 14px; border-radius:10px; font-weight:700; cursor:pointer; margin-left:8px;">Set Up Payouts</button>';
+      banner.style.background = '#FBEDE6';
+      banner.style.border = '1px solid #F0D2C5';
+      banner.style.color = '#7A3A22';
+      banner.innerHTML = 'You haven\'t set up payouts yet — bookings can still come in, but you won\'t get paid automatically until this is done. <button id="setup-payout-btn" style="background:#2D6A4F; color:#fff; border:none; padding:6px 14px; border-radius:10px; font-weight:700; cursor:pointer; margin-left:8px;">Set Up Payouts</button>';
       document.getElementById('setup-payout-btn').addEventListener('click', startPayoutOnboarding);
     }
   }
@@ -764,7 +767,7 @@
           <div class="save-msg block-save-msg" data-partner-id="${p.id}"></div>
         </div>
 
-        <div class="card-actions" style="border-top:1px solid #e0ddd0; padding-top:16px; margin-top:16px;">
+        <div class="card-actions" style="border-top:1px solid #E3E9E5; padding-top:16px; margin-top:16px;">
           <button class="btn-save" data-id="${p.id}">Save Changes</button>
           ${p.status === 'approved' ? `<button class="btn-pause" data-id="${p.id}" data-status="paused">Pause Listing</button>` : ''}
           ${p.status === 'paused' ? `<button class="btn-approve" data-id="${p.id}" data-status="approved">Reactivate</button>` : ''}
@@ -820,7 +823,7 @@
           saveMsg.style.color = '#a4472b';
           saveMsg.textContent = 'Error: ' + error.message;
         } else {
-          saveMsg.style.color = '#2F7D5B';
+          saveMsg.style.color = '#2D6A4F';
           saveMsg.textContent = 'Saved!';
         }
         saveMsg.style.display = 'block';
@@ -1087,8 +1090,8 @@
           <b>${b.partners ? b.partners.business_name : ''}</b><br>
           ${formatDate(b.check_in)} → ${formatDate(b.check_out)} · You receive: $${b.host_payout ? Number(b.host_payout).toFixed(2) : Number(b.total_price).toFixed(2)}<br>
           ${escapeHtml(b.guest_email)}${b.guest_phone ? ' · ' + escapeHtml(b.guest_phone) : ''}
-          ${Number(b.refunded_amount) > 0 ? `<div style="font-size:12px; color:#2F7D5B; margin-top:6px; font-weight:600;">Refunded $${Number(b.refunded_amount).toFixed(2)}${b.cancelled_by ? ' · cancelled by ' + b.cancelled_by : ''}</div>` : (b.status === 'cancelled' && b.cancelled_by ? `<div style="font-size:12px; color:#888; margin-top:6px;">Cancelled by ${b.cancelled_by}${b.payment_status === 'paid' ? ' · not refunded' : ''}</div>` : '')}
-          ${b.payout_status === 'paid' ? `<div style="font-size:12px; color:#2F7D5B; margin-top:6px; font-weight:600;">Paid out $${Number(b.payout_amount).toFixed(2)} on ${formatDate(String(b.paid_out_at).slice(0, 10))}${Number(b.payout_reversed_amount) > 0 ? ` ($${Number(b.payout_reversed_amount).toFixed(2)} taken back after a refund)` : ''}</div>`
+          ${Number(b.refunded_amount) > 0 ? `<div style="font-size:12px; color:#2D6A4F; margin-top:6px; font-weight:600;">Refunded $${Number(b.refunded_amount).toFixed(2)}${b.cancelled_by ? ' · cancelled by ' + b.cancelled_by : ''}</div>` : (b.status === 'cancelled' && b.cancelled_by ? `<div style="font-size:12px; color:#888; margin-top:6px;">Cancelled by ${b.cancelled_by}${b.payment_status === 'paid' ? ' · not refunded' : ''}</div>` : '')}
+          ${b.payout_status === 'paid' ? `<div style="font-size:12px; color:#2D6A4F; margin-top:6px; font-weight:600;">Paid out $${Number(b.payout_amount).toFixed(2)} on ${formatDate(String(b.paid_out_at).slice(0, 10))}${Number(b.payout_reversed_amount) > 0 ? ` ($${Number(b.payout_reversed_amount).toFixed(2)} taken back after a refund)` : ''}</div>`
             : b.payout_status === 'waiting_on_host' ? `<div style="font-size:12px; color:#a4472b; margin-top:6px; font-weight:600;">$${Number(b.payout_amount).toFixed(2)} is waiting for you — finish payout setup above to receive it.</div>`
             : b.payout_status === 'failed' || b.payout_status === 'processing' ? `<div style="font-size:12px; color:#888; margin-top:6px;">Payout of $${Number(b.payout_amount || b.host_payout).toFixed(2)} is in progress.</div>`
             : b.status === 'confirmed' && b.payment_status === 'paid' ? `<div style="font-size:12px; color:#888; margin-top:6px;">You'll be paid $${Number(b.host_payout).toFixed(2)} automatically after checkout.</div>` : ''}

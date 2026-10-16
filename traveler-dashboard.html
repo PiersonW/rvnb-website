@@ -12,8 +12,11 @@
 <script src="push-subscribe.js"></script>
 <style>
   :root{
-    --night:#0B1220; --amber:#FFB547; --lane:#FAF7F0; --sign-green:#2F7D5B;
-    --asphalt:#64748B; --red:#a4472b;
+    --cta:#2D6A4F;
+    --cta-dark:#24573F;
+    --tint:#DCEFE4;
+    --night:#1E2B25; --amber:#BFE3CF; --lane:#F5F8F6; --sign-green:#2D6A4F;
+    --asphalt:#66756D; --red:#B4492E;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{font-family:'Inter',sans-serif; background:var(--lane); color:var(--night);}
@@ -68,10 +71,10 @@
     color:var(--asphalt); margin-bottom:2px; letter-spacing:0.04em;
   }
   .turnover-reminder{
-    margin-top:14px; background:#402a10; color:#f5c877; padding:10px 12px;
+    margin-top:14px; background:#FDF1DC; color:#7A4E0E; padding:10px 12px;
     border-radius:10px; font-size:12px; line-height:1.5;
   }
-  .turnover-reminder.allows-24hr{background:#16321f; color:#8fd8ac;}
+  .turnover-reminder.allows-24hr{background:#DCEFE4; color:#2D6A4F;}
   .btn-view{
     padding:8px 16px; border-radius:10px; font-size:12px; font-weight:700; text-transform:uppercase;
     border:2px solid var(--night); color:var(--night); text-decoration:none; display:inline-flex; align-items:center;
@@ -85,12 +88,12 @@
     border:none; cursor:pointer; background:#e6e6e6; color:var(--night);
   }
   .msg-badge{background:var(--red); color:#fff; border-radius:10px; font-size:10px; padding:1px 6px; margin-left:4px; font-family:'JetBrains Mono',monospace;}
-  .msg-thread{display:none; margin-top:14px; border-top:1px solid #e0ddd0; padding-top:14px;}
+  .msg-thread{display:none; margin-top:14px; border-top:1px solid #E3E9E5; padding-top:14px;}
   .msg-thread.open{display:block;}
   .msg-list{max-height:260px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; margin-bottom:10px;}
   .msg-bubble{max-width:80%; padding:8px 12px; border-radius:12px; font-size:13px; line-height:1.4;}
   .msg-bubble.theirs{background:#f0eee4; align-self:flex-start; border-bottom-left-radius:2px;}
-  .msg-bubble.mine{background:var(--night); color:#fff; align-self:flex-end; border-bottom-right-radius:2px;}
+  .msg-bubble.mine{background:var(--cta); color:#fff; align-self:flex-end; border-bottom-right-radius:2px;}
   .msg-bubble .msg-time{display:block; font-family:'JetBrains Mono',monospace; font-size:9px; opacity:0.6; margin-top:3px;}
   .msg-compose{display:flex; gap:8px; align-items:flex-end;}
   .msg-compose textarea{flex:1; resize:none; padding:9px 11px; border:2px solid var(--night); border-radius:10px; font-family:'Inter',sans-serif; font-size:13px; min-width:0;}
@@ -111,7 +114,7 @@
     width:100%; min-width:0; padding:9px 11px; border:2px solid var(--night); border-radius:10px;
     font-family:'Inter',sans-serif; font-size:13px;
   }
-  .btn-save{background:var(--night); color:var(--amber); border:none; padding:10px 18px; border-radius:10px; font-weight:700; font-size:12px; text-transform:uppercase; cursor:pointer;}
+  .btn-save{background:var(--cta); color:#fff; border:none; padding:10px 18px; border-radius:10px; font-weight:700; font-size:12px; text-transform:uppercase; cursor:pointer;}
   .save-msg{font-size:12px; margin-top:8px; display:none;}
 </style>
   <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "36911a5edb0f4bdf95ab6da85ceccd46"}'></script><!-- End Cloudflare Web Analytics -->
@@ -134,20 +137,20 @@
           <span id="menu-notif-dot" style="display:none; position:absolute; bottom:-3px; left:-3px; width:16px; height:16px; border-radius:50%; background:var(--red);"></span>
         </button>
         <div id="traveler-menu-dropdown" style="display:none; position:absolute; top:calc(100% + 8px); right:0; background:#fff; border:1.5px solid var(--night); border-radius:12px; min-width:190px; z-index:100; overflow:hidden; box-shadow:0 6px 16px rgba(0,0,0,0.2);">
-          <a href="profile.html?return=traveler-dashboard.html" id="account-email-full" style="display:block; padding:10px 14px; font-size:13px; text-transform:none; text-decoration:none; color:inherit; border:none; border-bottom:1px solid #e0ddd0; border-radius:0;">
+          <a href="profile.html?return=traveler-dashboard.html" id="account-email-full" style="display:block; padding:10px 14px; font-size:13px; text-transform:none; text-decoration:none; color:inherit; border:none; border-bottom:1px solid #E3E9E5; border-radius:0;">
             <span id="account-email-text" style="display:block; font-size:11px; color:var(--asphalt); word-break:break-all;"></span>
             <span style="display:block; font-size:10px; font-weight:700; color:var(--sign-green); text-transform:uppercase; letter-spacing:0.03em; margin-top:4px;">Settings →</span>
           </a>
-          <a href="index.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; text-transform:none; color:var(--night); text-decoration:none; border:none; border-bottom:1px solid #e0ddd0; border-radius:0;">Home</a>
-          <a href="browse.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; text-transform:none; color:var(--night); text-decoration:none; border:none; border-bottom:1px solid #e0ddd0; border-radius:0;">Browse Listings</a>
-          <a href="notifications.html?return=traveler-dashboard.html" style="display:flex; align-items:center; justify-content:space-between; padding:11px 14px; font-size:13px; font-weight:600; text-transform:none; color:var(--night); text-decoration:none; border:none; border-bottom:1px solid #e0ddd0; border-radius:0;">
+          <a href="index.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; text-transform:none; color:var(--night); text-decoration:none; border:none; border-bottom:1px solid #E3E9E5; border-radius:0;">Home</a>
+          <a href="browse.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; text-transform:none; color:var(--night); text-decoration:none; border:none; border-bottom:1px solid #E3E9E5; border-radius:0;">Browse Listings</a>
+          <a href="notifications.html?return=traveler-dashboard.html" style="display:flex; align-items:center; justify-content:space-between; padding:11px 14px; font-size:13px; font-weight:600; text-transform:none; color:var(--night); text-decoration:none; border:none; border-bottom:1px solid #E3E9E5; border-radius:0;">
             Notifications
             <span id="menu-notif-count" style="display:none; background:var(--red); color:#fff; font-size:10px; font-weight:700; min-width:16px; height:16px; border-radius:8px; align-items:center; justify-content:center; padding:0 4px;"></span>
           </a>
-          <a href="admin.html" id="admin-btn" style="display:none; padding:11px 14px; font-size:13px; font-weight:600; text-transform:none; color:var(--sign-green); text-decoration:none; border:none; border-bottom:1px solid #e0ddd0; border-radius:0;">Admin Dashboard</a>
-          <a href="analytics.html" id="analytics-btn" style="display:none; padding:11px 14px; font-size:13px; font-weight:600; text-transform:none; color:var(--sign-green); text-decoration:none; border:none; border-bottom:1px solid #e0ddd0; border-radius:0;">Analytics</a>
-          <a href="traveler-dashboard.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; text-transform:none; color:var(--night); text-decoration:none; border:none; border-bottom:1px solid #e0ddd0; border-radius:0;">Traveler Dashboard</a>
-          <a href="host-dashboard.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; text-transform:none; color:var(--night); text-decoration:none; border:none; border-bottom:1px solid #e0ddd0; border-radius:0;">Host Dashboard</a>
+          <a href="admin.html" id="admin-btn" style="display:none; padding:11px 14px; font-size:13px; font-weight:600; text-transform:none; color:var(--sign-green); text-decoration:none; border:none; border-bottom:1px solid #E3E9E5; border-radius:0;">Admin Dashboard</a>
+          <a href="analytics.html" id="analytics-btn" style="display:none; padding:11px 14px; font-size:13px; font-weight:600; text-transform:none; color:var(--sign-green); text-decoration:none; border:none; border-bottom:1px solid #E3E9E5; border-radius:0;">Analytics</a>
+          <a href="traveler-dashboard.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; text-transform:none; color:var(--night); text-decoration:none; border:none; border-bottom:1px solid #E3E9E5; border-radius:0;">Traveler Dashboard</a>
+          <a href="host-dashboard.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; text-transform:none; color:var(--night); text-decoration:none; border:none; border-bottom:1px solid #E3E9E5; border-radius:0;">Host Dashboard</a>
           <button id="logout-btn" style="display:block; width:100%; text-align:left; padding:11px 14px; font-size:13px; font-weight:600; text-transform:none; color:var(--red,#a4472b); background:none; border:none; border-radius:0; cursor:pointer;">Sign Out</button>
         </div>
       </div>
@@ -299,7 +302,7 @@
           <div class="meta">
             <b>${formatDate(b.check_in)} → ${formatDate(b.check_out)}</b><br>
             ${address}<br>
-            $${b.total_charged ? Number(b.total_charged).toFixed(2) : Number(b.total_price).toFixed(2)} total (incl. fees &amp; tax)${Number(b.refunded_amount) > 0 ? `<br><span style="color:#2F7D5B; font-weight:600;">Refunded $${Number(b.refunded_amount).toFixed(2)}</span>` : ''}
+            $${b.total_charged ? Number(b.total_charged).toFixed(2) : Number(b.total_price).toFixed(2)} total (incl. fees &amp; tax)${Number(b.refunded_amount) > 0 ? `<br><span style="color:#2D6A4F; font-weight:600;">Refunded $${Number(b.refunded_amount).toFixed(2)}</span>` : ''}
           </div>
         </div>
         <span class="status ${b.status}">${b.status}</span>
