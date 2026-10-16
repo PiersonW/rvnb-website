@@ -1098,6 +1098,7 @@
           ${b.status === 'pending' ? `<button class="btn-reject" data-id="${b.id}" data-action="cancel">Decline</button>` : ''}
           ${b.status === 'confirmed' && checkoutHasPassed ? `<button class="btn-pause" data-id="${b.id}" data-action="complete">Mark Completed</button>` : ''}
           ${b.status === 'confirmed' && b.payment_status === 'paid' && !checkoutHasPassed ? `<button class="btn-reject" data-id="${b.id}" data-action="refund-cancel" data-remaining="${(Number(b.total_charged ?? b.total_price) - Number(b.refunded_amount || 0)).toFixed(2)}">Cancel &amp; Refund</button>` : ''}
+          ${b.status === 'completed' && ['paid', 'partially_refunded'].includes(b.payment_status) && Number(b.total_charged ?? b.total_price) - Number(b.refunded_amount || 0) > 0.004 ? `<button class="btn-reject" data-id="${b.id}" data-action="refund-completed" data-remaining="${(Number(b.total_charged ?? b.total_price) - Number(b.refunded_amount || 0)).toFixed(2)}">Refund</button>` : ''}
           <button class="btn-pause btn-message" data-booking-id="${b.id}" data-traveler-id="${b.traveler_id || ''}">Messages<span class="msg-badge" id="msg-badge-${b.id}" style="display:none;"></span></button>
         </div>
         ${b.status === 'confirmed' && !checkoutHasPassed ? `<div style="font-size:11px; color:var(--asphalt); margin-top:8px; font-family:'JetBrains Mono',monospace;">Can be marked completed after ${formatDate(b.check_out)}</div>` : ''}
@@ -1280,20 +1281,33 @@
           return;
         }
 
+        // Goodwill refund after a finished stay: all or part, booking stays completed.
+        let amount;
+        if(action === 'refund-completed'){
+          const remaining = btn.dataset.remaining;
+          const answer = prompt('Refund how much? Up to $' + remaining + '. It comes out of your payout for this stay, and the traveler is emailed.', remaining);
+          if(answer === null) return;
+          amount = Number(String(answer).replace(/[$,\s]/g, ''));
+          if(!(amount > 0 && amount <= Number(remaining))){
+            alert('Enter an amount between $0.01 and $' + remaining + '.');
+            return;
+          }
+        }
+
         const functionName = action === 'capture' ? 'capture-payment' : 'cancel-payment';
         const originalLabel = btn.textContent;
         const confirmMsg = action === 'capture'
           ? 'Confirm this booking and charge the traveler\'s card now?'
           : action === 'refund-cancel'
             ? 'Cancel this confirmed booking? The traveler gets a full refund of $' + btn.dataset.remaining + ' and will be emailed.'
-            : action === 'refund' ? null
+            : action === 'refund' || action === 'refund-completed' ? null
             : 'Decline this booking? Any card hold will be released.';
         if(confirmMsg && !confirm(confirmMsg)) return;
 
         btn.disabled = true;
         btn.textContent = action === 'capture' ? 'Charging...' : (action === 'cancel' ? 'Cancelling...' : 'Refunding...');
 
-        const { data, error } = await supabaseClient.functions.invoke(functionName, { body: { bookingId: id } });
+        const { data, error } = await supabaseClient.functions.invoke(functionName, { body: { bookingId: id, amount } });
 
         if(error || (data && data.error)){
           msgEl.style.display = 'block';
