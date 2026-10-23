@@ -71,7 +71,7 @@ async function sendConfirmationEmail(resendKey: string | undefined, b: any): Pro
     body: JSON.stringify({
       from: 'RVnB <notifications@tryrvnb.com>',
       to: [b.guest_email],
-      reply_to: 'pierson.willhite@gmail.com',
+      reply_to: 'hello@hivebuilt.dev',
       subject: `Booking confirmed — ${p.business_name} (${p.city}, ${p.state})`,
       html,
     }),

@@ -62,7 +62,7 @@ async function sendEmail(resendKey: string | undefined, to: string | null | unde
     body: JSON.stringify({
       from: 'RVnB <notifications@tryrvnb.com>',
       to: [to],
-      reply_to: 'pierson.willhite@gmail.com',
+      reply_to: 'hello@hivebuilt.dev',
       subject,
       html,
     }),
@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
           body: JSON.stringify({
             from: 'RVnB <notifications@tryrvnb.com>',
             to: [booking.guest_email],
-            reply_to: 'pierson.willhite@gmail.com',
+            reply_to: 'hello@hivebuilt.dev',
             subject: `Booking update — ${booking.partners?.business_name || 'RVnB'}`,
             html: `<p>Hi ${esc(booking.guest_name)},</p><p>Unfortunately your booking request at <b>${spot}</b> for ${booking.check_in} → ${booking.check_out} was not able to be confirmed. Your card was not charged — the hold has been released, and your bank usually clears it within a few days.</p><p>Feel free to look for another spot on <a href="https://tryrvnb.com/browse.html">RVnB</a>.</p>`,
           }),

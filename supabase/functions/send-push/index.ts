@@ -53,7 +53,7 @@ async function sendWebPush(supabaseAdmin: any, userId: string, payload: string) 
     console.error('Missing VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY secrets - skipping web push');
     return 0;
   }
-  webpush.setVapidDetails('mailto:pierson.willhite@gmail.com', VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+  webpush.setVapidDetails('mailto:hello@hivebuilt.dev', VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
   const { data: subs, error } = await supabaseAdmin.from('push_subscriptions').select('*').eq('user_id', userId);
   if (error) throw error;
@@ -143,7 +143,7 @@ async function emailGuest(supabaseAdmin: any, bookingId: string, message: string
     body: JSON.stringify({
       from: 'RVnB <notifications@tryrvnb.com>',
       to: [b.guest_email],
-      reply_to: 'pierson.willhite@gmail.com',
+      reply_to: 'hello@hivebuilt.dev',
       subject: `New message from your host at ${spot}`,
       html:
         `<p>Hi ${esc(b.guest_name)},</p>` +

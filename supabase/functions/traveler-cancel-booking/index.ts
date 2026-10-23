@@ -77,7 +77,7 @@ async function sendEmail(resendKey: string | undefined, to: string | null | unde
     body: JSON.stringify({
       from: 'RVnB <notifications@tryrvnb.com>',
       to: [to],
-      reply_to: 'pierson.willhite@gmail.com',
+      reply_to: 'hello@hivebuilt.dev',
       subject,
       html,
     }),
