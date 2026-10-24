@@ -302,6 +302,16 @@
   .msg.error{color:#B4492E !important;} .msg.success{color:#2D6A4F !important;}
   a.back{color:var(--asphalt) !important; opacity:1 !important;}
   .box a, .login-box a{color:var(--cta);}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .rep-form{display:flex; flex-wrap:wrap; gap:8px; align-items:center;}
+  .rep-form input{padding:9px 11px; border:1.5px solid #CFDAD3; border-radius:8px; font-size:13px; background:#fff; color:var(--night);}
+  .rep-form label{font-size:12px; color:var(--asphalt); display:flex; align-items:center; gap:6px;}
+  .rep-form label input{width:80px;}
+  .rep-row{display:grid; grid-template-columns:minmax(0,1.6fr) repeat(4, minmax(0,0.7fr)) auto; gap:10px; align-items:center; padding:12px 0; border-top:1px solid var(--lane-dim); font-size:13px;}
+  .rep-row.head{font-size:11px; text-transform:uppercase; letter-spacing:0.04em; color:var(--asphalt); border-top:none;}
+  .rep-row .actions{display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;}
+  .rep-row button{font-size:12px; padding:6px 10px; border-radius:8px; border:1.5px solid var(--cta); background:#fff; color:var(--cta); cursor:pointer; font-weight:600;}
+  @media(max-width:700px){.rep-row{grid-template-columns:1fr 1fr;} .rep-row.head{display:none;}}
 </style>
   <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "36911a5edb0f4bdf95ab6da85ceccd46"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
@@ -367,6 +377,23 @@
       <button class="tab-btn" data-tab="leads">Host Leads</button>
       <button class="tab-btn" data-tab="users">Users</button>
       <button class="tab-btn" data-tab="waitlist">Waitlist</button>
+      <button class="tab-btn" data-tab="reps">Sales Reps</button>
+    </div>
+    <div id="reps-container" class="tab-panel">
+      <div class="card" style="margin-bottom:16px;">
+        <h3 style="margin-bottom:10px;">Add a rep</h3>
+        <form id="add-rep-form" class="rep-form">
+          <input type="text" id="rep-name" placeholder="Full name" required>
+          <input type="email" id="rep-email" placeholder="Email they'll log in with" required>
+          <input type="text" id="rep-code" placeholder="Code (auto)" maxlength="12">
+          <label>$ when live <input type="number" id="rep-approve" value="10" min="0" step="0.01"></label>
+          <label>$ after first stay <input type="number" id="rep-first" value="15" min="0" step="0.01"></label>
+          <button type="submit" class="btn-add-lead">Add rep</button>
+        </form>
+        <div class="meta" id="rep-form-msg" style="margin-top:8px;"></div>
+        <div class="meta" style="margin-top:6px;">Reps log in at <b>tryrvnb.com/rep.html</b> with this email (Google or email sign-in). Their link and QR code are on that page.</div>
+      </div>
+      <div id="reps-list-container"></div>
     </div>
     <div id="listings-container" class="tab-panel active"></div>
     <div id="bookings-container" class="tab-panel"></div>
@@ -562,6 +589,7 @@
     loadHostLeads();
     loadUsers();
     loadWaitlist();
+    loadReps();
   }
 
   async function checkUnreadNotifications(){
@@ -715,6 +743,7 @@
               ${p.business_type || '—'} · ${p.spots_available} spot(s) · $${p.price_per_night}/night<br>
               Check-in ${formatTime12hr(p.arrival_time)} · Check-out ${formatTime12hr(p.departure_time)}<br>
               ${p.contact_name ? 'Contact: ' + p.contact_name + (p.contact_email ? ' (' + p.contact_email + ')' : '') : ''}
+              ${p.referral_code ? `<br>Rep code: <b>${escapeHtml(p.referral_code)}</b>${p.rep_id ? '' : ' (no active rep has this code)'}` : ''}
             </div>
             ${p.rules ? '<div class="rules">"' + p.rules + '"</div>' : ''}
           </div>
@@ -1743,6 +1772,87 @@
   let allWaitlist = [];
   let waitlistSearchTerm = '';
   let waitlistStateFilter = 'all';
+
+  // ============================================
+  // SALES REPS — referral codes, earnings, and payments recorded by admin
+  // ============================================
+  const repMoney = n => '$' + Number(n || 0).toFixed(2);
+
+  function suggestRepCode(name){
+    const first = (name.trim().split(/\s+/)[0] || 'REP').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 6) || 'REP';
+    return first + Math.floor(10 + Math.random() * 90);
+  }
+  document.getElementById('rep-name').addEventListener('input', e => {
+    const codeInput = document.getElementById('rep-code');
+    if(!codeInput.dataset.touched) codeInput.value = e.target.value.trim() ? suggestRepCode(e.target.value) : '';
+  });
+  document.getElementById('rep-code').addEventListener('input', e => { e.target.dataset.touched = '1'; });
+
+  document.getElementById('add-rep-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('rep-form-msg');
+    const name = document.getElementById('rep-name').value.trim();
+    const code = (document.getElementById('rep-code').value.trim() || suggestRepCode(name)).toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const row = {
+      name,
+      email: document.getElementById('rep-email').value.trim().toLowerCase(),
+      code,
+      approve_bonus: Number(document.getElementById('rep-approve').value || 0),
+      first_stay_bonus: Number(document.getElementById('rep-first').value || 0),
+    };
+    const { error } = await supabaseClient.from('sales_reps').insert(row);
+    if(error){
+      msg.style.color = 'var(--red)';
+      msg.textContent = error.code === '23505' ? 'That code or email is already used by another rep.' : 'Couldn’t add rep: ' + error.message;
+      return;
+    }
+    msg.style.color = 'var(--cta)';
+    msg.textContent = `Added ${name} with code ${code}. Send them to tryrvnb.com/rep.html to log in with ${row.email}.`;
+    e.target.reset();
+    delete document.getElementById('rep-code').dataset.touched;
+    loadReps();
+  });
+
+  async function loadReps(){
+    const box = document.getElementById('reps-list-container');
+    box.innerHTML = '<div class="empty">Loading reps...</div>';
+    const { data, error } = await supabaseClient.rpc('rvnb_admin_rep_summary');
+    if(error){ box.innerHTML = '<div class="empty">Could not load reps: ' + escapeHtml(error.message) + '</div>'; return; }
+    if(!data.length){ box.innerHTML = '<div class="empty">No reps yet.</div>'; return; }
+    box.innerHTML = `<div class="card">
+      <div class="rep-row head"><div>Rep</div><div>Lots</div><div>Earned</div><div>Paid</div><div>Owed</div><div></div></div>
+      ${data.map(r => `<div class="rep-row">
+        <div><b>${escapeHtml(r.name)}</b> · <span class="mono">${escapeHtml(r.code)}</span>${r.active ? '' : ' · <i>off</i>'}<br>
+          <span class="meta">${escapeHtml(r.email)}${r.linked ? '' : ' · hasn’t logged in yet'} · ${repMoney(r.approve_bonus)} live / ${repMoney(r.first_stay_bonus)} first stay</span></div>
+        <div>${r.listings} <span class="meta">(${r.live} live)</span></div>
+        <div>${repMoney(r.earned)}</div>
+        <div>${repMoney(r.paid)}</div>
+        <div><b>${repMoney(r.owed)}</b></div>
+        <div class="actions">
+          <button data-rep-pay="${r.rep_id}" data-owed="${Number(r.owed).toFixed(2)}" data-name="${escapeHtml(r.name)}">Record payment</button>
+          <button data-rep-toggle="${r.rep_id}" data-active="${r.active}">${r.active ? 'Turn off' : 'Turn on'}</button>
+        </div>
+      </div>`).join('')}
+    </div>`;
+
+    box.querySelectorAll('[data-rep-pay]').forEach(btn => btn.addEventListener('click', async () => {
+      const answer = prompt(`How much did you pay ${btn.dataset.name}? (owed: $${btn.dataset.owed})`, btn.dataset.owed);
+      if(answer === null) return;
+      const amount = Number(String(answer).replace(/[$,\s]/g, ''));
+      if(!(amount > 0)){ alert('Enter an amount greater than $0.'); return; }
+      const note = prompt('Note (optional, e.g. "Venmo")', '') || null;
+      const { error } = await supabaseClient.from('rep_payments').insert({ rep_id: btn.dataset.repPay, amount, note });
+      if(error){ alert('Couldn’t record payment: ' + error.message); return; }
+      loadReps();
+    }));
+    box.querySelectorAll('[data-rep-toggle]').forEach(btn => btn.addEventListener('click', async () => {
+      const turningOff = btn.dataset.active === 'true';
+      if(turningOff && !confirm('Turn off this rep’s code? New sign-ups with it won’t be credited. What they already earned stays.')) return;
+      const { error } = await supabaseClient.from('sales_reps').update({ active: !turningOff }).eq('id', btn.dataset.repToggle);
+      if(error){ alert('Couldn’t update rep: ' + error.message); return; }
+      loadReps();
+    }));
+  }
 
   async function loadWaitlist(){
     const container = document.getElementById('waitlist-list-container');

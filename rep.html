@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rep Dashboard — RVnB</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root{
+    --cta:#2D6A4F; --cta-dark:#24573F; --tint:#DCEFE4;
+    --night:#1E2B25; --lane:#F5F8F6; --lane-dim:#E3E9E5; --asphalt:#66756D; --red:#B4492E;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Inter',sans-serif; background:var(--lane); color:var(--night); line-height:1.5;}
+  .wrap{max-width:720px; margin:0 auto; padding:0 16px;}
+  header{background:#fff; border-bottom:1px solid var(--lane-dim); padding:14px 0;}
+  header .wrap{display:flex; justify-content:space-between; align-items:center; gap:12px;}
+  .site-logo{display:flex; align-items:center; gap:8px; text-decoration:none; color:var(--night); font-family:'Manrope',sans-serif; font-weight:800; font-size:18px;}
+  header button{background:none; border:none; color:var(--cta); font-size:14px; font-weight:600; cursor:pointer;}
+  h1{font-family:'Manrope',sans-serif; font-weight:800; font-size:clamp(24px,5vw,30px); margin:28px 0 4px;}
+  h2{font-family:'Manrope',sans-serif; font-weight:800; font-size:17px; margin-bottom:10px;}
+  .sub{color:var(--asphalt); margin-bottom:20px;}
+  .card{background:#fff; border:1px solid var(--lane-dim); border-radius:14px; padding:18px; margin-bottom:16px;}
+  .center{padding:60px 0; text-align:center; color:var(--asphalt);}
+  .btn{display:inline-block; background:var(--cta); color:#fff; border:none; border-radius:10px; padding:12px 18px; font-weight:700; font-size:14px; cursor:pointer; text-decoration:none;}
+  .btn.outline{background:#fff; color:var(--cta); border:1.5px solid var(--cta);}
+  .stats{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-bottom:16px;}
+  .stat{background:#fff; border:1px solid var(--lane-dim); border-radius:12px; padding:14px;}
+  .stat .label{font-size:12px; color:var(--asphalt);}
+  .stat .value{font-family:'Manrope',sans-serif; font-weight:800; font-size:22px; margin-top:2px;}
+  .stat.owed .value{color:var(--cta);}
+  .share{display:grid; gap:16px;}
+  @media(min-width:600px){.share{grid-template-columns:1fr auto; align-items:start;}}
+  .code{font-family:'JetBrains Mono',monospace; font-size:28px; font-weight:700; letter-spacing:0.08em; color:var(--cta);}
+  .link-row{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;}
+  .link-row input{flex:1; min-width:0; padding:10px 12px; border:1.5px solid #CFDAD3; border-radius:10px; font-size:13px; color:var(--night); background:var(--lane);}
+  #qr{background:#fff; padding:8px; border:1px solid var(--lane-dim); border-radius:10px; width:max-content;}
+  #qr img, #qr canvas{display:block;}
+  .muted{font-size:13px; color:var(--asphalt);}
+  .listing{display:flex; justify-content:space-between; gap:12px; padding:12px 0; border-top:1px solid var(--lane-dim);}
+  .listing:first-of-type{border-top:none;}
+  .listing .name{font-weight:700;}
+  .listing .where{font-size:13px; color:var(--asphalt);}
+  .listing .right{text-align:right; flex-shrink:0;}
+  .pill{display:inline-block; font-size:12px; font-weight:700; padding:2px 10px; border-radius:99px;}
+  .pill.approved{background:var(--tint); color:var(--cta);}
+  .pill.pending, .pill.waitlist{background:#EEF1EF; color:var(--asphalt);}
+  .pill.paused{background:#EEF1EF; color:var(--asphalt);}
+  .earned{font-size:13px; font-weight:700; margin-top:4px;}
+  .steps{font-size:12px; color:var(--asphalt); margin-top:2px;}
+  .payment{display:flex; justify-content:space-between; padding:8px 0; border-top:1px solid var(--lane-dim); font-size:14px;}
+  .payment:first-of-type{border-top:none;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <a href="index.html" class="site-logo">
+      <img src="logo-64.png" width="26" height="26" alt="">
+      <span>RV<span style="color:var(--cta);">n</span>B</span>
+    </a>
+    <button id="logout-btn" type="button" style="display:none;">Log out</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="loading" class="center">Loading…</div>
+
+  <div id="signed-out" class="center" style="display:none;">
+    <h1>Rep dashboard</h1>
+    <p class="sub">Log in with the email RVnB has on file for you.</p>
+    <a class="btn" href="traveler-login.html?return=rep.html">Log in</a>
+  </div>
+
+  <div id="not-rep" class="center" style="display:none;">
+    <h1>Not set up as a rep</h1>
+    <p class="sub" id="not-rep-text">This account isn’t on RVnB’s rep list yet.</p>
+  </div>
+
+  <div id="dashboard" style="display:none;">
+    <h1 id="hello">Hi</h1>
+    <p class="sub" id="rates"></p>
+
+    <div class="stats">
+      <div class="stat"><div class="label">Lots signed up</div><div class="value" id="stat-count">0</div></div>
+      <div class="stat"><div class="label">Earned</div><div class="value" id="stat-earned">$0</div></div>
+      <div class="stat owed"><div class="label">Owed to you</div><div class="value" id="stat-owed">$0</div></div>
+    </div>
+
+    <div class="card">
+      <h2>Your sign-up link</h2>
+      <div class="share">
+        <div>
+          <div class="muted">Your code</div>
+          <div class="code" id="code"></div>
+          <div class="link-row">
+            <input id="link" readonly aria-label="Your sign-up link">
+            <button class="btn" id="copy-btn" type="button">Copy</button>
+            <button class="btn outline" id="share-btn" type="button" style="display:none;">Share</button>
+          </div>
+          <p class="muted" style="margin-top:10px;">Business owners who sign up with this link get your code filled in automatically. They can also type it into “Referral code” on the sign-up form.</p>
+        </div>
+        <div>
+          <div id="qr"></div>
+          <p class="muted" style="margin-top:6px; text-align:center;">Let them scan this</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Lots you signed up</h2>
+      <div id="listings"></div>
+    </div>
+
+    <div class="card">
+      <h2>Payments from RVnB</h2>
+      <div id="payments"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+  const SUPABASE_URL = 'https://icnhpciixqrhrqrzxkxg.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbmhwY2lpeHFyaHJxcnp4a3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2MDMsImV4cCI6MjA5OTczMjYwM30.5a8nNSiSA7U89f2kGAHGNPPfYpFra0Ve7PIFtOq3GDk';
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const STATUS_LABEL = { approved: 'Live', pending: 'In review', waitlist: 'Waitlist', paused: 'Paused' };
+
+  function show(id){
+    ['loading', 'signed-out', 'not-rep', 'dashboard'].forEach(x => {
+      document.getElementById(x).style.display = x === id ? 'block' : 'none';
+    });
+  }
+  function esc(s){
+    return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+  const money = n => '$' + Number(n || 0).toFixed(Number(n) % 1 ? 2 : 0);
+  function formatDate(d){
+    if(!d) return '';
+    const [y, m, day] = String(d).slice(0, 10).split('-').map(Number);
+    return new Date(y, m - 1, day).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  async function init(){
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if(!session){ show('signed-out'); return; }
+    document.getElementById('logout-btn').style.display = 'inline-block';
+
+    const { data: rep, error } = await supabaseClient.rpc('rvnb_rep_dashboard');
+    if(error){
+      document.getElementById('not-rep-text').textContent = 'Couldn’t load your dashboard: ' + error.message;
+      show('not-rep');
+      return;
+    }
+    if(!rep){
+      document.getElementById('not-rep-text').textContent =
+        `You’re logged in as ${session.user.email}, which isn’t on RVnB’s rep list. Ask RVnB to add this email, or log out and use the one they have.`;
+      show('not-rep');
+      return;
+    }
+    render(rep);
+    show('dashboard');
+  }
+
+  function render(rep){
+    document.getElementById('hello').textContent = 'Hi, ' + rep.name.split(' ')[0];
+    document.getElementById('rates').textContent = rep.active
+      ? `You earn ${money(rep.approve_bonus)} when a lot you signed up goes live, and ${money(rep.first_stay_bonus)} more after its first completed stay.`
+      : 'Your rep code is turned off, so new sign-ups won’t be credited. Contact RVnB if that’s a mistake.';
+
+    document.getElementById('stat-count').textContent = rep.listings.length;
+    document.getElementById('stat-earned').textContent = money(rep.earned);
+    document.getElementById('stat-owed').textContent = money(rep.owed);
+
+    const link = `https://tryrvnb.com/list-your-lot.html?ref=${encodeURIComponent(rep.code)}`;
+    document.getElementById('code').textContent = rep.code;
+    document.getElementById('link').value = link;
+    document.getElementById('qr').innerHTML = '';
+    if(window.QRCode) new QRCode(document.getElementById('qr'), { text: link, width: 132, height: 132, colorDark: '#1E2B25', colorLight: '#ffffff' });
+
+    const copyBtn = document.getElementById('copy-btn');
+    copyBtn.onclick = async () => {
+      try { await navigator.clipboard.writeText(link); } catch(e) { document.getElementById('link').select(); document.execCommand('copy'); }
+      copyBtn.textContent = 'Copied';
+      setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1500);
+    };
+    if(navigator.share){
+      const shareBtn = document.getElementById('share-btn');
+      shareBtn.style.display = 'inline-block';
+      shareBtn.onclick = () => navigator.share({ title: 'List your lot on RVnB', text: 'Earn money from your empty parking lot overnight.', url: link }).catch(() => {});
+    }
+
+    const list = document.getElementById('listings');
+    if(!rep.listings.length){
+      list.innerHTML = '<p class="muted">None yet. When a business signs up with your code, it shows up here.</p>';
+    } else {
+      list.innerHTML = rep.listings.map(l => {
+        const steps = [
+          `Signed up ${formatDate(l.submitted_at)}`,
+          l.approved_at ? `live ${formatDate(l.approved_at)}` : null,
+          l.first_stay_at ? `first stay ${formatDate(l.first_stay_at)}` : null,
+        ].filter(Boolean).join(' · ');
+        return `<div class="listing">
+          <div>
+            <div class="name">${esc(l.business_name)}</div>
+            <div class="where">${esc(l.city)}, ${esc(l.state)}</div>
+            <div class="steps">${esc(steps)}</div>
+          </div>
+          <div class="right">
+            <span class="pill ${esc(l.status)}">${esc(STATUS_LABEL[l.status] || l.status)}</span>
+            <div class="earned">${money(l.earned)}</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    const pays = document.getElementById('payments');
+    pays.innerHTML = rep.payments.length
+      ? rep.payments.map(p => `<div class="payment"><span>${formatDate(p.paid_at)}${p.note ? ' · ' + esc(p.note) : ''}</span><b>${money(p.amount)}</b></div>`).join('')
+      : '<p class="muted">No payments yet.</p>';
+  }
+
+  document.getElementById('logout-btn').addEventListener('click', async () => {
+    await supabaseClient.auth.signOut();
+    location.reload();
+  });
+
+  init();
+</script>
+</body>
+</html>

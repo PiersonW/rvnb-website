@@ -263,6 +263,12 @@
         <input type="file" id="photos" accept="image/*" multiple required>
         <div class="hint">Photos of the actual parking area help travelers know what to expect.</div>
       </div>
+
+      <div>
+        <label for="referral_code">Referral code (optional)</label>
+        <input type="text" id="referral_code" placeholder="e.g. JAKE7" autocapitalize="characters" autocomplete="off" maxlength="20">
+        <div class="hint" id="referral-hint">Did someone from RVnB help you sign up? Enter their code.</div>
+      </div>
     </fieldset>
 
     <button type="submit" id="submit-btn">Submit for review</button>
@@ -343,6 +349,34 @@
   // ============================================
   let authMode = 'signup';
   let currentUser = null;
+
+  // ============================================
+  // REFERRAL CODE — a rep's link (?ref=CODE) prefills it. Kept in
+  // localStorage so it survives the sign-in redirect (Google comes back
+  // without the query string).
+  // ============================================
+  const REF_KEY = 'rvnb_ref_code';
+  (function initReferral(){
+    const input = document.getElementById('referral_code');
+    let code = new URLSearchParams(location.search).get('ref');
+    try {
+      if(code) localStorage.setItem(REF_KEY, code);
+      else code = localStorage.getItem(REF_KEY);
+    } catch(e) {}
+    if(code) input.value = code.trim().toUpperCase();
+    let timer;
+    async function check(){
+      const hint = document.getElementById('referral-hint');
+      const value = input.value.trim();
+      if(!value){ hint.textContent = 'Did someone from RVnB help you sign up? Enter their code.'; hint.style.color = ''; return; }
+      const { data } = await supabaseClient.rpc('rvnb_check_referral_code', { p_code: value });
+      if(input.value.trim() !== value) return;
+      if(data){ hint.textContent = '✓ Signed up with ' + data; hint.style.color = 'var(--cta)'; }
+      else { hint.textContent = 'We don’t recognize that code — double-check it, or leave it blank.'; hint.style.color = 'var(--red)'; }
+    }
+    input.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(check, 400); });
+    if(input.value) check();
+  })();
 
   document.querySelectorAll('.auth-tab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -616,7 +650,8 @@
       contact_email: document.getElementById('contact_email').value.trim(),
       photo_urls: photoUrls.join(','),
       host_id: currentUser ? currentUser.id : null,
-      status: isActiveMarket ? 'pending' : 'waitlist'
+      status: isActiveMarket ? 'pending' : 'waitlist',
+      referral_code: document.getElementById('referral_code').value.trim() || null
     };
 
     const { error } = await supabaseClient.from('partners').insert(payload);
@@ -627,6 +662,8 @@
       submitBtn.textContent = 'Submit for review';
       return;
     }
+
+    try { localStorage.removeItem(REF_KEY); } catch(e) {}
 
     if(isActiveMarket){
       showMsg('Thanks! Your listing is in for review — we\'ll be in touch soon.', 'success');
