@@ -285,6 +285,7 @@
             <span id="menu-notif-count" style="display:none; background:var(--red); color:#fff; font-size:10px; font-weight:700; min-width:16px; height:16px; border-radius:8px; align-items:center; justify-content:center; padding:0 4px;"></span>
           </a>
           <a href="admin.html" id="admin-btn" style="display:none; padding:11px 14px; font-size:13px; font-weight:600; color:var(--sign-green); text-decoration:none; border-bottom:1px solid #E3E9E5;">Admin Dashboard</a>
+          <a href="rep.html" id="rep-btn" style="display:none; padding:11px 14px; font-size:13px; font-weight:600; color:var(--sign-green); text-decoration:none; border-bottom:1px solid #E3E9E5;">Rep Dashboard</a>
           <a href="analytics.html" id="analytics-btn" style="display:none; padding:11px 14px; font-size:13px; font-weight:600; color:var(--sign-green); text-decoration:none; border-bottom:1px solid #E3E9E5;">Analytics</a>
           <a href="traveler-dashboard.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #E3E9E5;">Traveler Dashboard</a>
           <a href="host-dashboard.html" style="display:block; padding:11px 14px; font-size:13px; font-weight:600; color:var(--night); text-decoration:none; border-bottom:1px solid #E3E9E5;">Host Dashboard</a>
@@ -439,6 +440,10 @@
       document.getElementById('admin-btn').style.display = 'block';
       document.getElementById('analytics-btn').style.display = 'block';
     }
+    // Reps (people RVnB added on the Sales Reps tab) get a link to their dashboard.
+    supabaseClient.rpc('rvnb_rep_dashboard').then(({ data }) => {
+      if(data) document.getElementById('rep-btn').style.display = 'block';
+    });
     loadListings();
     loadBookings();
     checkPayoutStatus();
