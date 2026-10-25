@@ -104,7 +104,7 @@
             <button class="btn" id="copy-btn" type="button">Copy</button>
             <button class="btn outline" id="share-btn" type="button" style="display:none;">Share</button>
           </div>
-          <p class="muted" style="margin-top:10px;">Business owners who sign up with this link get your code filled in automatically. They can also type it into “Referral code” on the sign-up form.</p>
+          <p class="muted" style="margin-top:10px;">Hosts who sign up with this link get your code filled in automatically. They can also type it into “Referral code” on the sign-up form.</p>
         </div>
         <div>
           <div id="qr"></div>
@@ -198,7 +198,7 @@
 
     const list = document.getElementById('listings');
     if(!rep.listings.length){
-      list.innerHTML = '<p class="muted">None yet. When a business signs up with your code, it shows up here.</p>';
+      list.innerHTML = '<p class="muted">None yet. When someone signs up a lot with your code, it shows up here.</p>';
     } else {
       list.innerHTML = rep.listings.map(l => {
         const steps = [
