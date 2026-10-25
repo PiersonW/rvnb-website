@@ -776,6 +776,7 @@
           <button class="btn-save" data-id="${p.id}">Save Changes</button>
           ${p.status === 'approved' ? `<button class="btn-pause" data-id="${p.id}" data-status="paused">Pause Listing</button>` : ''}
           ${p.status === 'paused' ? `<button class="btn-approve" data-id="${p.id}" data-status="approved">Reactivate</button>` : ''}
+          <button class="btn-remove-listing" data-id="${p.id}" data-name="${escapeHtml(p.business_name)}" style="background:#fff; color:#B4492E; border:1.5px solid #B4492E; padding:10px 16px; border-radius:10px; font-weight:700; cursor:pointer;">Remove Listing</button>
         </div>
         <div class="save-msg main-save-msg">Saved!</div>
       `;
@@ -840,6 +841,17 @@
     document.querySelectorAll('.btn-pause, .btn-approve').forEach(btn => {
       btn.addEventListener('click', async () => {
         await supabaseClient.from('partners').update({ status: btn.dataset.status }).eq('id', btn.dataset.id);
+        loadListings();
+      });
+    });
+
+    // Remove: hides the listing from this dashboard and the map; booking history
+    // is kept. The database refuses while there's an open request or upcoming stay.
+    document.querySelectorAll('.btn-remove-listing').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if(!confirm('Remove "' + btn.dataset.name + '"? It comes off the map and out of your dashboard. Past stays and reviews are kept. To bring it back later, contact RVnB.')) return;
+        const { error } = await supabaseClient.from('partners').update({ status: 'deleted' }).eq('id', btn.dataset.id);
+        if(error){ alert('Couldn’t remove the listing: ' + error.message); return; }
         loadListings();
       });
     });
