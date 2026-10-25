@@ -934,7 +934,9 @@
     });
   });
 
-  // Real submit via Web3Forms
+  // Saves to waitlist_signups (the same list the app uses; RVnB gets a push
+  // notification for each) and still emails RVnB via Web3Forms as before.
+  // Counts as joined if either one works.
   const submitBtn = document.getElementById('submit-btn');
   const signupPageLoadTime = Date.now();
   submitBtn.addEventListener('click', async ()=>{
@@ -970,6 +972,20 @@
     submitBtn.textContent = 'Submitting...';
     msg.textContent = '';
 
+    let saved = false;
+    if(window.rvnbClient){
+      const { data: sess } = await window.rvnbClient.auth.getSession();
+      const { error } = await window.rvnbClient.from('waitlist_signups').insert({
+        name: name,
+        email: email.toLowerCase(),
+        interest: role === 'business' ? 'host' : 'traveler',
+        source: 'web',
+        user_id: sess && sess.session ? sess.session.user.id : null,
+      });
+      saved = !error || error.code === '23505';
+      if(error && error.code !== '23505') console.error('Waitlist save failed:', error.message);
+    }
+
     try{
       const res = await fetch('https://api.web3forms.com/submit', {
         method: 'POST',
@@ -983,8 +999,8 @@
           'Interested In': role === 'business' ? 'Hosting a lot' : 'Traveling / booking',
         })
       });
-      const data = await res.json();
-      if(data.success){
+      const data = await res.json().catch(() => ({}));
+      if(data.success || saved){
         msg.className = 'form-msg confirmed';
         msg.innerHTML = '✓ Thanks, ' + name + ' — you\'re on the list! We\'ll reach out at ' + email + ' soon.';
         document.getElementById('name-input').value='';
@@ -994,8 +1010,15 @@
         msg.textContent = 'Something went wrong — please try again.';
       }
     } catch(err){
-      msg.className = 'form-msg';
-      msg.textContent = 'Something went wrong — please try again.';
+      if(saved){
+        msg.className = 'form-msg confirmed';
+        msg.innerHTML = '✓ Thanks, ' + name + ' — you\'re on the list! We\'ll reach out at ' + email + ' soon.';
+        document.getElementById('name-input').value='';
+        document.getElementById('email-input').value='';
+      } else {
+        msg.className = 'form-msg';
+        msg.textContent = 'Something went wrong — please try again.';
+      }
     } finally {
       submitBtn.disabled = false;
       submitBtn.textContent = 'Join the list';
@@ -1038,6 +1061,7 @@
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbmhwY2lpeHFyaHJxcnp4a3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2MDMsImV4cCI6MjA5OTczMjYwM30.5a8nNSiSA7U89f2kGAHGNPPfYpFra0Ve7PIFtOq3GDk';
     const ADMIN_EMAIL = 'pierson.willhite@gmail.com';
     const authClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    window.rvnbClient = authClient; // shared with the waitlist form
 
     authClient.auth.getSession().then(async ({ data }) => {
       if(!data.session) return;

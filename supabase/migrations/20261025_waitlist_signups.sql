@@ -60,7 +60,8 @@ begin
     v_admin,
     'waitlist_signup',
     'New waitlist sign-up',
-    coalesce(nullif(new.name, ''), new.email) || ' (' || new.email || ') wants a spot'
+    coalesce(nullif(new.name, ''), new.email) || ' (' || new.email || ')'
+      || case when new.interest = 'host' then ' has a lot to list' else ' wants a spot' end
       || case when new.latitude is not null
            then ' near ' || round(new.latitude::numeric, 2) || ', ' || round(new.longitude::numeric, 2)
            else '' end,
