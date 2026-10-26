@@ -1832,7 +1832,7 @@
         <div>${r.listings} <span class="meta">(${r.live} live)</span></div>
         <div>${repMoney(r.earned)}</div>
         <div>${repMoney(r.paid)}</div>
-        <div><b>${repMoney(r.owed)}</b></div>
+        <div><b>${Number(r.owed) < 0 ? 'Overpaid ' + repMoney(-Number(r.owed)) : repMoney(r.owed)}</b></div>
         <div class="actions">
           <button data-rep-pay="${r.rep_id}" data-owed="${Number(r.owed).toFixed(2)}" data-name="${escapeHtml(r.name)}">Record payment</button>
           <button data-rep-toggle="${r.rep_id}" data-active="${r.active}">${r.active ? 'Turn off' : 'Turn on'}</button>
