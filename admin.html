@@ -1836,6 +1836,7 @@
         <div class="actions">
           <button data-rep-pay="${r.rep_id}" data-owed="${Number(r.owed).toFixed(2)}" data-name="${escapeHtml(r.name)}">Record payment</button>
           <button data-rep-toggle="${r.rep_id}" data-active="${r.active}">${r.active ? 'Turn off' : 'Turn on'}</button>
+          <button data-rep-remove="${r.rep_id}" data-name="${escapeHtml(r.name)}" data-lots="${r.listings}" data-paid="${Number(r.paid).toFixed(2)}" style="border-color:#B4492E; color:#B4492E;">Remove</button>
         </div>
       </div>`).join('')}
     </div>`;
@@ -1848,6 +1849,16 @@
       const note = prompt('Note (optional, e.g. "Venmo")', '') || null;
       const { error } = await supabaseClient.from('rep_payments').insert({ rep_id: btn.dataset.repPay, amount, note });
       if(error){ alert('Couldn’t record payment: ' + error.message); return; }
+      loadReps();
+    }));
+    box.querySelectorAll('[data-rep-remove]').forEach(btn => btn.addEventListener('click', async () => {
+      const lots = Number(btn.dataset.lots), paid = Number(btn.dataset.paid);
+      const warning = lots > 0 || paid > 0
+        ? `${btn.dataset.name} has ${lots} lot(s) and $${paid.toFixed(2)} in recorded payments. Removing deletes those payment records and takes the credit off their lots. To keep the history, use Turn off instead.\n\nRemove anyway?`
+        : `Remove ${btn.dataset.name}? They lose access to the rep dashboard.`;
+      if(!confirm(warning)) return;
+      const { error } = await supabaseClient.from('sales_reps').delete().eq('id', btn.dataset.repRemove);
+      if(error){ alert('Couldn’t remove rep: ' + error.message); return; }
       loadReps();
     }));
     box.querySelectorAll('[data-rep-toggle]').forEach(btn => btn.addEventListener('click', async () => {
