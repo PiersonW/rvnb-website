@@ -387,8 +387,8 @@
           <input type="text" id="rep-name" placeholder="Full name" required>
           <input type="email" id="rep-email" placeholder="Email they'll log in with" required>
           <input type="text" id="rep-code" placeholder="Code (auto)" maxlength="12">
-          <label>$ when live <input type="number" id="rep-approve" value="10" min="0" step="0.01"></label>
-          <label>$ after first stay <input type="number" id="rep-first" value="15" min="0" step="0.01"></label>
+          <label>$ when live <input type="number" id="rep-approve" value="5" min="0" step="0.01"></label>
+          <label>$ per month, first 3 months <input type="number" id="rep-monthly" value="5" min="0" step="0.01"></label>
           <button type="submit" class="btn-add-lead">Add rep</button>
         </form>
         <div class="meta" id="rep-form-msg" style="margin-top:8px;"></div>
@@ -1803,7 +1803,7 @@
       email: document.getElementById('rep-email').value.trim().toLowerCase(),
       code,
       approve_bonus: Number(document.getElementById('rep-approve').value || 0),
-      first_stay_bonus: Number(document.getElementById('rep-first').value || 0),
+      monthly_bonus: Number(document.getElementById('rep-monthly').value || 0),
     };
     const { error } = await supabaseClient.from('sales_reps').insert(row);
     if(error){
@@ -1828,7 +1828,7 @@
       <div class="rep-row head"><div>Rep</div><div>Lots</div><div>Earned</div><div>Paid</div><div>Owed</div><div></div></div>
       ${data.map(r => `<div class="rep-row">
         <div><b>${escapeHtml(r.name)}</b> · <span class="mono">${escapeHtml(r.code)}</span>${r.active ? '' : ' · <i>off</i>'}<br>
-          <span class="meta">${escapeHtml(r.email)}${r.linked ? '' : ' · hasn’t logged in yet'} · ${repMoney(r.approve_bonus)} live / ${repMoney(r.first_stay_bonus)} first stay</span></div>
+          <span class="meta">${escapeHtml(r.email)}${r.linked ? '' : ' · hasn’t logged in yet'} · ${repMoney(r.approve_bonus)} live + ${repMoney(r.monthly_bonus)}/mo × ${r.trail_months} once booked</span></div>
         <div>${r.listings} <span class="meta">(${r.live} live)</span></div>
         <div>${repMoney(r.earned)}</div>
         <div>${repMoney(r.paid)}</div>

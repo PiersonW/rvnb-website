@@ -147,6 +147,20 @@
     return new Date(y, m - 1, day).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
+  // One line on how a lot's monthly ("trail") payments are going.
+  function trailStatus(l, rep){
+    const months = rep.trail_months;
+    if(!l.approved_at) return 'Waiting to be approved';
+    if(l.status === 'deleted') return `Removed · ${l.months_earned} of ${months} months earned`;
+    if(l.trail_unlocked){
+      if(l.months_elapsed >= months) return `Done · ${l.months_earned} of ${months} months earned`;
+      return `Month ${l.months_elapsed + 1} of ${months} · ${l.months_earned} earned so far`;
+    }
+    if(l.months_elapsed >= months) return `No booking in the first ${months} months · sign-up bonus only`;
+    const deadline = new Date(new Date(l.approved_at).getTime() + months * 30 * 86400000);
+    return `Needs a booking by ${deadline.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} to start the ${money(rep.monthly_bonus)}/month`;
+  }
+
   async function init(){
     const { data: { session } } = await supabaseClient.auth.getSession();
     if(!session){ show('signed-out'); return; }
@@ -171,7 +185,7 @@
   function render(rep){
     document.getElementById('hello').textContent = 'Hi, ' + rep.name.split(' ')[0];
     document.getElementById('rates').textContent = rep.active
-      ? `You earn ${money(rep.approve_bonus)} when a lot you signed up goes live, and ${money(rep.first_stay_bonus)} more after its first completed stay.`
+      ? `You earn ${money(rep.approve_bonus)} when a lot you sign up goes live. Once it gets a booking in its first ${rep.trail_months} months, you also earn ${money(rep.monthly_bonus)} for each of those months it stays listed, up to ${money(Number(rep.approve_bonus) + Number(rep.monthly_bonus) * rep.trail_months)} per lot.`
       : 'Your rep code is turned off, so new sign-ups won’t be credited. Contact RVnB if that’s a mistake.';
 
     document.getElementById('stat-count').textContent = rep.listings.length;
@@ -204,13 +218,14 @@
         const steps = [
           `Signed up ${formatDate(l.submitted_at)}`,
           l.approved_at ? `live ${formatDate(l.approved_at)}` : null,
-          l.first_stay_at ? `first stay ${formatDate(l.first_stay_at)}` : null,
+          l.first_booking_at ? `first booking ${formatDate(l.first_booking_at)}` : null,
         ].filter(Boolean).join(' · ');
         return `<div class="listing">
           <div>
             <div class="name">${esc(l.business_name)}</div>
             <div class="where">${esc(l.city)}, ${esc(l.state)}</div>
             <div class="steps">${esc(steps)}</div>
+            <div class="steps" style="${l.trail_unlocked ? 'color:var(--cta);' : ''}">${esc(trailStatus(l, rep))}</div>
           </div>
           <div class="right">
             <span class="pill ${esc(l.status)}">${esc(STATUS_LABEL[l.status] || l.status)}</span>
