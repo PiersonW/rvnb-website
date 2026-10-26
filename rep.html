@@ -90,7 +90,7 @@
     <div class="stats">
       <div class="stat"><div class="label">Lots signed up</div><div class="value" id="stat-count">0</div></div>
       <div class="stat"><div class="label">Earned</div><div class="value" id="stat-earned">$0</div></div>
-      <div class="stat owed"><div class="label">Owed to you</div><div class="value" id="stat-owed">$0</div></div>
+      <div class="stat owed"><div class="label" id="stat-owed-label">Owed to you</div><div class="value" id="stat-owed">$0</div></div>
     </div>
 
     <div class="card">
@@ -190,7 +190,9 @@
 
     document.getElementById('stat-count').textContent = rep.listings.length;
     document.getElementById('stat-earned').textContent = money(rep.earned);
-    document.getElementById('stat-owed').textContent = money(rep.owed);
+    const ahead = Number(rep.owed) < 0;
+    document.getElementById('stat-owed-label').textContent = ahead ? 'Paid ahead' : 'Owed to you';
+    document.getElementById('stat-owed').textContent = money(Math.abs(Number(rep.owed)));
 
     const link = `https://tryrvnb.com/list-your-lot.html?ref=${encodeURIComponent(rep.code)}`;
     document.getElementById('code').textContent = rep.code;
