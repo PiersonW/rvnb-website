@@ -86,6 +86,10 @@ async function sendEmail(resendKey: string | undefined, to: string | null | unde
 // Errors that mean "the host's Stripe account can't receive money yet" —
 // worth retrying once they finish onboarding, not a real failure.
 function isHostSetupError(err: any) {
+  // Not enough money behind the transfer (e.g. a tiny test booking whose
+  // Stripe fee ate RVnB's cut) is RVnB's problem, not the host's. Stripe's
+  // wording for it mentions "payouts", so rule it out before the text match.
+  if (err?.code === 'balance_insufficient' || /insufficient funds/i.test(err?.message || '')) return false;
   const text = `${err?.code || ''} ${err?.message || ''}`.toLowerCase();
   return /capabilit|transfers|payouts|onboarding|account.*(restricted|not|cannot)|no such destination|insufficient_capabilities/.test(text);
 }
