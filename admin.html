@@ -391,6 +391,7 @@
       <button class="tab-btn" data-tab="leads">Host Leads</button>
       <button class="tab-btn" data-tab="users">Users</button>
       <button class="tab-btn" data-tab="waitlist">Waitlist</button>
+      <button class="tab-btn" data-tab="reports" id="reports-tab-btn">Reports</button>
       <button class="tab-btn" data-tab="reps">Sales Reps</button>
     </div>
     <div id="reps-container" class="tab-panel">
@@ -417,6 +418,16 @@
         <div class="lead-filters" id="user-role-filters"></div>
       </div>
       <div id="users-list-container"></div>
+    </div>
+    <div id="reports-container" class="tab-panel">
+      <div class="users-toolbar">
+        <div class="lead-filters" id="report-status-filters">
+          <button class="lead-filter-btn active" data-report-status="open">Open</button>
+          <button class="lead-filter-btn" data-report-status="all">All</button>
+        </div>
+      </div>
+      <div class="meta" style="margin-bottom:10px;">Reports come from the Report buttons in the app. Act on each within 24 hours (Apple requires it).</div>
+      <div id="reports-list-container"></div>
     </div>
     <div id="waitlist-container" class="tab-panel">
       <div class="users-toolbar">
@@ -633,6 +644,7 @@
     loadUsers();
     loadWaitlist();
     loadReps();
+    loadReports();
   }
 
   async function checkUnreadNotifications(){
@@ -2031,6 +2043,67 @@
       if(error){ alert('Couldn’t update rep: ' + error.message); return; }
       loadReps();
     }));
+  }
+
+  // ============================================
+  // REPORTS (content_reports via rvnb_admin_reports / rvnb_admin_act_on_report)
+  // ============================================
+  let reportStatus = 'open';
+  const REPORT_KIND = { listing: 'Listing', review: 'Review', message: 'Message', user: 'Person' };
+  const escR = (v) => String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  document.querySelectorAll('[data-report-status]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      reportStatus = btn.dataset.reportStatus;
+      document.querySelectorAll('[data-report-status]').forEach(b => b.classList.toggle('active', b === btn));
+      loadReports();
+    });
+  });
+
+  async function loadReports(){
+    const container = document.getElementById('reports-list-container');
+    container.innerHTML = '<div class="empty">Loading...</div>';
+    const { data, error } = await supabaseClient.rpc('rvnb_admin_reports', { p_status: reportStatus });
+    if(error){ container.innerHTML = '<div class="empty">Could not load reports: ' + escR(error.message) + '</div>'; return; }
+    if(reportStatus === 'open'){
+      document.getElementById('reports-tab-btn').textContent = data.length ? `Reports (${data.length})` : 'Reports';
+    }
+    if(!data.length){ container.innerHTML = '<div class="empty">' + (reportStatus === 'open' ? 'No open reports.' : 'No reports yet.') + '</div>'; return; }
+    container.innerHTML = data.map(r => `
+      <div class="card" data-report-id="${r.id}">
+        <div class="card-top">
+          <div>
+            <h3>${REPORT_KIND[r.kind] || r.kind} · ${escR(r.reason)}</h3>
+            <div class="meta">${new Date(r.created_at).toLocaleString()} · from ${escR(r.reporter_email || 'unknown')}</div>
+          </div>
+          <span class="status ${r.status === 'open' ? 'pending' : 'approved'}">${escR(r.status)}</span>
+        </div>
+        <div class="meta" style="margin-top:8px;">
+          ${r.listing_name ? 'Listing: <b>' + escR(r.listing_name) + '</b><br>' : ''}
+          ${r.reported_email ? 'About: ' + escR(r.reported_name || '') + ' (' + escR(r.reported_email) + ')<br>' : ''}
+          ${r.review_comment != null ? 'Review: “' + escR(r.review_comment) + '”<br>' : ''}
+          ${r.message_body != null ? 'Message: “' + escR(r.message_body) + '”<br>' : ''}
+          ${r.details ? 'Their note: ' + escR(r.details) + '<br>' : ''}
+          ${r.admin_note ? 'Action: ' + escR(r.admin_note) : ''}
+        </div>
+        ${r.status === 'open' ? `<div class="card-actions">
+          ${r.kind === 'review' && r.review_comment != null ? '<button class="btn-reject" data-act="remove_review">Remove review</button>' : ''}
+          ${r.kind === 'message' && r.message_body != null ? '<button class="btn-reject" data-act="remove_message">Remove message</button>' : ''}
+          ${r.listing_id ? '<button class="btn-reject" data-act="pause_listing">Pause listing</button>' : ''}
+          <button class="btn-approve" data-act="resolve">Handled</button>
+          <button class="btn-quick" data-act="dismiss">Dismiss</button>
+        </div>` : ''}
+      </div>`).join('');
+    container.querySelectorAll('[data-act]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.closest('[data-report-id]').dataset.reportId;
+        const action = btn.dataset.act;
+        if(['remove_review','remove_message','pause_listing'].includes(action) && !confirm('Are you sure? This takes the content down.')) return;
+        const { error } = await supabaseClient.rpc('rvnb_admin_act_on_report', { p_report_id: id, p_action: action });
+        if(error){ alert('Could not update: ' + error.message); return; }
+        loadReports();
+        if(action === 'pause_listing') loadListings();
+      });
+    });
   }
 
   async function loadWaitlist(){
