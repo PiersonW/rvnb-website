@@ -128,6 +128,9 @@
     <p>Tell us about your space. We review every listing before it goes live — you'll typically hear back within a few days.</p>
   </div>
 
+  <!-- OUTREACH DRAFT: shown when the host arrives from their claim link -->
+  <div id="claim-banner" class="msg success" style="margin:8px 0 0;"></div>
+
   <!-- ACCOUNT GATE -->
   <div id="auth-gate" class="auth-box">
     <button type="button" id="google-signin-btn" style="width:100%; padding:12px; background:#fff; color:#1E2B25; border:2px solid #4E8468; border-radius:10px; font-weight:600; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px;">
@@ -200,6 +203,10 @@
           <option value="residential">Residential</option>
           <option value="church">Church</option>
           <option value="gym">Gym</option>
+          <option value="farm">Farm / Orchard / Ranch</option>
+          <option value="winery">Winery / Brewery / Distillery</option>
+          <option value="golf">Golf course</option>
+          <option value="venue">Event venue</option>
           <option value="restaurant">Restaurant</option>
           <option value="office">Office</option>
           <option value="warehouse">Warehouse / Industrial</option>
@@ -376,6 +383,56 @@
     }
     input.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(check, 400); });
     if(input.value) check();
+  })();
+
+  // ============================================
+  // CLAIM LINK — outreach emails link to ?claim=<token>, which opens this
+  // form already filled in from the business's public info (host_leads.draft).
+  // Kept in localStorage so it survives the sign-in redirect; only the first
+  // landing from the email counts as a visit.
+  // ============================================
+  const CLAIM_KEY = 'rvnb_claim_token';
+  let claimToken = null;
+  (async function initClaim(){
+    const fromUrl = new URLSearchParams(location.search).get('claim');
+    try {
+      if(fromUrl) localStorage.setItem(CLAIM_KEY, fromUrl);
+      claimToken = fromUrl || localStorage.getItem(CLAIM_KEY);
+    } catch(e) { claimToken = fromUrl; }
+    if(!claimToken) return;
+    const { data, error } = await supabaseClient.rpc('rvnb_outreach_open', { p_token: claimToken, p_record: !!fromUrl });
+    if(error || !data){ claimToken = null; return; }
+    const banner = document.getElementById('claim-banner');
+    if(data.listed){
+      banner.textContent = `${data.business_name} is already submitted. You can manage it from your host dashboard.`;
+      banner.classList.add('show');
+      return;
+    }
+    const d = data.draft || {};
+    const set = (id, v) => { if(v !== undefined && v !== null && v !== '') document.getElementById(id).value = v; };
+    set('business_name', data.business_name);
+    set('contact_name', data.contact_name);
+    set('address', data.address);
+    set('city', data.city);
+    set('state', data.state);
+    set('business_type', d.business_type);
+    set('spots_available', d.spots_available);
+    set('max_rig_length_ft', d.max_rig_length_ft);
+    set('price_per_night', d.price_per_night);
+    set('arrival_time', d.arrival_time);
+    set('departure_time', d.departure_time);
+    set('rules', d.rules_note);
+    set('amenities', d.amenities_note);
+    if(d.allows_24hr_parking) document.getElementById('allows_24hr_parking').checked = true;
+    const tick = (cls, values) => (values || []).forEach(v => {
+      const cb = Array.from(document.querySelectorAll('.' + cls)).find(c => c.dataset.value === v);
+      if(cb){ cb.checked = true; cb.closest('.preset-chip').classList.add('checked'); }
+    });
+    tick('rule-preset', d.rules);
+    tick('amenity-preset', d.amenities);
+    banner.textContent = `We drafted this listing for ${data.business_name}. Sign in, check every field (price, spots and times are only our guesses), add a photo or two, then submit.`;
+    banner.classList.add('show');
+    document.querySelector('.intro h1').textContent = 'Your listing draft';
   })();
 
   document.querySelectorAll('.auth-tab').forEach(tab => {
@@ -654,7 +711,7 @@
       referral_code: document.getElementById('referral_code').value.trim() || null
     };
 
-    const { error } = await supabaseClient.from('partners').insert(payload);
+    const { data: inserted, error } = await supabaseClient.from('partners').insert(payload).select('id').single();
 
     if(error){
       showMsg('Something went wrong: ' + error.message, 'error');
@@ -664,6 +721,14 @@
     }
 
     try { localStorage.removeItem(REF_KEY); } catch(e) {}
+
+    // Came from an outreach email: tie this listing to that lead.
+    if(claimToken && inserted && inserted.id){
+      try { await supabaseClient.rpc('rvnb_outreach_claim', { p_token: claimToken, p_listing_id: inserted.id }); } catch(e) {}
+      try { localStorage.removeItem(CLAIM_KEY); } catch(e) {}
+      claimToken = null;
+      document.getElementById('claim-banner').classList.remove('show');
+    }
 
     if(isActiveMarket){
       showMsg('Thanks! Your listing is in for review — we\'ll be in touch soon.', 'success');

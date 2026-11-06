@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Unsubscribe — RVnB</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{ --cta:#2D6A4F; --night:#1E2B25; --lane:#F5F8F6; --lane-dim:#E3E9E5; --asphalt:#66756D; }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Inter',sans-serif; background:var(--lane); color:var(--night); line-height:1.5;}
+  header{background:#fff; border-bottom:1px solid var(--lane-dim); padding:16px 0;}
+  .wrap{max-width:560px; margin:0 auto; padding:0 16px;}
+  header a{display:flex; align-items:center; gap:8px; text-decoration:none; color:var(--night); font-family:'Manrope',sans-serif; font-weight:700;}
+  .card{background:#fff; border:1px solid var(--lane-dim); border-radius:12px; padding:28px; margin:48px 0;}
+  h1{font-family:'Manrope',sans-serif; font-size:24px; margin-bottom:10px;}
+  p{color:var(--asphalt); margin-bottom:12px;}
+  button{padding:13px 20px; background:var(--cta); color:#fff; border:none; border-radius:10px; font-weight:700; font-size:15px; cursor:pointer;}
+  button:disabled{opacity:0.6; cursor:default;}
+  a.link{color:var(--cta);}
+</style>
+</head>
+<body>
+<header><div class="wrap"><a href="index.html"><img src="logo-64.png" width="20" height="20" alt="">RV<span style="color:var(--cta)">n</span>B</a></div></header>
+<div class="wrap">
+  <div class="card" id="card">
+    <h1>Stop RVnB emails?</h1>
+    <p>We'll stop sending you emails about listing on RVnB. This won't affect bookings or an account you already have.</p>
+    <button id="confirm">Unsubscribe</button>
+  </div>
+</div>
+<script>
+  const supabaseClient = window.supabase.createClient(
+    'https://icnhpciixqrhrqrzxkxg.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbmhwY2lpeHFyaHJxcnp4a3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNTY2MDMsImV4cCI6MjA5OTczMjYwM30.5a8nNSiSA7U89f2kGAHGNPPfYpFra0Ve7PIFtOq3GDk'
+  );
+  const token = new URLSearchParams(location.search).get('t');
+  const card = document.getElementById('card');
+  const btn = document.getElementById('confirm');
+  function done(title, text){
+    card.innerHTML = '';
+    const h = document.createElement('h1'); h.textContent = title;
+    const p = document.createElement('p'); p.innerHTML = text;
+    card.append(h, p);
+  }
+  if(!token){
+    done('Link not recognized', 'To stop emails, reply "no" to the email, or write to <a class="link" href="mailto:hello@hivebuilt.dev?subject=Unsubscribe">hello@hivebuilt.dev</a>.');
+  }
+  btn && btn.addEventListener('click', async () => {
+    btn.disabled = true; btn.textContent = 'Unsubscribing…';
+    const { data, error } = await supabaseClient.rpc('rvnb_outreach_unsubscribe', { p_token: token });
+    if(error || !data){
+      done('Something went wrong', 'Please reply "no" to the email, or write to <a class="link" href="mailto:hello@hivebuilt.dev?subject=Unsubscribe">hello@hivebuilt.dev</a>, and we\'ll take you off the list.');
+      return;
+    }
+    done('You\'re unsubscribed', 'You won\'t get any more emails from us about listing on RVnB. Sorry for the bother.');
+  });
+</script>
+</body>
+</html>

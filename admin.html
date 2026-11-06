@@ -113,6 +113,19 @@
   .btn-pause{background:#e6e6e6; color:var(--night);}
   .btn-reject{background:var(--red); color:#fff;}
 
+  /* Email outreach panel (Host Leads tab) */
+  .outreach{background:#fff; border:1px solid var(--lane-dim); border-radius:12px; padding:18px 20px; margin-bottom:18px;}
+  .outreach h3{font-family:'Manrope',sans-serif; font-size:15px; text-transform:uppercase; margin-bottom:12px;}
+  .funnel{display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:10px; margin-bottom:14px;}
+  .funnel div{background:var(--lane); border-radius:10px; padding:10px 12px;}
+  .funnel b{display:block; font-size:22px; font-family:'Manrope',sans-serif;}
+  .funnel span{font-size:12px; color:var(--asphalt);}
+  .outreach-actions{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .outreach-preview{margin-top:14px; display:flex; flex-direction:column; gap:10px;}
+  .outreach-preview .email{border:1px solid var(--lane-dim); border-radius:10px; padding:12px 14px; font-size:13px; white-space:pre-wrap;}
+  .outreach-preview .email b{display:block; margin-bottom:6px;}
+  .outreach-line{font-size:12px; color:var(--asphalt); margin-top:6px;}
+
   /* Host Leads tab */
   .status.not_contacted{background:#e6e6e6; color:var(--asphalt);}
   .status.contacted{background:#dbe4ea; color:#3a5f7a;}
@@ -413,6 +426,17 @@
       <div id="waitlist-list-container"></div>
     </div>
     <div id="leads-container" class="tab-panel">
+      <div class="outreach" id="outreach-panel">
+        <h3>Email outreach</h3>
+        <div class="funnel" id="outreach-funnel"></div>
+        <div class="outreach-actions">
+          <button class="btn-import-toggle" id="outreach-preview-btn">Preview next batch</button>
+          <button class="btn-import-toggle" id="outreach-test-btn">Send me a test</button>
+          <button class="btn-add-lead" id="outreach-send-btn">Send today's batch</button>
+          <span class="meta" id="outreach-msg"></span>
+        </div>
+        <div class="outreach-preview" id="outreach-preview"></div>
+      </div>
       <div class="lead-toolbar">
         <div class="lead-filters" id="lead-filters"></div>
         <div style="display:flex; gap:8px;">
@@ -444,8 +468,14 @@
             <select id="lead-business-type">
               <option value="">Select...</option>
               <option value="storage">Storage facility</option>
+              <option value="farm">Farm / Orchard / Ranch</option>
+              <option value="winery">Winery / Brewery / Distillery</option>
+              <option value="golf">Golf course</option>
+              <option value="venue">Event venue</option>
               <option value="church">Church</option>
               <option value="gym">Gym</option>
+              <option value="restaurant">Restaurant</option>
+              <option value="retail">Retail</option>
               <option value="other">Other</option>
             </select>
           </div>
@@ -468,6 +498,14 @@
           <div>
             <label for="lead-address">Address</label>
             <input type="text" id="lead-address">
+          </div>
+          <div>
+            <label for="lead-website">Website</label>
+            <input type="url" id="lead-website">
+          </div>
+          <div class="full">
+            <label for="lead-personal-line">Personal line (opens the outreach email; must be true and specific)</label>
+            <textarea id="lead-personal-line" rows="2" placeholder="e.g. I saw your orchard sits right off I-15 at the Santaquin exit."></textarea>
           </div>
           <div class="full">
             <label for="lead-notes">Notes</label>
@@ -1238,6 +1276,93 @@
   // ============================================
   // HOST LEADS (outreach tracker)
   // ============================================
+  const LEAD_TYPE_LABELS = {
+    storage: 'Storage facility', farm: 'Farm / Orchard / Ranch', winery: 'Winery / Brewery / Distillery',
+    brewery: 'Brewery', golf: 'Golf course', venue: 'Event venue', church: 'Church', gym: 'Gym',
+    restaurant: 'Restaurant', retail: 'Retail', other: 'Other'
+  };
+  function escapeLead(v){
+    return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  const fmtDay = (iso) => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/Denver' }) : '';
+  function outreachLine(lead){
+    const bits = [];
+    if(lead.emailed_at) bits.push('Emailed ' + fmtDay(lead.emailed_at));
+    if(lead.link_open_count) bits.push(`Opened link ${lead.link_open_count}× (last ${fmtDay(lead.link_last_opened_at)})`);
+    else if(lead.emailed_at) bits.push('Link not opened yet');
+    if(lead.listing_id) bits.push('Submitted a listing ' + fmtDay(lead.listed_at));
+    if(lead.unsubscribed_at) bits.push('Unsubscribed ' + fmtDay(lead.unsubscribed_at));
+    else if(lead.do_not_contact) bits.push('Do not email');
+    if(!lead.emailed_at && !lead.do_not_contact){
+      if(!lead.email) bits.push('No email yet');
+      else if(!lead.personal_line) bits.push('Needs a personal line before emailing');
+      else bits.push('Ready to email');
+    }
+    return `<div class="outreach-line">${bits.map(escapeLead).join(' · ')}</div>`;
+  }
+
+  function renderOutreachFunnel(){
+    const emailed = allLeads.filter(l => l.emailed_at);
+    const opened = emailed.filter(l => l.link_open_count > 0);
+    const listed = allLeads.filter(l => l.listing_id);
+    const unsub = allLeads.filter(l => l.unsubscribed_at || (l.do_not_contact && l.emailed_at));
+    const ready = allLeads.filter(l => !l.emailed_at && l.email && l.personal_line && !l.do_not_contact && l.status === 'not_contacted');
+    const pct = (n) => emailed.length ? ` (${Math.round(100 * n / emailed.length)}%)` : '';
+    const startOfDay = new Date(new Date().toLocaleDateString('en-CA', { timeZone: 'America/Denver' }) + 'T00:00:00');
+    const today = emailed.filter(l => new Date(l.emailed_at) >= startOfDay).length;
+    document.getElementById('outreach-funnel').innerHTML = [
+      [ready.length, 'Ready to email'],
+      [`${today}/25`, 'Sent today'],
+      [emailed.length, 'Emailed'],
+      [opened.length + pct(opened.length), 'Opened their link'],
+      [listed.length + pct(listed.length), 'Submitted a listing'],
+      [unsub.length, 'Unsubscribed / no'],
+    ].map(([n, label]) => `<div><b>${n}</b><span>${label}</span></div>`).join('');
+  }
+
+  async function callOutreach(body){
+    const msgEl = document.getElementById('outreach-msg');
+    msgEl.textContent = 'Working…';
+    const { data, error } = await supabaseClient.functions.invoke('send-outreach', { body });
+    if(error){
+      let detail = error.message;
+      try { detail = (await error.context.json()).error || detail; } catch(e) {}
+      msgEl.textContent = detail;
+      return null;
+    }
+    msgEl.textContent = '';
+    return data;
+  }
+
+  document.getElementById('outreach-preview-btn').addEventListener('click', async () => {
+    const data = await callOutreach({ mode: 'preview' });
+    if(!data) return;
+    const box = document.getElementById('outreach-preview');
+    const head = `<div class="meta">${data.emails.length} email(s) in the next batch · ${data.readyTotal} ready in total · ${data.sentToday}/${data.dailyCap} sent today`
+      + (data.missing.length ? ` · <b>Sending isn't set up yet: ${data.missing.map(escapeLead).join(', ')}</b>` : '')
+      + (data.skipped.length ? `<br>Skipped: ${data.skipped.map(s => escapeLead(s.business_name + ' (' + s.reason + ')')).join(', ')}` : '') + '</div>';
+    box.innerHTML = head + data.emails.map(e =>
+      `<div class="email"><b>To ${escapeLead(e.to)} · ${escapeLead(e.subject)}</b>${escapeLead(e.text)}</div>`).join('');
+  });
+
+  document.getElementById('outreach-test-btn').addEventListener('click', async () => {
+    const data = await callOutreach({ mode: 'test' });
+    if(data) document.getElementById('outreach-msg').textContent = `Test for ${data.business_name} sent to ${data.to}.`;
+  });
+
+  document.getElementById('outreach-send-btn').addEventListener('click', async () => {
+    const preview = await callOutreach({ mode: 'preview' });
+    if(!preview) return;
+    if(!preview.emails.length){ document.getElementById('outreach-msg').textContent = 'Nothing to send right now.'; return; }
+    if(!confirm(`Send ${preview.emails.length} outreach email(s) now? They go out for real and can't be unsent.`)) return;
+    const data = await callOutreach({ mode: 'send', limit: preview.emails.length });
+    if(!data) return;
+    const failed = data.results.filter(r => !r.ok);
+    document.getElementById('outreach-msg').textContent = `Sent ${data.sent}.` + (failed.length ? ` Failed: ${failed.map(f => f.business_name + ' (' + f.error + ')').join(', ')}` : '');
+    document.getElementById('outreach-preview').innerHTML = '';
+    loadHostLeads();
+  });
+
   const LEAD_STATUSES = ['not_contacted','contacted','interested','listed','declined'];
   const LEAD_STATUS_LABELS = {
     not_contacted: 'Not Contacted',
@@ -1260,7 +1385,7 @@
   });
 
   function clearLeadForm(){
-    ['lead-business-name','lead-business-type','lead-city','lead-contact-name','lead-phone','lead-email','lead-address','lead-notes']
+    ['lead-business-name','lead-business-type','lead-city','lead-contact-name','lead-phone','lead-email','lead-address','lead-website','lead-personal-line','lead-notes']
       .forEach(id => document.getElementById(id).value = '');
   }
 
@@ -1278,6 +1403,8 @@
       phone: document.getElementById('lead-phone').value.trim() || null,
       email: document.getElementById('lead-email').value.trim() || null,
       address: document.getElementById('lead-address').value.trim() || null,
+      website: document.getElementById('lead-website').value.trim() || null,
+      personal_line: document.getElementById('lead-personal-line').value.trim() || null,
       notes: document.getElementById('lead-notes').value.trim() || null,
       status: 'not_contacted'
     };
@@ -1347,6 +1474,7 @@
     }
 
     allLeads = data;
+    renderOutreachFunnel();
     renderLeadFilters();
     renderLeadList();
   }
@@ -1355,13 +1483,14 @@
     const card = document.createElement('div');
     card.className = 'card lead-card' + (expandedLeadIds.has(lead.id) ? ' expanded' : '');
     card.dataset.leadId = lead.id;
-    const typeLabel = { storage: 'Storage facility', church: 'Church', gym: 'Gym', other: 'Other' }[lead.business_type] || '—';
+    const typeLabel = LEAD_TYPE_LABELS[lead.business_type] || '—';
     const locationBits = [typeLabel, lead.city].filter(Boolean).join(' · ');
     card.innerHTML = `
       <div class="card-top lead-summary" data-toggle="1">
         <div>
-          <h3>${lead.business_name}</h3>
-          <div class="meta">${locationBits || '—'}</div>
+          <h3>${escapeLead(lead.business_name)}</h3>
+          <div class="meta">${escapeLead(locationBits) || '—'}</div>
+          ${outreachLine(lead)}
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
           <span class="status ${lead.status}">${LEAD_STATUS_LABELS[lead.status]}</span>
@@ -1373,7 +1502,8 @@
         <div class="meta" style="margin-bottom:10px;">
           ${lead.address ? lead.address + '<br>' : ''}
           ${lead.contact_name ? lead.contact_name + ' · ' : ''}${lead.phone ? `<a href="tel:${lead.phone.replace(/[^\d+]/g, '')}" class="phone-link">${lead.phone}</a> <a href="sms:${lead.phone.replace(/[^\d+]/g, '')}" class="text-link">(Text)</a> · ` : ''}${lead.email || ''}<br>
-          Last touch: ${lead.last_touch_date || 'never'}
+          ${lead.website ? `<a href="${escapeLead(lead.website)}" target="_blank" rel="noopener">${escapeLead(lead.website)}</a><br>` : ''}
+          Last touch: ${lead.last_touch_date || 'never'}${lead.source ? ' · Found via ' + escapeLead(lead.source) : ''}
         </div>
 
         <div class="edit-grid">
@@ -1387,6 +1517,14 @@
             <label>Last touch date</label>
             <input type="date" class="f-lead-touch" data-id="${lead.id}" value="${lead.last_touch_date || ''}">
           </div>
+          <div>
+            <label>Email</label>
+            <input type="email" class="f-lead-email" value="${escapeLead(lead.email || '')}">
+          </div>
+          <div class="full">
+            <label>Personal line (opens the outreach email)</label>
+            <textarea class="f-lead-personal" rows="2">${escapeLead(lead.personal_line || '')}</textarea>
+          </div>
           <div class="full">
             <label>Notes</label>
             <textarea class="f-lead-notes" data-id="${lead.id}" rows="2">${lead.notes || ''}</textarea>
@@ -1395,6 +1533,8 @@
 
         <div class="card-actions">
           <button class="btn-quick" data-id="${lead.id}" data-touch-today="1">Mark Contacted Today</button>
+          <button class="btn-quick" data-copy-claim="${lead.claim_token}">Copy listing link</button>
+          ${lead.do_not_contact ? '' : `<button class="btn-quick" data-id="${lead.id}" data-dnc="1">Do not email</button>`}
           <button class="btn-approve" data-id="${lead.id}" data-save="1">Save Changes</button>
           <button class="btn-reject" data-id="${lead.id}" data-delete="1">Delete</button>
         </div>
@@ -1441,11 +1581,34 @@
         const status = card.querySelector('.f-lead-status').value;
         const last_touch_date = card.querySelector('.f-lead-touch').value || null;
         const notes = card.querySelector('.f-lead-notes').value.trim() || null;
+        const email = card.querySelector('.f-lead-email').value.trim() || null;
+        const personal_line = card.querySelector('.f-lead-personal').value.trim() || null;
         const { error } = await supabaseClient
           .from('host_leads')
-          .update({ status, last_touch_date, notes, updated_at: new Date().toISOString() })
+          .update({ status, last_touch_date, notes, email, personal_line, updated_at: new Date().toISOString() })
           .eq('id', id);
         if(error){ alert('Update failed: ' + error.message); return; }
+        loadHostLeads();
+      });
+    });
+
+    document.querySelectorAll('[data-copy-claim]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const url = 'https://tryrvnb.com/list-your-lot.html?claim=' + btn.dataset.copyClaim;
+        try { await navigator.clipboard.writeText(url); btn.textContent = 'Copied'; }
+        catch(e) { prompt('Listing link for this lead (opening it counts as a visit):', url); }
+      });
+    });
+
+    document.querySelectorAll('[data-dnc="1"]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if(!confirm('Never email this lead? (Use this when they reply "no".)')) return;
+        const lead = allLeads.find(l => l.id === btn.dataset.id);
+        const { error } = await supabaseClient.from('host_leads')
+          .update({ do_not_contact: true, status: lead.status === 'listed' ? 'listed' : 'declined', updated_at: new Date().toISOString() })
+          .eq('id', btn.dataset.id);
+        if(error){ alert('Update failed: ' + error.message); return; }
+        if(lead.email) await supabaseClient.from('outreach_suppressions').upsert({ email: lead.email.toLowerCase(), reason: 'marked in admin' });
         loadHostLeads();
       });
     });

@@ -218,6 +218,10 @@
       <option value="residential">Residential</option>
       <option value="church">Church</option>
       <option value="gym">Gym</option>
+      <option value="farm">Farm / Orchard / Ranch</option>
+      <option value="winery">Winery / Brewery / Distillery</option>
+      <option value="golf">Golf course</option>
+      <option value="venue">Event venue</option>
       <option value="restaurant">Restaurant</option>
       <option value="office">Office</option>
       <option value="warehouse">Warehouse / Industrial</option>
@@ -534,7 +538,7 @@
   let activeRigLength = null;
 
   function matchesFilters(data){
-    if(activeTypeFilter && data.business_type !== activeTypeFilter) return false;
+    if(activeTypeFilter && String(data.business_type || '').toLowerCase() !== activeTypeFilter) return false;
     if(activeMinPrice !== null && Number(data.price_per_night) < activeMinPrice) return false;
     if(activeMaxPrice !== null && Number(data.price_per_night) > activeMaxPrice) return false;
     // A listing with no stated limit is assumed to fit any rig
