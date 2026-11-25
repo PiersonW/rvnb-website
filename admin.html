@@ -443,7 +443,8 @@
         <div class="outreach-actions">
           <button class="btn-import-toggle" id="outreach-preview-btn">Preview next batch</button>
           <button class="btn-import-toggle" id="outreach-test-btn">Send me a test</button>
-          <button class="btn-add-lead" id="outreach-send-btn">Send today's batch</button>
+          <!-- Outreach is sent from Pierson's Gmail for now (2026-11-24); hidden so nobody emails leads twice through Resend. -->
+          <button class="btn-add-lead" id="outreach-send-btn" style="display:none;">Send today's batch</button>
           <span class="meta" id="outreach-msg"></span>
         </div>
         <div class="outreach-preview" id="outreach-preview"></div>
@@ -1546,6 +1547,7 @@
         <div class="card-actions">
           <button class="btn-quick" data-id="${lead.id}" data-touch-today="1">Mark Contacted Today</button>
           <button class="btn-quick" data-copy-claim="${lead.claim_token}">Copy listing link</button>
+          ${lead.emailed_at || lead.do_not_contact ? '' : `<button class="btn-quick" data-id="${lead.id}" data-mark-emailed="1">Mark as emailed</button>`}
           ${lead.do_not_contact ? '' : `<button class="btn-quick" data-id="${lead.id}" data-dnc="1">Do not email</button>`}
           <button class="btn-approve" data-id="${lead.id}" data-save="1">Save Changes</button>
           <button class="btn-reject" data-id="${lead.id}" data-delete="1">Delete</button>
@@ -1609,6 +1611,27 @@
         const url = 'https://tryrvnb.com/list-your-lot.html?claim=' + btn.dataset.copyClaim;
         try { await navigator.clipboard.writeText(url); btn.textContent = 'Copied'; }
         catch(e) { prompt('Listing link for this lead (opening it counts as a visit):', url); }
+      });
+    });
+
+    // Backup for when the Outreach Agent hasn't matched a Gmail-sent email yet.
+    document.querySelectorAll('[data-mark-emailed="1"]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const lead = allLeads.find(l => l.id === btn.dataset.id);
+        if(!confirm(`Mark ${lead.business_name} as emailed today?`)) return;
+        const now = new Date();
+        const today = now.toLocaleDateString('en-CA', { timeZone: 'America/Denver' });
+        const { error } = await supabaseClient.from('host_leads')
+          .update({
+            emailed_at: now.toISOString(),
+            email_count: Math.max(1, lead.email_count || 0),
+            status: lead.status === 'not_contacted' ? 'contacted' : lead.status,
+            last_touch_date: today,
+            updated_at: now.toISOString()
+          })
+          .eq('id', btn.dataset.id);
+        if(error){ alert('Update failed: ' + error.message); return; }
+        loadHostLeads();
       });
     });
 

@@ -413,7 +413,10 @@
       claimToken = fromUrl || localStorage.getItem(CLAIM_KEY);
     } catch(e) { claimToken = fromUrl; }
     if(!claimToken) return;
-    const { data, error } = await supabaseClient.rpc('rvnb_outreach_open', { p_token: claimToken, p_record: !!fromUrl });
+    // Pierson testing his own outreach links shouldn't mark the lead as interested.
+    let isAdmin = false;
+    try { const { data: s } = await supabaseClient.auth.getSession(); isAdmin = s.session?.user?.email === 'pierson.willhite@gmail.com'; } catch(e) {}
+    const { data, error } = await supabaseClient.rpc('rvnb_outreach_open', { p_token: claimToken, p_record: !!fromUrl && !isAdmin });
     if(error || !data){ claimToken = null; return; }
     const banner = document.getElementById('claim-banner');
     if(data.listed){
