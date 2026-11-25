@@ -35,6 +35,10 @@
   }
   .intro h1{font-size:clamp(28px,5vw,40px); margin-bottom:12px;}
   .intro p{color:var(--asphalt); max-width:52ch;}
+  .how{list-style:none; margin-top:16px; display:flex; flex-direction:column; gap:8px; max-width:52ch;}
+  .how li{position:relative; padding-left:22px; color:var(--asphalt-dark); font-size:15px;}
+  .how li::before{content:'✓'; position:absolute; left:0; color:var(--sign-green); font-weight:700;}
+  .how b{color:var(--night);}
 
   form{padding:24px 0 80px; display:flex; flex-direction:column; gap:18px;}
   fieldset{border:none; display:flex; flex-direction:column; gap:18px;}
@@ -126,13 +130,26 @@
     <div class="eyebrow">Host application</div>
     <h1>List your lot</h1>
     <p>Tell us about your space. We review every listing before it goes live — you'll typically hear back within a few days.</p>
+    <ul class="how" id="how-it-works">
+      <li><b>Free to list.</b> You set the price and how many spots you have.</li>
+      <li><b>You pick the hours.</b> Set the earliest arrival and latest departure, so it can be just a quick overnight stop.</li>
+      <li><b>No hookups needed.</b> A flat, safe place to park is enough.</li>
+      <li><b>Guests book and pay online.</b> You get paid automatically after each stay.</li>
+    </ul>
+    <p class="hint" style="margin-top:12px;">Already have an account? <a href="#" id="login-link" style="color:var(--sign-green); font-weight:600;">Log in</a> · <a href="host-dashboard.html" style="color:var(--sign-green); font-weight:600;">Host dashboard</a></p>
   </div>
 
   <!-- OUTREACH DRAFT: shown when the host arrives from their claim link -->
   <div id="claim-banner" class="msg success" style="margin:8px 0 0;"></div>
 
-  <!-- ACCOUNT GATE -->
-  <div id="auth-gate" class="auth-box">
+  <!-- ACCOUNT STEP: shown when they press Submit without being signed in -->
+  <div id="auth-gate" class="auth-box" style="display:none;">
+    <h2 style="font-size:18px;">Last step: create your login</h2>
+    <p class="auth-note" style="margin-top:-6px;">So you can edit your listing and manage bookings later. We'll submit your listing as soon as you're in.</p>
+    <label id="auth-terms-wrap" style="display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--night); cursor:pointer; text-transform:none; letter-spacing:normal; font-family:'Inter',sans-serif; margin:0;">
+      <input type="checkbox" id="auth-terms-checkbox" style="margin-top:2px; flex-shrink:0; width:15px; height:15px;">
+      <span>I agree to RVnB's <a href="terms.html" target="_blank" style="color:var(--sign-green); text-decoration:underline;">Terms of Service</a>.</span>
+    </label>
     <button type="button" id="google-signin-btn" style="width:100%; padding:12px; background:#fff; color:#1E2B25; border:2px solid #4E8468; border-radius:10px; font-weight:600; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px;">
       <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.91-2.26c-.81.54-1.85.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.96v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.96 10.71a5.4 5.4 0 0 1 0-3.42V4.96H.96a9 9 0 0 0 0 8.08l3-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.96l3 2.33C4.67 5.16 6.66 3.58 9 3.58z"/></svg>
       Continue with Google
@@ -148,16 +165,12 @@
     <input type="email" id="auth-email" placeholder="Email" required>
     <input type="password" id="auth-password" placeholder="Password (min 6 characters)" required>
     <div class="cf-turnstile" data-sitekey="0x4AAAAAAD3dYgYRVK0pvWHm" data-callback="onAuthCaptcha" style="margin:6px 0;"></div>
-    <label id="auth-terms-wrap" style="display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--night); cursor:pointer;">
-      <input type="checkbox" id="auth-terms-checkbox" style="margin-top:2px; flex-shrink:0; width:15px; height:15px;">
-      <span>I agree to RVnB's <a href="terms.html" target="_blank" style="color:var(--sign-green); text-decoration:underline;">Terms of Service</a>.</span>
-    </label>
-    <button id="auth-submit" type="button">Create Account &amp; Continue</button>
+    <button id="auth-submit" type="button">Create Account &amp; Submit</button>
     <div class="msg" id="auth-msg"></div>
-    <p class="auth-note">Already have a listing? <a href="host-dashboard.html" style="color:var(--sign-green); font-weight:600;">Go to your dashboard</a> instead.</p>
+    <p class="auth-note"><a href="#" id="auth-back" style="color:var(--sign-green); font-weight:600;">← Back to the listing</a></p>
   </div>
 
-  <form id="listing-form" style="display:none;">
+  <form id="listing-form">
     <div style="position:absolute; left:-9999px;" aria-hidden="true">
       <label for="hp-field">Leave this field blank</label>
       <input type="text" id="hp-field" tabindex="-1" autocomplete="off">
@@ -268,7 +281,7 @@
       <div>
         <label for="photos">Photos (up to 5)</label>
         <input type="file" id="photos" accept="image/*" multiple required>
-        <div class="hint">Photos of the actual parking area help travelers know what to expect.</div>
+        <div class="hint" id="photos-hint">Photos of the actual parking area help travelers know what to expect.</div>
       </div>
 
       <div>
@@ -393,7 +406,7 @@
   // ============================================
   const CLAIM_KEY = 'rvnb_claim_token';
   let claimToken = null;
-  (async function initClaim(){
+  async function initClaim(){
     const fromUrl = new URLSearchParams(location.search).get('claim');
     try {
       if(fromUrl) localStorage.setItem(CLAIM_KEY, fromUrl);
@@ -409,6 +422,7 @@
       return;
     }
     const d = data.draft || {};
+    document.getElementById('how-it-works').style.display = 'none';
     const set = (id, v) => { if(v !== undefined && v !== null && v !== '') document.getElementById(id).value = v; };
     set('business_name', data.business_name);
     set('contact_name', data.contact_name);
@@ -430,25 +444,151 @@
     });
     tick('rule-preset', d.rules);
     tick('amenity-preset', d.amenities);
-    banner.textContent = `We drafted this listing for ${data.business_name}. Sign in, check every field (price, spots and times are only our guesses), add a photo or two, then submit.`;
+    banner.textContent = `Here's a draft listing for ${data.business_name}. Check the price, spots and times, add a photo or two, then submit; you'll create a login at the end.`;
     banner.classList.add('show');
     document.querySelector('.intro h1').textContent = 'Your listing draft';
-  })();
+  }
+
+  // ============================================
+  // DRAFT — everything typed is saved before sign-in (fields in localStorage,
+  // photos in IndexedDB) so it survives the Google redirect or an email
+  // confirmation link, then the listing submits itself once they're signed in.
+  // ============================================
+  const DRAFT_KEY = 'rvnb_listing_draft';
+  const PENDING_KEY = 'rvnb_listing_pending_submit';
+  const DRAFT_FIELDS = ['business_name','contact_name','contact_email','address','city','state','business_type',
+    'spots_available','max_rig_length_ft','price_per_night','arrival_time','departure_time','rules','amenities','referral_code'];
+  let restoredPhotos = [];
+
+  function photoDb(){
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open('rvnb_listing_draft', 1);
+      req.onupgradeneeded = () => req.result.createObjectStore('photos');
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  async function photoStore(mode, fn){
+    const db = await photoDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('photos', mode);
+      const out = fn(tx.objectStore('photos'));
+      tx.oncomplete = () => resolve(out && out.result);
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+  function selectedPhotos(){
+    const picked = Array.from(document.getElementById('photos').files);
+    return (picked.length ? picked : restoredPhotos).slice(0, 5);
+  }
+
+  async function saveDraft(){
+    const fields = {};
+    DRAFT_FIELDS.forEach(id => { fields[id] = document.getElementById(id).value; });
+    const draft = {
+      fields,
+      allows_24hr_parking: document.getElementById('allows_24hr_parking').checked,
+      rules: Array.from(document.querySelectorAll('.rule-preset:checked')).map(cb => cb.dataset.value),
+      amenities: Array.from(document.querySelectorAll('.amenity-preset:checked')).map(cb => cb.dataset.value),
+    };
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch(e) {}
+    try {
+      const files = selectedPhotos();
+      await photoStore('readwrite', s => s.put(files, 'files'));
+    } catch(e) { console.warn('Could not save photos for after sign-in', e); }
+  }
+
+  async function restoreDraft(){
+    let draft = null;
+    try { draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); } catch(e) {}
+    if(!draft) return false;
+    Object.entries(draft.fields || {}).forEach(([id, v]) => { const el = document.getElementById(id); if(el && v !== '') el.value = v; });
+    document.getElementById('allows_24hr_parking').checked = !!draft.allows_24hr_parking;
+    const tickOnly = (cls, values) => document.querySelectorAll('.' + cls).forEach(cb => {
+      cb.checked = (values || []).includes(cb.dataset.value);
+      cb.closest('.preset-chip').classList.toggle('checked', cb.checked);
+    });
+    tickOnly('rule-preset', draft.rules);
+    tickOnly('amenity-preset', draft.amenities);
+    try {
+      restoredPhotos = (await photoStore('readonly', s => s.get('files'))) || [];
+    } catch(e) { restoredPhotos = []; }
+    const input = document.getElementById('photos');
+    if(restoredPhotos.length){
+      try { const dt = new DataTransfer(); restoredPhotos.forEach(f => dt.items.add(f)); input.files = dt.files; } catch(e) {}
+      input.required = false;
+      document.getElementById('photos-hint').textContent = `${restoredPhotos.length} photo${restoredPhotos.length === 1 ? '' : 's'} saved from before you signed in. Pick again to replace them.`;
+    }
+    return true;
+  }
+
+  async function clearDraft(){
+    try { localStorage.removeItem(DRAFT_KEY); localStorage.removeItem(PENDING_KEY); } catch(e) {}
+    try { await photoStore('readwrite', s => s.delete('files')); } catch(e) {}
+    restoredPhotos = [];
+    document.getElementById('photos').required = true;
+    document.getElementById('photos-hint').textContent = 'Photos of the actual parking area help travelers know what to expect.';
+  }
+
+  // ============================================
+  // ACCOUNT STEP — shown only when they press Submit (or "Log in")
+  // ============================================
+  const authGate = document.getElementById('auth-gate');
+  let submitAfterAuth = false;
+
+  function setAuthMode(mode){
+    authMode = mode;
+    document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
+    document.getElementById('auth-submit').textContent = submitAfterAuth
+      ? (mode === 'signup' ? 'Create Account & Submit' : 'Log In & Submit')
+      : (mode === 'signup' ? 'Create Account' : 'Log In');
+    document.getElementById('auth-note').textContent = mode === 'signup'
+      ? 'Or create one with your email and a password.'
+      : 'Log in to add this listing to your existing account.';
+    document.getElementById('auth-terms-wrap').style.display = mode === 'signup' ? 'flex' : 'none';
+  }
+
+  function showAuthGate(forSubmit, mode){
+    submitAfterAuth = forSubmit;
+    authGate.querySelector('h2').textContent = forSubmit ? 'Last step: create your login' : 'Log in';
+    authGate.querySelector('p.auth-note').style.display = forSubmit ? '' : 'none';
+    setAuthMode(mode);
+    const email = document.getElementById('contact_email').value.trim();
+    if(email && !document.getElementById('auth-email').value) document.getElementById('auth-email').value = email;
+    form.style.display = 'none';
+    authGate.style.display = 'flex';
+    authGate.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function hideAuthGate(){
+    authGate.style.display = 'none';
+    form.style.display = 'flex';
+  }
+
+  function onSignedIn(user){
+    currentUser = user;
+    const emailInput = document.getElementById('contact_email');
+    if(!emailInput.value.trim()) emailInput.value = user.email || '';
+    const link = document.getElementById('login-link');
+    if(link) link.closest('p').innerHTML = `Signed in as ${user.email} · <a href="host-dashboard.html" style="color:var(--sign-green); font-weight:600;">Host dashboard</a>`;
+  }
+
+  document.getElementById('login-link').addEventListener('click', (e) => { e.preventDefault(); showAuthGate(false, 'login'); });
+  document.getElementById('auth-back').addEventListener('click', (e) => { e.preventDefault(); hideAuthGate(); });
 
   document.querySelectorAll('.auth-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      authMode = tab.dataset.mode;
-      document.getElementById('auth-submit').textContent = authMode === 'signup' ? 'Create Account & Continue' : 'Log In & Continue';
-      document.getElementById('auth-note').textContent = authMode === 'signup'
-        ? 'Create an account so you can come back later to edit your listing and manage bookings.'
-        : 'Log in to add another listing under your existing account.';
-      document.getElementById('auth-terms-wrap').style.display = authMode === 'signup' ? 'flex' : 'none';
-    });
+    tab.addEventListener('click', () => setAuthMode(tab.dataset.mode));
   });
 
   document.getElementById('google-signin-btn').addEventListener('click', async () => {
+    const authMsg = document.getElementById('auth-msg');
+    if(authMode === 'signup' && !document.getElementById('auth-terms-checkbox').checked){
+      authMsg.className = 'msg show error';
+      authMsg.textContent = 'Please agree to the Terms of Service first.';
+      return;
+    }
+    await saveDraft();
+    try { if(submitAfterAuth) localStorage.setItem(PENDING_KEY, '1'); } catch(e) {}
     await supabaseClient.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: window.location.origin + '/list-your-lot.html' }
@@ -484,6 +624,7 @@
         email, password,
         options: {
           captchaToken: authCaptchaToken,
+          emailRedirectTo: window.location.origin + '/list-your-lot.html',
           data: { role: 'host', terms_accepted: 'true' }
         }
       });
@@ -506,14 +647,16 @@
     // message instead of letting them hit a confusing error after filling
     // out the whole form.
     if(authMode === 'signup' && !result.data.session){
+      await saveDraft();
+      try { if(submitAfterAuth) localStorage.setItem(PENDING_KEY, '1'); } catch(e) {}
       authMsg.className = 'msg show success';
-      authMsg.textContent = 'Account created! Please check your email and click the confirmation link, then come back here and log in to continue.';
+      authMsg.textContent = 'Account created! Check your email and tap the confirmation link. Your listing is saved on this device and will submit when you come back.';
       if(window.turnstile) window.turnstile.reset();
       authCaptchaToken = null;
       return;
     }
 
-    currentUser = result.data.user;
+    onSignedIn(result.data.user);
 
     // For a brand-new signup, the profiles row is created server-side by the
     // on_auth_user_created database trigger the instant the account exists —
@@ -528,26 +671,36 @@
       await supabaseClient.from('profiles').update({ role: 'host' }).eq('id', currentUser.id);
     }
 
-    authMsg.className = '';
-    document.getElementById('auth-gate').style.display = 'none';
-    form.style.display = 'flex';
-    document.getElementById('contact_email').value = currentUser.email;
+    authMsg.className = 'msg';
+    hideAuthGate();
+    if(submitAfterAuth){ submitAfterAuth = false; form.requestSubmit(); }
   });
 
   async function checkExistingSession(){
     const { data } = await supabaseClient.auth.getSession();
     if(data.session){
-      currentUser = data.session.user;
+      onSignedIn(data.session.user);
       // Covers Google sign-in too: the profile-creation trigger defaults role
       // to 'traveler' since OAuth signups don't carry our custom metadata, so
       // make sure anyone landing here (host flow) is marked role='host'.
       await supabaseClient.from('profiles').update({ role: 'host' }).eq('id', currentUser.id);
-      document.getElementById('auth-gate').style.display = 'none';
-      form.style.display = 'flex';
-      document.getElementById('contact_email').value = currentUser.email;
     }
   }
-  checkExistingSession();
+
+  // Page start: claim draft first, then anything they typed before signing in
+  // (which wins), then the session. Back from sign-in with a pending submit →
+  // submit it for them.
+  (async function start(){
+    await initClaim();
+    await restoreDraft();
+    await checkExistingSession();
+    let pending = false;
+    try { pending = localStorage.getItem(PENDING_KEY) === '1'; } catch(e) {}
+    if(pending && currentUser){
+      try { localStorage.removeItem(PENDING_KEY); } catch(e) {}
+      form.requestSubmit();
+    }
+  })();
 
   // Free geocoding via OpenStreetMap's Nominatim — no API key needed.
   // Fine for this volume of submissions; if listings ever scale into the
@@ -628,6 +781,18 @@
         return;
       }
     }
+    if(selectedPhotos().length === 0){
+      showMsg('Please add at least one photo of the parking area.', 'error');
+      return;
+    }
+
+    // Not signed in yet: save what they typed and ask for a login now.
+    if(!currentUser){
+      msg.className = 'msg';
+      await saveDraft();
+      showAuthGate(true, 'signup');
+      return;
+    }
 
     submitBtn.disabled = true;
     submitBtn.textContent = 'Locating address...';
@@ -648,7 +813,7 @@
     submitBtn.textContent = 'Compressing photos...';
     showMsg('Compressing photos...', 'loading');
 
-    const photoFiles = Array.from(document.getElementById('photos').files).slice(0, 5);
+    const photoFiles = selectedPhotos();
     const photoUrls = [];
     for(const file of photoFiles){
       let uploadFile = file;
@@ -721,6 +886,7 @@
     }
 
     try { localStorage.removeItem(REF_KEY); } catch(e) {}
+    await clearDraft();
 
     // Came from an outreach email: tie this listing to that lead.
     if(claimToken && inserted && inserted.id){
@@ -772,8 +938,10 @@
     }).catch(() => {}); // notification failure shouldn't block the user's success message
 
     form.reset();
+    if(currentUser) document.getElementById('contact_email').value = currentUser.email || '';
     submitBtn.disabled = false;
     submitBtn.textContent = 'Submit for review';
+    msg.scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
 </script>
 

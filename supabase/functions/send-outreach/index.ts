@@ -74,7 +74,7 @@ export function renderEmail(lead: Lead, mailingAddress: string) {
     hello,
     (lead.personal_line || '').trim(),
     `I run RVnB, a Utah site where RV travelers book a paid overnight spot at local businesses, farms and properties. It's one more place to be found, alongside anywhere you already list.`,
-    `It's free to list. You set the price and the nights you're open, you approve every request, and travelers pay online. You keep 88% of the nightly price, paid out to you automatically after each stay.`,
+    `It's free to list. You set the price and the nights you're open, plus the earliest arrival and latest departure, so it can be just a quick overnight stop. No hookups needed. You approve every request, and travelers pay online. You keep 88% of the nightly price, paid out to you automatically after each stay.`,
     `I drafted a listing for ${lead.business_name} from your public info, so it only takes a couple of minutes to check it, add a photo and submit:`,
   ];
   const signoff = ['Thanks,', 'Pierson Willhite', 'RVnB · tryrvnb.com'];
