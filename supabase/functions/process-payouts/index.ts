@@ -231,6 +231,31 @@ Deno.serve(async (req) => {
       if (wasConfirmed) await sendReviewRequests(b, host.email);
     }
 
+    // Free stays: nothing to pay out; mark them completed after checkout and
+    // send the same review requests.
+    let freeQuery = adminClient
+      .from('bookings')
+      .select('*, partners(business_name, host_id, departure_time)')
+      .eq('is_free_stay', true)
+      .eq('status', 'confirmed')
+      .lte('check_out', tomorrowUtc)
+      .limit(50);
+    if (bookingId) freeQuery = freeQuery.eq('id', bookingId);
+    const { data: freeStays } = await freeQuery;
+    for (const b of freeStays || []) {
+      const checkoutMs = localToUtcMs(b.check_out, b.partners?.departure_time || '12:00', LISTING_TIMEZONE);
+      if (Date.now() < checkoutMs) { results[b.id] = 'not_due'; continue; }
+      const { data: done } = await adminClient
+        .from('bookings').update({ status: 'completed' })
+        .eq('id', b.id).eq('status', 'confirmed').select('id');
+      results[b.id] = 'free_completed';
+      if (!done?.length) continue;
+      const { data: hostProfile } = b.partners?.host_id
+        ? await adminClient.from('profiles').select('email').eq('id', b.partners.host_id).single()
+        : { data: null };
+      await sendReviewRequests(b, hostProfile?.email);
+    }
+
     return json({ processed: Object.keys(results).length, results });
   } catch (err) {
     return json({ error: (err as Error).message }, 500);

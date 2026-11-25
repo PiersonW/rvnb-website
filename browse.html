@@ -378,7 +378,7 @@
         <div class="info">
           <h4>${escapeHtml(p.business_name)}</h4>
           <div class="addr">${escapeHtml(`${p.address}, ${p.city}, ${p.state}`)}</div>
-          <div class="price">$${p.price_per_night}/night</div>
+          <div class="price">${p.stay_type === 'free' ? 'Free stay' : `$${p.price_per_night}/night`}</div>
         </div>
       `;
 
@@ -508,7 +508,7 @@
           ${thumb}
           <h3>${escapeHtml(p.business_name)}</h3>
           <div>${escapeHtml(`${p.city}, ${p.state}`)}</div>
-          <div class="price">$${p.price_per_night}/night</div>
+          <div class="price">${p.stay_type === 'free' ? 'Free stay' : `$${p.price_per_night}/night`}</div>
           <div class="meta">${p.spots_available} spot(s) · check-in ${formatTime12hr(p.arrival_time)} · check-out ${formatTime12hr(p.departure_time)}</div>
           <a href="listing.html?id=${p.id}&from=map" style="display:inline-block; margin-top:8px; background:#1F4D39; color:#BFE3CF; padding:6px 12px; border-radius:10px; font-size:12px; font-weight:700; text-decoration:none; text-transform:uppercase;">View &amp; Book</a>
         </div>
@@ -539,8 +539,9 @@
 
   function matchesFilters(data){
     if(activeTypeFilter && String(data.business_type || '').toLowerCase() !== activeTypeFilter) return false;
-    if(activeMinPrice !== null && Number(data.price_per_night) < activeMinPrice) return false;
-    if(activeMaxPrice !== null && Number(data.price_per_night) > activeMaxPrice) return false;
+    const nightly = data.stay_type === 'free' ? 0 : Number(data.price_per_night);
+    if(activeMinPrice !== null && nightly < activeMinPrice) return false;
+    if(activeMaxPrice !== null && nightly > activeMaxPrice) return false;
     // A listing with no stated limit is assumed to fit any rig
     if(activeRigLength !== null && data.max_rig_length_ft && Number(data.max_rig_length_ft) < activeRigLength) return false;
     return true;

@@ -86,11 +86,14 @@ Deno.serve(async (req) => {
 
     const { data: listing } = await adminClient
       .from('partners')
-      .select('id, business_name, status, price_per_night, spots_available')
+      .select('id, business_name, status, price_per_night, spots_available, stay_type')
       .eq('id', partnerId)
       .single();
     if (!listing || listing.status !== 'approved') {
       return json({ error: 'This listing is not currently available for booking.' }, 400);
+    }
+    if (listing.stay_type === 'free') {
+      return json({ error: 'This is a free stay. Request it at tryrvnb.com.' }, 400);
     }
     const price = Number(listing.price_per_night);
     if (!(price > 0)) {

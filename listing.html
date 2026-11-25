@@ -181,7 +181,8 @@
     </div>
 
     <form id="booking-form">
-      <h2>Request to Book</h2>
+      <h2 id="booking-heading">Request to Book</h2>
+      <div id="free-stay-notice" style="display:none; background:var(--tint); color:var(--cta); padding:12px 14px; border-radius:10px; font-size:13px; line-height:1.5; margin-bottom:4px;"></div>
       <div id="login-banner" style="display:none; background:var(--tint); color:var(--cta); padding:10px 14px; border-radius:10px; font-size:13px; margin-bottom:4px; min-width:0; overflow-wrap:break-word;"></div>
       <div id="daily-turnover-notice" style="background:#FDF1DC; color:#7A4E0E; padding:12px 14px; border-radius:10px; font-size:13px; line-height:1.5; margin-bottom:4px;"></div>
       <div style="position:absolute; left:-9999px;" aria-hidden="true">
@@ -230,7 +231,7 @@
         <span>I agree to RVnB's <a href="terms.html" target="_blank" style="color:var(--cta); text-decoration:underline;">Terms of Service</a> and <a href="cancellation-policy.html" target="_blank" style="color:var(--cta); text-decoration:underline;">Cancellation Policy</a>.</span>
       </label>
       <button type="submit" id="submit-btn">Request to Book</button>
-      <div class="note">Your card will be authorized now but not charged until the host confirms. If declined, you're never charged.</div>
+      <div class="note" id="card-note">Your card will be authorized now but not charged until the host confirms. If declined, you're never charged.</div>
       <div class="msg" id="form-msg"></div>
     </form>
   </div>
@@ -334,7 +335,16 @@
     document.getElementById('l-type').textContent = data.business_type || 'RV Parking';
     document.getElementById('l-name').textContent = data.business_name;
     document.getElementById('l-address').textContent = `${data.address}, ${data.city}, ${data.state}`;
-    document.getElementById('l-price').textContent = `$${data.price_per_night} / night`;
+    isFreeStay = data.stay_type === 'free';
+    document.getElementById('l-price').textContent = isFreeStay ? 'Free stay · 1 night' : `$${data.price_per_night} / night`;
+    if(isFreeStay){
+      document.getElementById('booking-heading').textContent = 'Request a Free Stay';
+      document.getElementById('submit-btn').textContent = 'Request Free Stay';
+      document.getElementById('card-note').textContent = 'No payment needed. The host approves each request, and you\'ll get an email when they do.';
+      const fn = document.getElementById('free-stay-notice');
+      fn.style.display = 'block';
+      fn.innerHTML = `<b>Free one-night stay.</b> For self-contained RVs only; there are no hookups. It's free, but please support ${escapeHtml(data.business_name)} if you can, like buying something while you're there. That's suggested, never required.`;
+    }
     document.getElementById('l-spots').textContent = data.spots_available;
     document.getElementById('l-length').textContent = data.max_rig_length_ft ? data.max_rig_length_ft + ' ft' : 'No limit specified';
     document.getElementById('l-arrival').textContent = formatTime12hr(data.arrival_time);
@@ -350,6 +360,10 @@
       turnoverNotice.style.background = 'var(--tint)';
       turnoverNotice.style.color = 'var(--cta)';
       turnoverNotice.innerHTML = `<b>✓ 24-hour parking.</b> This is a designated RV spot — you're welcome to stay parked here for the full length of your booking without leaving and returning daily.`;
+    } else if(data.stay_type === 'free'){
+      turnoverNotice.style.background = '#FDF1DC';
+      turnoverNotice.style.color = '#7A4E0E';
+      turnoverNotice.innerHTML = `<b>Arrive after ${formatTime12hr(data.arrival_time)}, leave by ${formatTime12hr(data.departure_time)}</b> the next morning.`;
     } else {
       turnoverNotice.style.background = '#FDF1DC';
       turnoverNotice.style.color = '#7A4E0E';
@@ -464,6 +478,7 @@
   const TAX_RATE = 0.07; // placeholder — confirm actual local rate before going live
 
   let currentPricing = null;
+  let isFreeStay = false;
   let blockedRanges = [];
   let bookedRanges = [];
 
@@ -521,6 +536,20 @@
     }
     dateError.style.display = 'none';
 
+    // Free stay: one night, no payment.
+    if(isFreeStay){
+      breakdown.style.display = 'none';
+      cardWrap.style.display = 'none';
+      if(validNights !== 1){
+        dateError.style.display = 'block';
+        dateError.textContent = 'Free stays are one night. Pick a check-out date the day after check-in.';
+        currentPricing = null;
+        return;
+      }
+      currentPricing = { nights: 1, free: true, subtotal: 0, travelerFee: 0, taxAmount: 0, totalCharged: 0, hostFee: 0, hostPayout: 0 };
+      return;
+    }
+
     const subtotal = validNights * listing.price_per_night;
     const travelerFee = subtotal * TRAVELER_FEE_RATE;
     const taxAmount = (subtotal + travelerFee) * TAX_RATE;
@@ -552,6 +581,12 @@
     coEl.min = todayStr;
     ciEl.addEventListener('change', () => {
       if(ciEl.value) coEl.min = ciEl.value;
+      if(isFreeStay && ciEl.value){
+        const d = new Date(ciEl.value + 'T00:00:00Z');
+        d.setUTCDate(d.getUTCDate() + 1);
+        coEl.value = d.toISOString().slice(0, 10);
+        calcTotal();
+      }
     });
   })();
 
@@ -608,7 +643,7 @@
 
     if(!currentPricing || currentPricing.nights <= 0){
       msg.className = 'msg show error';
-      msg.textContent = 'Check-out must be after check-in.';
+      msg.textContent = isFreeStay ? 'Free stays are one night. Pick a check-out date the day after check-in.' : 'Check-out must be after check-in.';
       return;
     }
 
@@ -621,6 +656,35 @@
     const guestName = document.getElementById('guest_name').value.trim();
     const guestEmail = document.getElementById('guest_email').value.trim();
     const guestPhone = document.getElementById('guest_phone').value.trim();
+
+    if(isFreeStay){
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Sending your request...';
+      msg.className = 'msg show';
+      msg.textContent = '';
+      const { data: freeData, error: freeError } = await supabaseClient.functions.invoke('confirm-booking', {
+        body: { freeStay: true, partnerId: listing.id, checkIn: ci, checkOut: co, guestName, guestEmail, guestPhone, termsAccepted: true }
+      });
+      if(freeError || !freeData || freeData.error){
+        let errorBody = freeData;
+        if(freeError?.context){
+          try { errorBody = await freeError.context.json(); } catch(e){ /* keep generic message */ }
+        }
+        const reason = errorBody?.reason;
+        msg.className = 'msg show error';
+        msg.textContent = reason === 'fully_booked'
+          ? 'Sorry, this spot is already taken that night. Please choose a different date.'
+          : reason === 'blocked'
+            ? 'Sorry, the host has blocked that date. Please choose a different date.'
+            : 'Could not send your request: ' + (errorBody?.error || freeError?.message || 'unknown error');
+        if(reason) loadBookedDates();
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Request Free Stay';
+        return;
+      }
+      requestSent(guestName, guestEmail, guestPhone, ci, co);
+      return;
+    }
 
     submitBtn.disabled = true;
     submitBtn.textContent = 'Authorizing card...';
@@ -716,10 +780,19 @@
     // The server's numbers are the real ones.
     if(bookingData.pricing) currentPricing = bookingData.pricing;
 
+    requestSent(guestName, guestEmail, guestPhone, ci, co);
+  });
+
+  // Success modal, admin notice and form reset — shared by paid and free requests.
+  function requestSent(guestName, guestEmail, guestPhone, ci, co){
+    const submitBtn = document.getElementById('submit-btn');
+    const msg = document.getElementById('form-msg');
     msg.className = 'msg show success';
     msg.textContent = 'Request sent!';
 
-    const turnoverLine = listing.allows_24hr_parking
+    const turnoverLine = isFreeStay
+      ? `Arrive after ${formatTime12hr(listing.arrival_time)} and leave by ${formatTime12hr(listing.departure_time)} the next morning.`
+      : listing.allows_24hr_parking
       ? 'This is a 24-hour parking spot, so there\'s no daily departure to worry about — stay parked for your whole visit.'
       : 'Remember: your vehicle must leave the lot each morning by the departure time and return after the arrival time — every night of your stay.';
     document.getElementById('success-modal-text').textContent =
@@ -746,7 +819,7 @@
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({
         access_key: '7e10b2cb-2e39-4f72-b665-924100b8e61e',
-        subject: '🚐 New booking request — ' + listing.business_name,
+        subject: (isFreeStay ? '🚐 New free stay request — ' : '🚐 New booking request — ') + listing.business_name,
         from_name: 'RVnB Website',
         replyto: guestEmail,
         message:
@@ -755,7 +828,7 @@
           `Guest: ${guestName} (${guestEmail})` +
           `${guestPhone ? ' · ' + guestPhone : ''}\n` +
           `Dates: ${ci} → ${co}\n` +
-          `Traveler pays: $${currentPricing.totalCharged.toFixed(2)} · Host receives: $${currentPricing.hostPayout.toFixed(2)}\n\n` +
+          (isFreeStay ? `FREE STAY (no payment)\n\n` : `Traveler pays: $${currentPricing.totalCharged.toFixed(2)} · Host receives: $${currentPricing.hostPayout.toFixed(2)}\n\n`) +
           `Review it: https://tryrvnb.com/admin.html`
       })
     }).catch(() => {});
@@ -766,8 +839,8 @@
     cardElement.clear();
     currentPricing = null;
     submitBtn.disabled = false;
-    submitBtn.textContent = 'Request to Book';
-  });
+    submitBtn.textContent = isFreeStay ? 'Request Free Stay' : 'Request to Book';
+  }
 
   // Point "Back" wherever the person actually came from, not always the map.
   // Prefer an explicit ?from= param (reliable) over document.referrer (often

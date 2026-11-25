@@ -307,7 +307,7 @@
           <div class="meta">
             <b>${formatDate(b.check_in)} → ${formatDate(b.check_out)}</b><br>
             ${address}<br>
-            $${b.total_charged ? Number(b.total_charged).toFixed(2) : Number(b.total_price).toFixed(2)} total (incl. fees &amp; tax)${Number(b.refunded_amount) > 0 ? `<br><span style="color:#2D6A4F; font-weight:600;">Refunded $${Number(b.refunded_amount).toFixed(2)}</span>` : ''}
+            ${b.is_free_stay ? 'Free stay' : `$${b.total_charged ? Number(b.total_charged).toFixed(2) : Number(b.total_price).toFixed(2)} total (incl. fees &amp; tax)`}${Number(b.refunded_amount) > 0 ? `<br><span style="color:#2D6A4F; font-weight:600;">Refunded $${Number(b.refunded_amount).toFixed(2)}</span>` : ''}
           </div>
         </div>
         <span class="status ${b.status}">${b.status}</span>

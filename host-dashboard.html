@@ -702,7 +702,13 @@
               <option value="other" ${p.business_type === 'other' ? 'selected' : ''}>Other</option>
             </select>
           </div>
-          <div><label>Price per night ($)</label><input type="number" class="f-price" min="1" value="${p.price_per_night}"></div>
+          <div><label>Type of stay</label>
+            <select class="f-stay-type">
+              <option value="paid" ${p.stay_type !== 'free' ? 'selected' : ''}>Paid stay</option>
+              <option value="free" ${p.stay_type === 'free' ? 'selected' : ''}>Free stay (1 night, no hookups)</option>
+            </select>
+          </div>
+          <div><label>Price per night ($, paid stays)</label><input type="number" class="f-price" min="1" value="${p.price_per_night ?? ''}"></div>
           <div><label>Spots available</label><input type="number" class="f-spots" value="${p.spots_available}"></div>
           <div><label>Earliest arrival</label><input type="time" class="f-arrival" value="${p.arrival_time}"></div>
           <div><label>Latest departure</label><input type="time" class="f-departure" value="${p.departure_time}"></div>
@@ -803,8 +809,9 @@
           return;
         }
 
-        const price_per_night = parseFloat(card.querySelector('.f-price').value);
-        if(!price_per_night || price_per_night <= 0){
+        const stay_type = card.querySelector('.f-stay-type').value === 'free' ? 'free' : 'paid';
+        const price_per_night = stay_type === 'free' ? null : parseFloat(card.querySelector('.f-price').value);
+        if(stay_type === 'paid' && (!price_per_night || price_per_night <= 0)){
           saveMsg.style.color = 'var(--red)';
           saveMsg.textContent = 'Price per night must be at least $1 — travelers can\'t book a $0 listing.';
           saveMsg.style.display = 'block';
@@ -820,6 +827,7 @@
         const { error } = await supabaseClient.from('partners').update({
           business_name,
           business_type: card.querySelector('.f-business-type').value || null,
+          stay_type,
           price_per_night,
           spots_available: parseInt(card.querySelector('.f-spots').value, 10),
           arrival_time: card.querySelector('.f-arrival').value,
@@ -1109,7 +1117,7 @@
         </div>
         <div class="meta">
           <b>${b.partners ? b.partners.business_name : ''}</b><br>
-          ${formatDate(b.check_in)} → ${formatDate(b.check_out)} · You receive: $${b.host_payout ? Number(b.host_payout).toFixed(2) : Number(b.total_price).toFixed(2)}<br>
+          ${formatDate(b.check_in)} → ${formatDate(b.check_out)} · ${b.is_free_stay ? 'Free stay' : `You receive: $${b.host_payout ? Number(b.host_payout).toFixed(2) : Number(b.total_price).toFixed(2)}`}<br>
           ${escapeHtml(b.guest_email)}${b.guest_phone ? ' · ' + escapeHtml(b.guest_phone) : ''}
           ${Number(b.refunded_amount) > 0 ? `<div style="font-size:12px; color:#2D6A4F; margin-top:6px; font-weight:600;">Refunded $${Number(b.refunded_amount).toFixed(2)}${b.cancelled_by ? ' · cancelled by ' + b.cancelled_by : ''}</div>` : (b.status === 'cancelled' && b.cancelled_by ? `<div style="font-size:12px; color:#888; margin-top:6px;">Cancelled by ${b.cancelled_by}${b.payment_status === 'paid' ? ' · not refunded' : ''}</div>` : '')}
           ${b.payout_status === 'paid' ? `<div style="font-size:12px; color:#2D6A4F; margin-top:6px; font-weight:600;">Paid out $${Number(b.payout_amount).toFixed(2)} on ${formatDate(String(b.paid_out_at).slice(0, 10))}${Number(b.payout_reversed_amount) > 0 ? ` ($${Number(b.payout_reversed_amount).toFixed(2)} taken back after a refund)` : ''}</div>`
@@ -1118,8 +1126,9 @@
             : b.status === 'confirmed' && b.payment_status === 'paid' ? `<div style="font-size:12px; color:#888; margin-top:6px;">You'll be paid $${Number(b.host_payout).toFixed(2)} automatically after checkout.</div>` : ''}
         </div>
         <div class="card-actions">
-          ${b.status !== 'confirmed' && b.status !== 'cancelled' && b.status !== 'completed' ? `<button class="btn-approve" data-id="${b.id}" data-action="capture">Confirm &amp; Charge</button>` : ''}
-          ${b.status === 'pending' ? `<button class="btn-reject" data-id="${b.id}" data-action="cancel">Decline</button>` : ''}
+          ${b.status !== 'confirmed' && b.status !== 'cancelled' && b.status !== 'completed' ? `<button class="btn-approve" data-id="${b.id}" data-action="capture" ${b.is_free_stay ? 'data-free="1"' : ''}>${b.is_free_stay ? 'Accept' : 'Confirm &amp; Charge'}</button>` : ''}
+          ${b.status === 'pending' ? `<button class="btn-reject" data-id="${b.id}" data-action="cancel" ${b.is_free_stay ? 'data-free="1"' : ''}>Decline</button>` : ''}
+          ${b.status === 'confirmed' && b.is_free_stay && !checkoutHasPassed ? `<button class="btn-reject" data-id="${b.id}" data-action="cancel" data-free="1" data-confirmed="1">Cancel Stay</button>` : ''}
           ${b.status === 'confirmed' && checkoutHasPassed ? `<button class="btn-pause" data-id="${b.id}" data-action="complete">Mark Completed</button>` : ''}
           ${b.status === 'confirmed' && b.payment_status === 'paid' && !checkoutHasPassed ? `<button class="btn-reject" data-id="${b.id}" data-action="refund-cancel" data-remaining="${(Number(b.total_charged ?? b.total_price) - Number(b.refunded_amount || 0)).toFixed(2)}">Cancel &amp; Refund</button>` : ''}
           ${b.status === 'completed' && ['paid', 'partially_refunded'].includes(b.payment_status) && Number(b.total_charged ?? b.total_price) - Number(b.refunded_amount || 0) > 0.004 ? `<button class="btn-reject" data-id="${b.id}" data-action="refund-completed" data-remaining="${(Number(b.total_charged ?? b.total_price) - Number(b.refunded_amount || 0)).toFixed(2)}">Refund</button>` : ''}
@@ -1320,7 +1329,12 @@
 
         const functionName = action === 'capture' ? 'capture-payment' : 'cancel-payment';
         const originalLabel = btn.textContent;
-        const confirmMsg = action === 'capture'
+        const isFree = btn.dataset.free === '1';
+        const confirmMsg = isFree
+          ? (action === 'capture' ? 'Accept this free stay request? The traveler will be emailed.'
+            : btn.dataset.confirmed === '1' ? 'Cancel this free stay? The traveler will be emailed.'
+            : 'Decline this free stay request? The traveler will be emailed.')
+          : action === 'capture'
           ? 'Confirm this booking and charge the traveler\'s card now?'
           : action === 'refund-cancel'
             ? 'Cancel this confirmed booking? The traveler gets a full refund of $' + btn.dataset.remaining + ' and will be emailed.'
@@ -1329,7 +1343,7 @@
         if(confirmMsg && !confirm(confirmMsg)) return;
 
         btn.disabled = true;
-        btn.textContent = action === 'capture' ? 'Charging...' : (action === 'cancel' ? 'Cancelling...' : 'Refunding...');
+        btn.textContent = action === 'capture' ? (isFree ? 'Accepting...' : 'Charging...') : (action === 'cancel' ? 'Cancelling...' : 'Refunding...');
 
         const { data, error } = await supabaseClient.functions.invoke(functionName, { body: { bookingId: id, amount } });
 

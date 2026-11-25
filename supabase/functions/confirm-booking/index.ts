@@ -62,14 +62,143 @@ async function sendEmail(resendKey: string | undefined, to: string, subject: str
   }).catch(() => {});
 }
 
+type RequestInfo = {
+  bookingId: string; partnerId: string; listingName: string;
+  guestName: string; guestEmail: string; checkIn: string; checkOut: string;
+  totalCharged: number; isFree: boolean;
+};
+
+// "Request received" to the guest and "new request" to the host.
+async function sendRequestEmails(adminClient: any, resendKey: string | undefined, r: RequestInfo) {
+  const { data: listing } = await adminClient
+    .from('partners')
+    .select('business_name, address, city, state, host_id')
+    .eq('id', r.partnerId)
+    .single();
+  const spot = esc(listing?.business_name || r.listingName);
+  const dates = `${formatDate(r.checkIn)} → ${formatDate(r.checkOut)}`;
+  const cancelLink = `https://tryrvnb.com/cancel-booking.html?booking=${r.bookingId}`;
+
+  const guestEmail = sendEmail(resendKey, r.guestEmail,
+    `Request received — ${listing?.business_name || r.listingName}`,
+    `
+      <p>Hi ${esc(r.guestName)},</p>
+      <p>We got your ${r.isFree ? 'free stay ' : 'booking '}request. The host will confirm shortly — you'll get another email the moment they do.</p>
+      <table style="border-collapse:collapse; margin:14px 0;">
+        <tr><td style="padding:4px 12px 4px 0; color:#555;">Location</td><td><b>${spot}</b></td></tr>
+        <tr><td style="padding:4px 12px 4px 0; color:#555;">Address</td><td>${esc(`${listing?.address}, ${listing?.city}, ${listing?.state}`)}</td></tr>
+        <tr><td style="padding:4px 12px 4px 0; color:#555;">Dates</td><td>${dates}</td></tr>
+        <tr><td style="padding:4px 12px 4px 0; color:#555;">Total</td><td>${r.isFree ? 'Free' : `$${r.totalCharged.toFixed(2)}`}</td></tr>
+      </table>
+      ${r.isFree
+        ? `<p>This is a free stay for self-contained RVs (no hookups). If you can, support the host by buying something while you're there.</p>`
+        : `<p>Your card is held, not charged, until the host accepts.</p>`}
+      <p>Need to cancel? <a href="${cancelLink}">Cancel this trip</a> — no account needed.</p>
+    `);
+
+  let hostEmail: Promise<void> = Promise.resolve();
+  if (listing?.host_id) {
+    const { data: hostProfile } = await adminClient
+      .from('profiles').select('email').eq('id', listing.host_id).single();
+    if (hostProfile?.email) {
+      hostEmail = sendEmail(resendKey, hostProfile.email,
+        `New ${r.isFree ? 'free stay' : 'booking'} request — ${listing.business_name}`,
+        `<p>Hi,</p><p>You have a new ${r.isFree ? 'free stay ' : 'booking '}request from <b>${esc(r.guestName)}</b> for ${dates}.</p><p>Log into your <a href="https://tryrvnb.com/host-dashboard.html">host dashboard</a> to confirm or decline.</p>`);
+    }
+  }
+  await Promise.all([guestEmail, hostEmail]);
+}
+
+// FREE STAY — no payment. One night, self-contained RVs, host still approves.
+// RVnB's fee for free stays isn't decided yet (guest booking fee or
+// membership). When it is, charge it here (and set traveler_fee), never
+// anything to the host.
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+async function requestFreeStay(req: Request, body: any, adminClient: any, resendKey: string | undefined) {
+  const { partnerId, checkIn, checkOut, guestName, guestEmail, guestPhone, termsAccepted } = body;
+  if (!partnerId || !ISO_DATE.test(checkIn || '') || !ISO_DATE.test(checkOut || '')) {
+    return json({ error: 'Please refresh the page and try again.' }, 400);
+  }
+  if (!guestName || !guestEmail || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(guestEmail)) {
+    return json({ error: 'Please enter your name and a valid email.' }, 400);
+  }
+  if (termsAccepted !== true) {
+    return json({ error: 'Please agree to the Terms of Service and Cancellation Policy.' }, 400);
+  }
+  const nights = Math.round((Date.parse(checkOut) - Date.parse(checkIn)) / 86400000);
+  if (nights !== 1) {
+    return json({ error: 'Free stays are one night. Pick a check-out date the day after check-in.' }, 400);
+  }
+  const yesterdayUtc = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  if (checkIn < yesterdayUtc) return json({ error: 'Check-in date is in the past.' }, 400);
+
+  let travelerId: string | null = null;
+  const callerJwt = (req.headers.get('Authorization') || '').replace('Bearer ', '');
+  if (callerJwt) {
+    const { data: userData } = await adminClient.auth.getUser(callerJwt);
+    if (userData?.user) {
+      travelerId = userData.user.id;
+      const { data: profile } = await adminClient
+        .from('profiles').select('is_paused').eq('id', travelerId).single();
+      if (profile?.is_paused) {
+        return json({ error: 'Your account has been paused and can\'t make new bookings. Please contact us if you believe this is a mistake.' }, 403);
+      }
+    }
+  }
+
+  const { data: listing } = await adminClient
+    .from('partners').select('id, business_name, status, stay_type').eq('id', partnerId).single();
+  if (!listing || listing.status !== 'approved') {
+    return json({ error: 'This listing is not currently available for booking.' }, 400);
+  }
+  if (listing.stay_type !== 'free') {
+    return json({ error: 'This listing is a paid stay. Please refresh the page and try again.' }, 400);
+  }
+
+  // The bookings trigger checks spots and blocked dates at insert time.
+  const { data: booking, error } = await adminClient
+    .from('bookings')
+    .insert({
+      partner_id: listing.id,
+      check_in: checkIn,
+      check_out: checkOut,
+      subtotal: 0, traveler_fee: 0, tax_amount: 0, total_charged: 0,
+      host_fee: 0, host_payout: 0, tax_rate: 0, total_price: 0,
+      guest_name: String(guestName).trim().slice(0, 200),
+      guest_email: String(guestEmail).trim().slice(0, 200),
+      guest_phone: String(guestPhone || '').trim().slice(0, 50) || null,
+      traveler_id: travelerId,
+      payment_intent_id: null,
+      status: 'pending',
+      payment_status: 'unpaid',
+      payout_status: 'not_owed',
+      is_free_stay: true,
+      terms_accepted_at: new Date().toISOString(),
+    })
+    .select('id')
+    .single();
+  if (error) {
+    const msg = error.message || '';
+    const reason = msg.includes('fully booked') ? 'fully_booked' : msg.includes('blocked') ? 'blocked' : 'error';
+    return json({ error: msg || 'Could not save your request', reason }, 409);
+  }
+
+  await sendRequestEmails(adminClient, resendKey, {
+    bookingId: booking.id, partnerId: listing.id, listingName: listing.business_name,
+    guestName, guestEmail, checkIn, checkOut, totalCharged: 0, isFree: true,
+  });
+  return json({ success: true, bookingId: booking.id, free: true });
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const { paymentIntentId } = await req.json();
-    if (!paymentIntentId || !/^pi_[A-Za-z0-9]+$/.test(paymentIntentId)) {
+    const body = await req.json();
+    const { paymentIntentId } = body;
+    if (!body.freeStay && (!paymentIntentId || !/^pi_[A-Za-z0-9]+$/.test(paymentIntentId))) {
       return json({ error: 'paymentIntentId is required' }, 400);
     }
 
@@ -81,6 +210,10 @@ Deno.serve(async (req) => {
       throw new Error('Missing required Edge Function secrets');
     }
     const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+    if (body.freeStay) {
+      return await requestFreeStay(req, body, adminClient, RESEND_API_KEY);
+    }
 
     // Already turned into a booking (e.g. the browser retried)? Return it.
     const { data: existing } = await adminClient
@@ -157,41 +290,11 @@ Deno.serve(async (req) => {
     }
 
     // Emails — best effort; the booking is already saved.
-    const { data: listing } = await adminClient
-      .from('partners')
-      .select('business_name, address, city, state, host_id')
-      .eq('id', m.partner_id)
-      .single();
-    const spot = esc(listing?.business_name || m.listing_name);
-    const dates = `${formatDate(m.check_in)} → ${formatDate(m.check_out)}`;
-    const cancelLink = `https://tryrvnb.com/cancel-booking.html?booking=${booking.id}`;
-
-    const guestEmail = sendEmail(RESEND_API_KEY, m.guest_email,
-      `Request received — ${listing?.business_name || m.listing_name}`,
-      `
-        <p>Hi ${esc(m.guest_name)},</p>
-        <p>We got your booking request. The host will confirm shortly — you'll get another email the moment they do.</p>
-        <table style="border-collapse:collapse; margin:14px 0;">
-          <tr><td style="padding:4px 12px 4px 0; color:#555;">Location</td><td><b>${spot}</b></td></tr>
-          <tr><td style="padding:4px 12px 4px 0; color:#555;">Address</td><td>${esc(`${listing?.address}, ${listing?.city}, ${listing?.state}`)}</td></tr>
-          <tr><td style="padding:4px 12px 4px 0; color:#555;">Dates</td><td>${dates}</td></tr>
-          <tr><td style="padding:4px 12px 4px 0; color:#555;">Total</td><td>$${totalCharged.toFixed(2)}</td></tr>
-        </table>
-        <p>Your card is held, not charged, until the host accepts.</p>
-        <p>Need to cancel? <a href="${cancelLink}">Cancel this trip</a> — no account needed.</p>
-      `);
-
-    let hostEmail: Promise<void> = Promise.resolve();
-    if (listing?.host_id) {
-      const { data: hostProfile } = await adminClient
-        .from('profiles').select('email').eq('id', listing.host_id).single();
-      if (hostProfile?.email) {
-        hostEmail = sendEmail(RESEND_API_KEY, hostProfile.email,
-          `New booking request — ${listing.business_name}`,
-          `<p>Hi,</p><p>You have a new booking request from <b>${esc(m.guest_name)}</b> for ${dates}.</p><p>Log into your <a href="https://tryrvnb.com/host-dashboard.html">host dashboard</a> to confirm or decline.</p>`);
-      }
-    }
-    await Promise.all([guestEmail, hostEmail]);
+    await sendRequestEmails(adminClient, RESEND_API_KEY, {
+      bookingId: booking.id, partnerId: m.partner_id, listingName: m.listing_name,
+      guestName: m.guest_name, guestEmail: m.guest_email,
+      checkIn: m.check_in, checkOut: m.check_out, totalCharged, isFree: false,
+    });
 
     return json({
       success: true,

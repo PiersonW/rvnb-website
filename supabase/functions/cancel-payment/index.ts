@@ -148,7 +148,27 @@ Deno.serve(async (req) => {
       await adminClient.from('bookings')
         .update({ status: 'cancelled', cancelled_by: actor })
         .eq('id', bookingId);
-      return json({ success: true, refundAmount: 0 });
+      // Free stays: tell the traveler (paid ones are emailed in the branches above).
+      let emailedGuest = false;
+      if (booking.is_free_stay && RESEND_API_KEY && booking.guest_email) {
+        const spot = esc(`${booking.partners?.business_name || 'your listing'}`);
+        const what = booking.status === 'pending'
+          ? `your free stay request at <b>${spot}</b> for ${booking.check_in} → ${booking.check_out} was not able to be confirmed.`
+          : `your free stay at <b>${spot}</b> for ${booking.check_in} → ${booking.check_out} has been cancelled by the host.`;
+        const res = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from: 'RVnB <notifications@tryrvnb.com>',
+            to: [booking.guest_email],
+            reply_to: 'hello@hivebuilt.dev',
+            subject: `Booking update — ${booking.partners?.business_name || 'RVnB'}`,
+            html: `<p>Hi ${esc(booking.guest_name)},</p><p>Unfortunately ${what}</p><p>Feel free to look for another spot on <a href="https://tryrvnb.com/browse.html">RVnB</a>.</p>`,
+          }),
+        }).catch(() => null);
+        emailedGuest = !!res?.ok;
+      }
+      return json({ success: true, refundAmount: 0, emailedGuest });
     }
 
     let refundCents = remainingCents;

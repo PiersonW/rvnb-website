@@ -51,7 +51,7 @@ async function sendConfirmationEmail(resendKey: string | undefined, b: any): Pro
     `<tr><td style="padding:4px 12px 4px 0; color:#555;">${label}</td><td>${value}</td></tr>`;
   const html = `
     <p>Hi ${esc(b.guest_name)},</p>
-    <p>Your booking is confirmed! Your card has been charged. Here are your trip details:</p>
+    <p>${b.is_free_stay ? 'Your free stay is confirmed!' : 'Your booking is confirmed! Your card has been charged.'} Here are your trip details:</p>
     <table style="border-collapse:collapse; margin:14px 0;">
       ${row('Location', `<b>${esc(p.business_name)}</b>`)}
       ${row('Address', esc(`${p.address}, ${p.city}, ${p.state}`))}
@@ -61,9 +61,10 @@ async function sendConfirmationEmail(resendKey: string | undefined, b: any): Pro
       ${b.total_charged ? row('Total paid', `$${Number(b.total_charged).toFixed(2)}`) : ''}
     </table>
     ${p.rules ? `<p><b>Host rules:</b><br>${esc(p.rules)}</p>` : ''}
-    ${p.allows_24hr_parking
+    ${b.is_free_stay ? '' : p.allows_24hr_parking
       ? `<p><b>24-hour parking.</b> This is a designated RV spot — you're welcome to stay parked for the full length of your booking without leaving and returning daily.</p>`
       : `<p><b>⚠ Daily departure required.</b> Even for multi-night stays, your vehicle must leave the lot by <b>${formatTime12hr(p.departure_time)}</b> each morning and may not return until <b>${formatTime12hr(p.arrival_time)}</b> that evening — every night of your stay, not just once.</p>`}
+    ${b.is_free_stay ? `<p><b>Free stay.</b> Self-contained RVs only; there are no hookups. If you can, support the host by buying something while you're there.</p>` : ''}
     <p>Safe travels!</p>`;
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -106,7 +107,7 @@ Deno.serve(async (req) => {
     // Look up the booking and its listing's host
     const { data: booking, error: bookingErr } = await adminClient
       .from('bookings')
-      .select('id, payment_intent_id, payment_status, status, guest_name, guest_email, check_in, check_out, total_charged, partners(host_id, business_name, address, city, state, arrival_time, departure_time, allows_24hr_parking, rules)')
+      .select('id, payment_intent_id, payment_status, status, is_free_stay, guest_name, guest_email, check_in, check_out, total_charged, partners(host_id, business_name, address, city, state, arrival_time, departure_time, allows_24hr_parking, rules)')
       .eq('id', bookingId)
       .single();
     if (bookingErr || !booking) return json({ error: 'Booking not found' }, 404);
@@ -114,6 +115,16 @@ Deno.serve(async (req) => {
     const isAdmin = userData.user.email === ADMIN_EMAIL;
     const isHost = (booking.partners as any)?.host_id === userData.user.id;
     if (!isAdmin && !isHost) return json({ error: 'Not authorized to act on this booking' }, 403);
+
+    // Free stay: nothing to charge, just confirm it.
+    if (booking.is_free_stay) {
+      if (booking.status !== 'pending') {
+        return json({ error: `This request is already ${booking.status}.` }, 400);
+      }
+      await adminClient.from('bookings').update({ status: 'confirmed' }).eq('id', bookingId);
+      const emailedGuest = await sendConfirmationEmail(Deno.env.get('RESEND_API_KEY'), booking);
+      return json({ success: true, emailedGuest });
+    }
 
     if (booking.payment_status !== 'authorized') {
       return json({ error: `Cannot capture — payment status is "${booking.payment_status}", expected "authorized"` }, 400);

@@ -39,6 +39,12 @@
   .how li{position:relative; padding-left:22px; color:var(--asphalt-dark); font-size:15px;}
   .how li::before{content:'✓'; position:absolute; left:0; color:var(--sign-green); font-weight:700;}
   .how b{color:var(--night);}
+  .stay-choice{display:flex; flex-direction:column; gap:8px;}
+  .stay-opt{display:flex; gap:10px; align-items:flex-start; border:2px solid var(--lane-dim); background:#fff; border-radius:10px; padding:12px 14px; cursor:pointer;
+    font-family:'Inter',sans-serif; font-size:13px; text-transform:none; letter-spacing:normal; color:var(--asphalt-dark); margin:0;}
+  .stay-opt input{width:auto; margin-top:3px; flex-shrink:0;}
+  .stay-opt b{display:block; color:var(--night); font-size:15px;}
+  .stay-opt:has(input:checked){border-color:var(--cta); background:var(--tint);}
 
   form{padding:24px 0 80px; display:flex; flex-direction:column; gap:18px;}
   fieldset{border:none; display:flex; flex-direction:column; gap:18px;}
@@ -239,8 +245,17 @@
         </div>
       </div>
 
+      <div>
+        <label>Type of stay</label>
+        <div class="stay-choice">
+          <label class="stay-opt"><input type="radio" name="stay_type" value="paid" checked><span><b>Paid stay</b>You set a nightly price. Guests pay online and you're paid automatically.</span></label>
+          <label class="stay-opt"><input type="radio" name="stay_type" value="free"><span><b>Free stay</b>No charge. One night per guest, self-contained RVs only (no hookups). Guests are asked to support your business, like buying something, but never required to.</span></label>
+        </div>
+        <div class="hint">Some counties treat paid RV stays as a campground. A free one-night stay is often simpler. Check your local rules.</div>
+      </div>
+
       <div class="row2">
-        <div>
+        <div id="price-wrap">
           <label for="price_per_night">Price per night ($)</label>
           <input type="number" id="price_per_night" min="1" step="1" required>
         </div>
@@ -365,6 +380,33 @@
   renderPresetChips('amenity-presets', AMENITY_PRESETS, 'amenity-preset');
 
   // ============================================
+  // PAID / FREE STAY
+  // ============================================
+  function stayType(){
+    const r = document.querySelector('input[name="stay_type"]:checked');
+    return r ? r.value : 'paid';
+  }
+  function setStayType(value){
+    const r = document.querySelector(`input[name="stay_type"][value="${value === 'free' ? 'free' : 'paid'}"]`);
+    if(r) r.checked = true;
+    applyStayType();
+  }
+  function applyStayType(){
+    const free = stayType() === 'free';
+    document.getElementById('price-wrap').style.display = free ? 'none' : '';
+    document.getElementById('price_per_night').required = !free;
+    const parking = document.getElementById('allows_24hr_parking');
+    parking.closest('div').style.display = free ? 'none' : 'flex';
+    if(free) parking.checked = false;
+    if(free){
+      // Free stays are for self-contained RVs: no hookups.
+      const cb = Array.from(document.querySelectorAll('.rule-preset')).find(c => c.dataset.value === 'No hookups available on-site');
+      if(cb && !cb.checked){ cb.checked = true; cb.closest('.preset-chip').classList.add('checked'); }
+    }
+  }
+  document.querySelectorAll('input[name="stay_type"]').forEach(r => r.addEventListener('change', applyStayType));
+
+  // ============================================
   // ACCOUNT GATE — hosts must be logged in so listings tie to their account
   // ============================================
   let authMode = 'signup';
@@ -433,6 +475,7 @@
     set('city', data.city);
     set('state', data.state);
     set('business_type', d.business_type);
+    if(d.stay_type) setStayType(d.stay_type);
     set('spots_available', d.spots_available);
     set('max_rig_length_ft', d.max_rig_length_ft);
     set('price_per_night', d.price_per_night);
@@ -491,6 +534,7 @@
     const draft = {
       fields,
       allows_24hr_parking: document.getElementById('allows_24hr_parking').checked,
+      stay_type: stayType(),
       rules: Array.from(document.querySelectorAll('.rule-preset:checked')).map(cb => cb.dataset.value),
       amenities: Array.from(document.querySelectorAll('.amenity-preset:checked')).map(cb => cb.dataset.value),
     };
@@ -507,6 +551,7 @@
     if(!draft) return false;
     Object.entries(draft.fields || {}).forEach(([id, v]) => { const el = document.getElementById(id); if(el && v !== '') el.value = v; });
     document.getElementById('allows_24hr_parking').checked = !!draft.allows_24hr_parking;
+    if(draft.stay_type) setStayType(draft.stay_type);
     const tickOnly = (cls, values) => document.querySelectorAll('.' + cls).forEach(cb => {
       cb.checked = (values || []).includes(cb.dataset.value);
       cb.closest('.preset-chip').classList.toggle('checked', cb.checked);
@@ -865,7 +910,8 @@
       business_type: document.getElementById('business_type').value,
       spots_available: parseInt(document.getElementById('spots_available').value, 10),
       max_rig_length_ft: document.getElementById('max_rig_length_ft').value ? parseInt(document.getElementById('max_rig_length_ft').value, 10) : null,
-      price_per_night: parseFloat(document.getElementById('price_per_night').value),
+      stay_type: stayType(),
+      price_per_night: stayType() === 'free' ? null : parseFloat(document.getElementById('price_per_night').value),
       arrival_time: document.getElementById('arrival_time').value,
       departure_time: document.getElementById('departure_time').value,
       allows_24hr_parking: document.getElementById('allows_24hr_parking').checked,
@@ -935,12 +981,13 @@
           `Contact: ${payload.contact_name} (${payload.contact_email})\n` +
           `Address: ${payload.address}, ${payload.city}, ${payload.state}\n` +
           `Type: ${payload.business_type}\n` +
-          `Price: $${payload.price_per_night}/night · ${payload.spots_available} spot(s)\n\n` +
+          `${payload.stay_type === 'free' ? 'FREE STAY' : 'Price: $' + payload.price_per_night + '/night'} · ${payload.spots_available} spot(s)\n\n` +
           `Review it: https://tryrvnb.com/admin.html`
       })
     }).catch(() => {}); // notification failure shouldn't block the user's success message
 
     form.reset();
+    applyStayType();
     if(currentUser) document.getElementById('contact_email').value = currentUser.email || '';
     submitBtn.disabled = false;
     submitBtn.textContent = 'Submit for review';
